@@ -31,7 +31,7 @@ set(Omega_h_USE_Kokkos_DEFAULT OFF)
 set(KokkosCore_PREFIX_DEFAULT ${Kokkos_PREFIX})
 bob_add_dependency(PUBLIC NAME Kokkos TARGETS kokkos INCLUDE_DIR_VARS Kokkos_INCLUDE_DIRS)
 if (Omega_h_USE_Kokkos)
-  set_target_properties(kokkos PROPERTIES INTERFACE_COMPILE_OPTIONS "")
+  set_target_properties(Omega_h-Kokkos PROPERTIES INTERFACE_COMPILE_OPTIONS "")
 endif()
 
 set(libMeshb_REQUIRED_VERSION 7.24)
