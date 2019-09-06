@@ -324,10 +324,15 @@ Adj Mesh::derive_adj(Int from, Int to) {
   check_dim(from);
   check_dim2(to);
   if (from < to) {
+    OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
     Adj down = ask_adj(to, from);
+    OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
     Int nlows_per_high = element_degree(family(), to, from);
     LO nlows = nents(from);
+    assert(down.ab2b.size());
+    OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
     Adj up = invert_adj(down, nlows_per_high, nlows, to, from);
+    OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
     return up;
   } else if (to < from) {
     OMEGA_H_CHECK(to + 1 < from);

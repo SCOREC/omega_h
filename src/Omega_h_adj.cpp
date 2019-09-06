@@ -244,8 +244,10 @@ Adj invert_adj(Adj const down, Int const nlows_per_high, LO const nlows,
                          high_plural_name + " to " + high_plural_name;
   auto const codes_name =
       std::string(low_singular_name) + " " + high_plural_name + " codes";
+  OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
   auto const l2hl =
       invert_map_by_atomics(down.ab2b, nlows, l2lh_name, lh2hl_name);
+  OMEGA_H_CHECK(cudaSuccess == cudaDeviceSynchronize());
   auto const l2lh = l2hl.a2ab;
   auto const lh2hl = l2hl.ab2b;
   LO const nlh = lh2hl.size();
