@@ -31,6 +31,7 @@ bob_option(Omega_h_USE_CUDA_AWARE_MPI "Assume MPI is CUDA-aware, make use of tha
 bob_option(Omega_h_USE_SimModSuite "Enable reading Simmetrix MeshSim meshes" OFF)
 bob_input(Omega_h_VALGRIND "" STRING "Valgrind plus arguments for testing")
 bob_option(Omega_h_EXAMPLES "Compile examples" OFF)
+bob_option(Omega_h_USE_MPAS "Support reading MPAS meshes" OFF)
 
 bob_option(Omega_h_USE_MPI "Use MPI for parallelism" OFF)
 bob_option(Omega_h_ENABLE_DEMANGLED_STACKTRACE "Add linker options to enable human-readable stacktraces on gnu-c platforms." OFF)
@@ -141,6 +142,12 @@ if (Omega_h_USE_CUDA)
   endif()
 endif()
 
+
+if (Omega_h_USE_MPAS)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(NetCDF REQUIRED IMPORTED_TARGET netcdf>=4.7.3)
+endif()
+
 include(cmake/osh_use_dolfin.cmake)
 osh_use_dolfin()
 
@@ -161,6 +168,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_USE_ZLIB
     Omega_h_USE_libMeshb
     Omega_h_USE_EGADS
+    Omega_h_USE_MPAS
     Omega_h_USE_SEACASExodus
     Omega_h_USE_SimModSuite
     Omega_h_USE_DOLFIN

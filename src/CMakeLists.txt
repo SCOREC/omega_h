@@ -43,6 +43,7 @@ set(Omega_h_SOURCES
   Omega_h_ghost.cpp
   Omega_h_globals.cpp
   Omega_h_gmsh.cpp
+  Omega_h_mpas.cpp
   Omega_h_grammar.cpp
   Omega_h_graph.cpp
   Omega_h_hilbert.cpp
@@ -215,6 +216,10 @@ if(Omega_h_USE_EGADS)
   target_link_libraries(omega_h PUBLIC "${EGADS_LIBRARY}")
 endif()
 
+if(Omega_h_USE_MPAS)
+  target_link_libraries(omega_h PUBLIC PkgConfig::NetCDF)
+endif()
+
 if(Omega_h_USE_SimModSuite)
   target_include_directories(omega_h PUBLIC "${SIMMODSUITE_INCLUDE_DIR}")
   target_link_libraries(omega_h PUBLIC "${SIMMODSUITE_LIBS}")
@@ -272,6 +277,7 @@ macro(osh_add_util EXE_NAME)
   bob_export_target(${EXE_NAME})
 endmacro(osh_add_util)
 
+osh_add_util(mpas2osh)
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
 osh_add_util(oshdiff)

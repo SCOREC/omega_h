@@ -106,6 +106,10 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh);
 
 }  // namespace gmsh
 
+namespace mpas {
+Mesh read(filesystem::path const& filename, CommPtr comm);
+}
+
 namespace vtk {
 static constexpr bool do_compress = true;
 static constexpr bool dont_compress = false;

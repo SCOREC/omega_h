@@ -698,6 +698,8 @@ OMEGA_H_DLL Mesh read_mesh_file(filesystem::path const& path, CommPtr comm) {
 #endif
   } else if (extension == ".msh") {
     return gmsh::read(path, comm);
+  } else if (extension == ".nc") {
+    return mpas::read(path, comm);
   } else if (extension == ".pvtu") {
     Mesh mesh(comm->library());
     vtk::read_parallel(path, comm, &mesh);
