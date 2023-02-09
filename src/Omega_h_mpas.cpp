@@ -57,6 +57,21 @@ HostWrite<T> readArray(int ncid, const std::string name, const size_t len) {
   return arr;
 }
 
+HostWrite<Real> createCoordinates(int ncid, bool useCartesianCoords, 
+    const size_t dim, const size_t nCells) {
+  OMEGA_H_CHECK(dim==2); //TODO support 3d
+  auto x = useCartesianCoords ? readArray<Real>(ncid, "xCell", nCells) :
+                                      readArray<Real>(ncid, "latCell", nCells);
+  auto y = useCartesianCoords ? readArray<Real>(ncid, "yCell", nCells) :
+                                      readArray<Real>(ncid, "lonCell", nCells);
+  HostWrite<Real> coords(nCells*dim);
+  for(size_t i=0; i<nCells; i++) {
+    coords[i*2]   = x[i];
+    coords[i*2+1] = y[i];
+  }
+  return coords;
+}
+
 template <class T>
 bool anyZeros(T& arr, const size_t start, const size_t end) {
   for(size_t i=start; i<end; i++) {
@@ -103,21 +118,21 @@ HostWrite<LO> createElemConnectivity(HostWrite<LO>& mpasConn, const size_t nPrim
   return elm2vtx;
 }
 
-
 void read_internal(int ncid, bool useCartesianCoords,
     std::vector<std::string>& vtxFieldNames, Mesh* mesh) {
-  (void)mesh;
+  const size_t dim = 2;
   const size_t nCells = readDimension(ncid, "nCells");
   const size_t nVertices = readDimension(ncid, "nVertices");
+  auto coords = createCoordinates(ncid, useCartesianCoords, dim, nCells);
   printf("primal cells verts: %u %u\n", nCells, nVertices);
-  auto coords0 = useCartesianCoords ? readArray<Real>(ncid, "xCell", nCells) :
-                                      readArray<Real>(ncid, "latCell", nCells);
   auto cellsOnVertices = readArray<LO>(ncid, "cellsOnVertex", nVertices*3);
   std::vector< HostWrite<Real> > fieldVals;
   for(auto name : vtxFieldNames) //primal (polygonal) cell = dual (triangle) vertex
     fieldVals.push_back( readArray<Real>(ncid, name, nCells) );
-
   auto elm2vtx = createElemConnectivity(cellsOnVertices, nVertices);
+  Read<LO> elm2vtx_d(elm2vtx.write());
+  Read<Real> coords_d(coords.write());
+  build_from_elems_and_coords(mesh, OMEGA_H_SIMPLEX, dim, elm2vtx_d, coords_d);
 }
 
 Mesh read(int ncid, CommPtr comm) {
