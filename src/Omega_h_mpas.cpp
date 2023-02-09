@@ -133,6 +133,9 @@ void read_internal(int ncid, bool useCartesianCoords,
   Read<LO> elm2vtx_d(elm2vtx.write());
   Read<Real> coords_d(coords.write());
   build_from_elems_and_coords(mesh, OMEGA_H_SIMPLEX, dim, elm2vtx_d, coords_d);
+  for(size_t i=0; i<vtxFieldNames.size(); i++) {
+    mesh->add_tag<Real>(OMEGA_H_VERT, vtxFieldNames[i], 1, fieldVals[i].write());
+  }
 }
 
 Mesh read(int ncid, CommPtr comm) {
