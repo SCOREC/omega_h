@@ -58,12 +58,51 @@ HostWrite<T> readArray(int ncid, const std::string name, const size_t len) {
 }
 
 template <class T>
-bool anyZeros(T& arr, size_t start, size_t end) {
+bool anyZeros(T& arr, const size_t start, const size_t end) {
   for(size_t i=start; i<end; i++) {
     if(arr[i] == 0) return true;
   }
   return false;
 }
+
+template <class T>
+void copySubArray(T& src, T& dest,
+    const size_t srcStart, const size_t destStart, const size_t len) {
+  for(size_t i=0; i<len; i++) {
+    dest[destStart+i] = src[srcStart+i];
+  }
+}
+
+HostWrite<LO> createElemConnectivity(HostWrite<LO>& mpasConn, const size_t nPrimalVtx) {
+  OMEGA_H_CHECK(nPrimalVtx*3 == mpasConn.size());
+  //Primal vertices that don't bound three primal cells
+  // don't form valid dual triangles.
+  //This handles boundaries of the mesh.
+  //See figure 5.3 of MPAS v1.0 spec
+  int nTri=0;
+  for(int i=0; i<nPrimalVtx; i++) {
+    if( ! anyZeros(mpasConn, i*3, (i+1)*3) )
+      nTri++;
+  }
+  printf("nTri %d\n", nTri);
+  //create omegah connectivity array
+  int triIdx=0;
+  HostWrite<LO> elm2vtx(nTri*3);
+  for(int i=0; i<nPrimalVtx; i++) {
+    if( ! anyZeros(mpasConn, i*3, (i+1)*3) ) {
+      copySubArray(mpasConn, elm2vtx, i*3, triIdx*3, 3);
+      triIdx++;
+    }
+  }
+  //decrement the indices - mpas uses 1-based indexing
+  for(int i=0; i<nTri*3; i++) {
+    --elm2vtx[i];
+    if(elm2vtx[i] < 0) printf("foo %d %d\n", i, elm2vtx[i]);
+    OMEGA_H_CHECK(elm2vtx[i]>=0);
+  }
+  return elm2vtx;
+}
+
 
 void read_internal(int ncid, bool useCartesianCoords,
     std::vector<std::string>& vtxFieldNames, Mesh* mesh) {
@@ -78,17 +117,7 @@ void read_internal(int ncid, bool useCartesianCoords,
   for(auto name : vtxFieldNames) //primal (polygonal) cell = dual (triangle) vertex
     fieldVals.push_back( readArray<Real>(ncid, name, nCells) );
 
-  //Primal vertices that don't bound three primal cells
-  // don't form valid dual triangles.
-  //This handles boundaries of the mesh.
-  //See figure 5.3 of MPAS v1.0 spec
-  int nTri=0;
-  for(int i=0; i<nVertices; i++) {
-    if( ! anyZeros(cellsOnVertices, i*3, (i+1)*3) )
-      nTri++;
-  }
-  printf("nTri %d\n", nTri);
-
+  auto elm2vtx = createElemConnectivity(cellsOnVertices, nVertices);
 }
 
 Mesh read(int ncid, CommPtr comm) {
