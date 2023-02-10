@@ -17,13 +17,40 @@
 #include <netcdf.h>
 #endif  // OMEGA_H_USE_MPAS
 
+namespace {
+
+//TODO read from file
+std::vector<std::string> readVtxFieldList(Omega_h::filesystem::path const& filename) {
+  return {
+    "observedSurfaceVelocityX",
+    "observedSurfaceVelocityY",
+    "observedSurfaceVelocityUncertainty",
+    "sfcMassBal",
+    "surfaceAirTemperature",
+    "basalHeatFlux",
+    "observedThicknessTendency"
+  };
+}
+
+} //end anonymous namespace
+
 namespace Omega_h {
 
 namespace mpas {
 
 #ifndef OMEGA_H_USE_MPAS
 
-Mesh read(filesystem::path const&, CommPtr comm) {
+Mesh read(filesystem::path const&, const std::vector<std::string>&, CommPtr) {
+  Omega_h_fail("recompile with Omega_h_USE_MPAS enabled!\n");
+  return Mesh(comm->library()); //silence warning
+}
+
+Mesh read(filesystem::path const&, filesystem::path const&, CommPtr) {
+  Omega_h_fail("recompile with Omega_h_USE_MPAS enabled!\n");
+  return Mesh(comm->library()); //silence warning
+}
+
+Mesh read(filesystem::path const&, filesystem::path const&, CommPtr comm) {
   Omega_h_fail("recompile with Omega_h_USE_MPAS enabled!\n");
   return Mesh(comm->library()); //silence warning
 }
@@ -57,7 +84,7 @@ HostWrite<T> readArray(int ncid, const std::string name, const size_t len) {
   return arr;
 }
 
-HostWrite<Real> createCoordinates(int ncid, bool useCartesianCoords, 
+HostWrite<Real> createCoordinates(int ncid, bool useCartesianCoords,
     const size_t dim, const size_t nCells) {
   OMEGA_H_CHECK(dim==2); //TODO support 3d
   auto x = useCartesianCoords ? readArray<Real>(ncid, "xCell", nCells) :
@@ -119,7 +146,7 @@ HostWrite<LO> createElemConnectivity(HostWrite<LO>& mpasConn, const size_t nPrim
 }
 
 void read_internal(int ncid, bool useCartesianCoords,
-    std::vector<std::string>& vtxFieldNames, Mesh* mesh) {
+    const std::vector<std::string>& vtxFieldNames, Mesh* mesh) {
   const size_t dim = 2;
   const size_t nCells = readDimension(ncid, "nCells");
   const size_t nVertices = readDimension(ncid, "nVertices");
@@ -138,12 +165,11 @@ void read_internal(int ncid, bool useCartesianCoords,
   }
 }
 
-Mesh read(int ncid, CommPtr comm) {
+Mesh read(int ncid, const std::vector<std::string>& vtxFieldList, CommPtr comm) {
   auto mesh = Mesh(comm->library());
   bool useCartesianCoords = true;
-  std::vector<std::string> vtxFieldNames = {"observedSurfaceVelocityX", "observedSurfaceVelocityY"};
   if (comm->rank() == 0) {
-    read_internal(ncid, useCartesianCoords, vtxFieldNames, &mesh);
+    read_internal(ncid, useCartesianCoords, vtxFieldList, &mesh);
   }
   fprintf(stderr, "done read\n");
   mesh.set_comm(comm);
@@ -151,15 +177,25 @@ Mesh read(int ncid, CommPtr comm) {
   return mesh;
 }
 
-Mesh read(filesystem::path const& filename, CommPtr comm) {
+Mesh read(filesystem::path const& filename, const std::vector<std::string>& vtxFieldList, CommPtr comm) {
   int retval;
   int ncid;
   retval = nc_open(filename.c_str(), NC_NOWRITE, &ncid);
   checkErr(retval);
-  auto mesh = mpas::read(ncid, comm);
+  auto mesh = mpas::read(ncid, vtxFieldList, comm);
   retval = nc_close(ncid);
   checkErr(retval);
   return mesh;
+}
+
+Mesh read(filesystem::path const& filename, filesystem::path const& vtxFieldListFile, CommPtr comm) {
+  const auto vtxFieldList = readVtxFieldList(vtxFieldListFile);
+  return mpas::read(filename, vtxFieldList, comm);
+}
+
+Mesh read(filesystem::path const& filename, CommPtr comm) {
+  const std::vector<std::string> vtxFieldList;
+  return mpas::read(filename, vtxFieldList, comm);
 }
 
 #endif  // OMEGA_H_USE_MPAS

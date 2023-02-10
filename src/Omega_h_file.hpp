@@ -107,6 +107,8 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh);
 }  // namespace gmsh
 
 namespace mpas {
+Mesh read(filesystem::path const& filename, const std::vector<std::string>& vtxFieldList, CommPtr comm);
+Mesh read(filesystem::path const& filename, filesystem::path const& vtxFieldListFile, CommPtr comm);
 Mesh read(filesystem::path const& filename, CommPtr comm);
 }
 
