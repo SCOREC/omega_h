@@ -28,7 +28,8 @@ std::vector<std::string> readVtxFieldList(Omega_h::filesystem::path const& filen
     "sfcMassBal",
     "surfaceAirTemperature",
     "basalHeatFlux",
-    "observedThicknessTendency"
+    "observedThicknessTendency",
+    "floatingBasalMassBal"
   };
 }
 
