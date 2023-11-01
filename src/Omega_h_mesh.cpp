@@ -1482,4 +1482,18 @@ OMEGA_H_INST(I64)
 OMEGA_H_INST(Real)
 #undef OMEGA_H_INST
 
+#define OMEGA_H_GLOBAL_TAGS_EXPL_INST(T)                                           \
+template T const& Mesh::get_global_tag<T>(std::string const& name)const;         \
+template void Mesh::add_global_tag<T>(std::string const& name, T const& value);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(I8);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(I32);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(I64);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(Real);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(std::string);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(std::vector<I32>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(std::vector<I64>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(std::vector<Real>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST(std::vector<std::string>);
+#undef OMEGA_H_GLOBAL_TAGS_EXPL_INST
+
 }  // end namespace Omega_h

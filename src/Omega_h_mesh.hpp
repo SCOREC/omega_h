@@ -508,6 +508,22 @@ OMEGA_H_EXPL_INST_DECL(I64)
 OMEGA_H_EXPL_INST_DECL(Real)
 #undef OMEGA_H_EXPL_INST_DECL
 
+// Global tags can have an additional variety of types.
+
+#define OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(T)                                           \
+extern template T const& Mesh::get_global_tag<T>(std::string const& name)const;         \
+extern template void Mesh::add_global_tag<T>(std::string const& name, T const& value);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(I8);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(I32);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(I64);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(Real);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(std::string);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(std::vector<I32>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(std::vector<I64>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(std::vector<Real>);
+OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL(std::vector<std::string>);
+#undef OMEGA_H_GLOBAL_TAGS_EXPL_INST_DECL
+
 }  // namespace Omega_h
 
 #endif
