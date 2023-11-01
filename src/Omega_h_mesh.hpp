@@ -11,6 +11,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <any>
 
 namespace Omega_h {
 
@@ -77,6 +78,8 @@ class Mesh {
 
   GO nglobal_ents(Int dim);
   template <typename T>
+  void add_global_tag(std::string const& name, const T& value);
+  template <typename T>
   void add_tag(Int dim, std::string const& name, Int ncomps);
   template <typename T>
   void add_tag(Topo_type ent_type, std::string const& name, Int ncomps);
@@ -94,6 +97,8 @@ class Mesh {
       bool internal = false);
   TagBase const* get_tagbase(Int dim, std::string const& name) const;
   TagBase const* get_tagbase(Topo_type ent_type, std::string const& name) const;
+  template <typename T>
+  const T& get_global_tag(std::string const& name) const;
   template <typename T>
   Tag<T> const* get_tag(Int dim, std::string const& name) const;
   template <typename T>
@@ -282,6 +287,7 @@ class Mesh {
   Int nghost_layers_;
   LO nents_[DIMS];
   LO nents_type_[TOPO_TYPES];
+  std::map<std::string,std::any> global_tags_;
   TagVector tags_[DIMS];
   TagVector tags_type_[TOPO_TYPES];
   // rc field tags stored in "rc" format

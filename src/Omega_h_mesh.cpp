@@ -219,6 +219,11 @@ GO Mesh::nglobal_ents(Int ent_dim) {
 }
 
 template <typename T>
+void Mesh::add_global_tag(std::string const& name, const T& value) {
+  global_tags_[name] = std::any(value);
+}
+
+template <typename T>
 void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps) {
   this->add_tag(ent_dim, name, ncomps, Read<T>(), true);
 }
@@ -338,6 +343,22 @@ void Mesh::react_to_set_tag(Topo_type ent_type, std::string const& name) {
     remove_tag(Topo_type::tetrahedron, "size");
     remove_tag(Topo_type::quadrilateral, "size");
     remove_tag(Topo_type::triangle, "size");
+  }
+}
+
+template <typename T>
+const T& Mesh::get_global_tag(std::string const& name) const
+{
+  auto it = global_tags_.find(name);
+  OMEGA_H_CHECK (it!=global_tags_.end());
+
+  try {
+    return std::any_cast<T>(it->second);
+  } catch (const std::bad_any_cast&) {
+    printf("Attempt to access global tag %s with the wrong type\n",name.c_str());
+    printf("  typeid of requested type: %s\n",typeid(T).name());
+    printf("  typeid of stored ojbect : %s\n",it->second.type().name());
+    throw;
   }
 }
 
