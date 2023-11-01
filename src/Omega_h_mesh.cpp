@@ -352,14 +352,15 @@ const T& Mesh::get_global_tag(std::string const& name) const
   auto it = global_tags_.find(name);
   OMEGA_H_CHECK (it!=global_tags_.end());
 
-  try {
-    return std::any_cast<T>(it->second);
-  } catch (const std::bad_any_cast&) {
-    printf("Attempt to access global tag %s with the wrong type\n",name.c_str());
-    printf("  typeid of requested type: %s\n",typeid(T).name());
-    printf("  typeid of stored ojbect : %s\n",it->second.type().name());
-    throw;
+  const T* p = std::any_cast<T>(&it->second);
+  if (p==nullptr) {
+    std::string s;
+    s += "Attempt to access global tag " + name + " with the wrong type\n";
+    s += "  typeid of requested type: " + std::string(typeid(T).name()) + "\n";
+    s += "  typeid of stored ojbect : " + std::string(it->second.type().name()) + "\n";
+    throw std::runtime_error(s);
   }
+  return *p;
 }
 
 TagBase const* Mesh::get_tagbase(Int ent_dim, std::string const& name) const {
