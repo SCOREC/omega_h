@@ -1,6 +1,7 @@
 #include "MeshSim.h"
 #include "SimDiscrete.h"
 #include "SimMessages.h"
+#include "SimLicense.h"
 #include <iostream>
 using namespace std;
 
@@ -46,7 +47,8 @@ void finalize_write(int numVerts, const double *coords, int numElems,
                     const char *model_path) {
   Sim_logOn("importData1.log");
   MS_init();
-  Sim_readLicenseFile(0);
+  //Sim_readLicenseFile(0);
+  SimLicense_start("geomsim_core,geomsim_parasolid,geomsim_adv,meshsim_adv", NULL);
   pMesh meshtest;
   SimDiscrete_start(0);
   Sim_setMessageHandler(messageHandler);
@@ -82,7 +84,8 @@ void finalize_write(int numVerts, const double *coords, int numElems,
   GM_release(modeltest);
   Progress_delete(progress);
   SimDiscrete_stop(0);
-  Sim_unregisterAllKeys();
+  //Sim_unregisterAllKeys();
+  SimLicense_stop();
   MS_exit();
   Sim_logOff();
 }

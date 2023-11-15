@@ -6,6 +6,7 @@
 #include "Omega_h_mesh.hpp"
 #include "Omega_h_adj.hpp"
 
+#include "SimLicense.h" 
 #include "SimModel.h"
 #include "SimUtil.h"
 #include "SimDiscrete.h"
@@ -639,7 +640,8 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering) {
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
   SimModel_start();
-  Sim_readLicenseFile(NULL);
+  //Sim_readLicenseFile(NULL);
+  SimLicense_start("geomsim_core,geomsim_parasolid,geomsim_adv,meshsim_adv", NULL);
   SimDiscrete_start(0);
   pNativeModel nm = NULL;
   pProgress p = NULL;

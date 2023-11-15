@@ -66,7 +66,7 @@ macro(getSimCadLib searchPath libName lib check)
 endmacro(getSimCadLib)
 
 find_path(SIMMODSUITE_INCLUDE_DIR
-  NAMES SimUtil.h SimError.h SimModel.h
+  NAMES SimUtil.h SimError.h SimModel.h SimLicense.h
   PATHS ${SIMMETRIX_INCLUDE_DIR})
 if(NOT EXISTS "${SIMMODSUITE_INCLUDE_DIR}")
   message(FATAL_ERROR "simmetrix include dir not found")
@@ -174,12 +174,14 @@ if (Omega_h_USE_MPI)
     SimMeshing
     SimMeshTools
     SimModel
+    SimLicense
     SimPartitionWrapper-${SIM_MPI})
 else()
   message(STATUS "cake mpi is disabled!")
   set(SIM_CORE_LIB_NAMES
     SimMeshing
     SimMeshTools
+    SimLicense
     SimModel)
 endif()
 
