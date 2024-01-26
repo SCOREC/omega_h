@@ -19,17 +19,22 @@
 
 namespace {
 
+enum FieldType { integer, real };
+
+typedef std::map<FieldType, std::string> FieldMap;
+
 //TODO read from file
-std::vector<std::string> readVtxFieldList(Omega_h::filesystem::path const& filename) {
+FieldMap readVtxFieldList(Omega_h::filesystem::path const& filename) {
   return {
-    "observedSurfaceVelocityX",
-    "observedSurfaceVelocityY",
-    "observedSurfaceVelocityUncertainty",
-    "sfcMassBal",
-    "surfaceAirTemperature",
-    "basalHeatFlux",
-    "observedThicknessTendency",
-    "floatingBasalMassBal"
+    {real, "observedSurfaceVelocityX"},
+    {real, "observedSurfaceVelocityY"},
+    {real, "observedSurfaceVelocityUncertainty"},
+    {real, "sfcMassBal"},
+    {real, "surfaceAirTemperature"},
+    {real, "basalHeatFlux"},
+    {real, "observedThicknessTendency"},
+    {real, "floatingBasalMassBal"},
+    {integer, "idCell"}
   };
 }
 
@@ -41,7 +46,7 @@ namespace mpas {
 
 #ifndef OMEGA_H_USE_MPAS
 
-Mesh read(filesystem::path const&, const std::vector<std::string>&, CommPtr) {
+Mesh read(filesystem::path const&, const FieldMap&, CommPtr) {
   Omega_h_fail("recompile with Omega_h_USE_MPAS enabled!\n");
   return Mesh(comm->library()); //silence warning
 }
@@ -147,26 +152,35 @@ HostWrite<LO> createElemConnectivity(HostWrite<LO>& mpasConn, const size_t nPrim
 }
 
 void read_internal(int ncid, bool useCartesianCoords,
-    const std::vector<std::string>& vtxFieldNames, Mesh* mesh) {
+    const FieldMap& vtxFieldNames, Mesh* mesh) {
   const size_t dim = 2;
   const size_t nCells = readDimension(ncid, "nCells");
   const size_t nVertices = readDimension(ncid, "nVertices");
   auto coords = createCoordinates(ncid, useCartesianCoords, dim, nCells);
   printf("primal cells verts: %u %u\n", nCells, nVertices);
   auto cellsOnVertices = readArray<LO>(ncid, "cellsOnVertex", nVertices*3);
-  std::vector< HostWrite<Real> > fieldVals;
-  for(auto name : vtxFieldNames) //primal (polygonal) cell = dual (triangle) vertex
-    fieldVals.push_back( readArray<Real>(ncid, name, nCells) );
+  std::map<std::string, HostWrite<Real> > fieldValsReal;
+  std::map<std::string, HostWrite<LO> > fieldValsInt;
+  for(auto& [type,name] : vtxFieldNames) { //primal (polygonal) cell = dual (triangle) vertex
+    if(type == real) {
+      fieldValsReal[name] = readArray<Real>(ncid, name, nCells);
+    } else if(type == integer) {
+      fieldValsInt[name] = readArray<LO>(ncid, name, nCells);
+    } else {
+      Omega_h_fail("Unrecognized field type!\n");
+    }
+  }
   auto elm2vtx = createElemConnectivity(cellsOnVertices, nVertices);
   Read<LO> elm2vtx_d(elm2vtx.write());
   Read<Real> coords_d(coords.write());
   build_from_elems_and_coords(mesh, OMEGA_H_SIMPLEX, dim, elm2vtx_d, coords_d);
-  for(size_t i=0; i<vtxFieldNames.size(); i++) {
-    mesh->add_tag<Real>(OMEGA_H_VERT, vtxFieldNames[i], 1, fieldVals[i].write());
-  }
+  for(auto& [name,vals] : fieldValsReal)
+    mesh->add_tag<Real>(OMEGA_H_VERT, name, 1, vals.write());
+  for(auto& [name,vals] : fieldValsInt)
+    mesh->add_tag<LO>(OMEGA_H_VERT, name, 1, vals.write());
 }
 
-Mesh read(int ncid, const std::vector<std::string>& vtxFieldList, CommPtr comm) {
+Mesh read(int ncid, const FieldMap& vtxFieldList, CommPtr comm) {
   auto mesh = Mesh(comm->library());
   bool useCartesianCoords = true;
   if (comm->rank() == 0) {
@@ -178,7 +192,7 @@ Mesh read(int ncid, const std::vector<std::string>& vtxFieldList, CommPtr comm) 
   return mesh;
 }
 
-Mesh read(filesystem::path const& filename, const std::vector<std::string>& vtxFieldList, CommPtr comm) {
+Mesh read(filesystem::path const& filename, const FieldMap& vtxFieldList, CommPtr comm) {
   int retval;
   int ncid;
   retval = nc_open(filename.c_str(), NC_NOWRITE, &ncid);
@@ -195,7 +209,7 @@ Mesh read(filesystem::path const& filename, filesystem::path const& vtxFieldList
 }
 
 Mesh read(filesystem::path const& filename, CommPtr comm) {
-  const std::vector<std::string> vtxFieldList;
+  const FieldMap vtxFieldList;
   return mpas::read(filename, vtxFieldList, comm);
 }
 
