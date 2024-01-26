@@ -277,7 +277,9 @@ macro(osh_add_util EXE_NAME)
   bob_export_target(${EXE_NAME})
 endmacro(osh_add_util)
 
-osh_add_util(mpas2osh)
+if(Omega_h_USE_MPAS)
+  osh_add_util(mpas2osh)
+endif()
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
 osh_add_util(oshdiff)
@@ -379,6 +381,15 @@ if(BUILD_TESTING)
   endif()
   set(TEST_EXES ${TEST_EXES} unit_math)
   test_basefunc(run_unit_math 1 ./unit_math)
+
+  if (Omega_h_USE_MPAS)
+    if (Omega_h_MPAS_MESH_DIR)
+      test_func(run_mpas2osh 1 ./mpas2osh
+        ${Omega_h_MPAS_MESH_DIR}/greenland.nc
+        ${Omega_h_MPAS_MESH_DIR}/fieldList.txt
+        ${Omega_h_MPAS_MESH_DIR}/greenland.osh)
+    endif()
+  endif()
 
   if(Omega_h_USE_SimModSuite)
     set(d3dMesh ${CMAKE_SOURCE_DIR}/meshes/d3d)
