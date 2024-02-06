@@ -107,6 +107,7 @@ set(Omega_h_SOURCES
   Omega_h_xml.cpp
   Omega_h_xml_lite.cpp
   Omega_h_yaml.cpp
+  Omega_h_mesh2d.cpp
   )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -276,6 +277,7 @@ endmacro(osh_add_util)
 osh_add_util(describe)
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
+osh_add_util(osh2vtk2d)
 osh_add_util(oshdiff)
 osh_add_util(vtkdiff)
 osh_add_util(osh_box)
@@ -747,5 +749,6 @@ endfunction(smoke_test)
 smoke_test(osh_box NONE 1 1 1 2 2 2 box.osh)
 smoke_test(osh_scale osh_box box.osh 100 box_100.osh)
 smoke_test(osh2vtk osh_scale box_100.osh box_100_vtk)
+smoke_test(osh2vtk2d osh_scale box_100.osh box_100_vtk)
 
 bob_end_subdir()

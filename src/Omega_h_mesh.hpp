@@ -40,14 +40,14 @@ class Mesh {
   void set_comm(CommPtr const& comm);
   void set_family(Omega_h_Family family);
   void set_matched(I8 is_matched);
-  void set_dim(Int dim_in);
+  virtual void set_dim(Int dim_in);
   void set_verts(LO nverts_in);
   void set_ents(Int ent_dim, Adj down);
   void set_parents(Int ent_dim, Parents parents);
   Library* library() const;
   CommPtr comm() const;
   Omega_h_Parting parting() const;
-  inline Int dim() const {
+  virtual inline Int dim() const {
     OMEGA_H_CHECK(0 <= dim_ && dim_ <= 3);
     return dim_;
   }
@@ -229,7 +229,6 @@ class Mesh {
   void react_to_set_tag(Int dim, std::string const& name);
   Omega_h_Family family_;
   I8 matched_ = -1;
-  Int dim_;
   CommPtr comm_;
   Int parting_;
   Int nghost_layers_;
@@ -251,6 +250,9 @@ class Mesh {
   AdjPtr revClass_[DIMS];
 
   void add_rcField(Int ent_dim, std::string const& name, TagPtr tag);
+
+protected:
+  Int dim_;
 
  public:
   void add_coords(Reals array);
@@ -329,7 +331,8 @@ class Mesh {
   LO nents_owned(Int ent_dim);
   std::string string(int verbose = 0);
 
- public:
+  virtual ~Mesh() = default;
+
   ClassSets class_sets;
   [[nodiscard]] const TagVector& get_rc_tags(Int dim) const {
     return rc_field_tags_[dim];
