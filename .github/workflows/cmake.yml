@@ -42,9 +42,7 @@ jobs:
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
-           printf "0.1 %s\n" "$CXX"
            echo "CXX=mpicxx" >> $GITHUB_ENV
-           printf "0.2 %s\n" "$CXX"
 
     - name: Configure Kokkos
       if: ${{ matrix.kokkos == 'on' }}
