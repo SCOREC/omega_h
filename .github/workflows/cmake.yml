@@ -29,6 +29,23 @@ jobs:
         repository: kokkos/kokkos
         path: kokkos
 
+    - name: install mpich
+      if: ${{ matrix.mpi == 'on' }}
+      run: |
+           sudo apt update
+           sudo apt install mpich
+
+    - name: set mpi compiler wrapper
+      if: ${{ matrix.mpi == 'on' }}
+      run: |
+           echo "CXX=mpicxx" >> "$GITHUB_ENV"
+           echo "MPICH_CXX=${{matrix.compiler.CXX}}" >> "$GITHUB_ENV"
+
+    - name: set base compiler
+      if: ${{ matrix.mpi == 'off' }}
+      run: |
+           echo "CXX=${{matrix.compiler.CXX}}" >> "$GITHUB_ENV"
+
     - name: Configure Kokkos
       if: ${{ matrix.kokkos == 'on' }}
       shell: bash
@@ -48,7 +65,7 @@ jobs:
       working-directory: ${{github.workspace}}/omega_h
       run: cmake .
            -Bbuild
-           -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+           -DCMAKE_CXX_COMPILER=$CXX
            -DCMAKE_VERBOSE_MAKEFILE=on
            -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
