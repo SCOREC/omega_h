@@ -451,7 +451,7 @@ if(BUILD_TESTING)
 
   osh_add_exe(load_2d)
   set(TEST_EXES ${TEST_EXES} load_2d)
-  will_fail_test_func(load_2d 1 box_100.osh box_100_vtk)
+  will_fail_test_func(load_2d 1 box_100.osh)
 
   test_basefunc(run_arrayops 1 ./arrayops_test)
   set(TEST_EXES ${TEST_EXES} reprosum_test)

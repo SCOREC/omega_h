@@ -7,13 +7,10 @@
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
   if( argc != 3 && argc != 4 ) {
-    fprintf(stderr, "Usage: %s inputMesh.osh [dimension=0|1|2|3]\n", argv[0]);
+    fprintf(stderr, "Usage: %s inputMesh.osh\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-  OMEGA_H_CHECK(argc == 3 || argc == 4);
+  OMEGA_H_CHECK(argc == 2);
   Omega_h::Mesh2D mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
-  auto dim = mesh.dim();
-  if (argc == 4) dim = atoi(argv[2]);
-  OMEGA_H_CHECK(dim>=0 && dim<=mesh.dim());
 }
