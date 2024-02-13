@@ -61,8 +61,8 @@ jobs:
       run: cmake --build $GITHUB_WORKSPACE/kokkos/build --target install
 
     - name: check env
-      run: 
-       printf 'CXX = %s\n' "$CXX" 
+      run: |
+           printf 'CXX = %s\n' "${{env.CXX}}" 
 
     - name: Configure CMake
       shell: bash
