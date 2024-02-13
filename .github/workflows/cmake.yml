@@ -65,7 +65,7 @@ jobs:
       working-directory: ${{github.workspace}}/omega_h
       run: cmake .
            -Bbuild
-           -DCMAKE_CXX_COMPILER=$CXX
+           -DCMAKE_CXX_COMPILER=${CXX}
            -DCMAKE_VERBOSE_MAKEFILE=on
            -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
