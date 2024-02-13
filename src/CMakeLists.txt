@@ -339,7 +339,11 @@ if(BUILD_TESTING)
       endif()
       set(TEST_STR ${VALGRIND} ${ARGN} ${CTEST_MEMPOOL_ARG})
     endif()
-    add_test(NAME ${TEST_NAME} COMMAND ${TEST_STR})
+
+    list(POP_FRONT ARGN TEST_EXEC)
+    string(REPLACE "./" "" TEST_EXEC ${TEST_EXEC})
+
+    add_test(NAME ${TEST_NAME} COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:${TEST_EXEC}> ${VALGRIND} ${ARGN} ${CTEST_MEMPOOL_ARG}) # https://cmake.org/cmake/help/latest/prop_test/WILL_FAIL.html#prop_test:WILL_FAIL
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
       set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT "PATH=${CMAKE_INSTALL_PREFIX}\\bin;$ENV{PATH}" )
     endif()
@@ -348,31 +352,6 @@ if(BUILD_TESTING)
         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/gpuCleanup.cmake)
     endif()
   endfunction(test_func_impl)
-
-  function(will_fail_test_func_impl TEST_NAME NUM_PROCS)
-    if (ENABLE_CTEST_MEMPOOL)
-      set(CTEST_MEMPOOL_ARG "--osh-pool")
-    endif()
-
-    string(REPLACE " " ";" VALGRIND "${Omega_h_VALGRIND}")
-    if(MPIEXEC_EXECUTABLE)
-      set(TEST_STR ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${NUM_PROCS} ${VALGRIND} ${ARGN})
-    else()
-      if(NOT (${NUM_PROCS} EQUAL "1"))
-        message(STATUS "test ${TEST_NAME} ignored because MPIEXEC_EXECUTABLE not found!")
-        return()
-      endif()
-      set(TEST_STR ${VALGRIND} ${ARGN} ${CTEST_MEMPOOL_ARG})
-    endif()
-    add_test(NAME ${TEST_NAME} COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:${TEST_NAME}> ${VALGRIND} ${ARGN} ${CTEST_MEMPOOL_ARG}) # https://cmake.org/cmake/help/latest/prop_test/WILL_FAIL.html#prop_test:WILL_FAIL
-    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-      set_tests_properties(${TEST_NAME} PROPERTIES ENVIRONMENT "PATH=${CMAKE_INSTALL_PREFIX}\\bin;$ENV{PATH}" )
-    endif()
-    if(Omega_h_GPU_CHECK)
-      add_test(NAME ${TEST_NAME}_gpuCleanup
-              COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/cmake/gpuCleanup.cmake)
-    endif()
-  endfunction(will_fail_test_func_impl)
 
   # 'base' tests are those that do not depend on a mesh object
   function(test_basefunc TEST_NAME NUM_PROCS)
@@ -391,7 +370,7 @@ if(BUILD_TESTING)
 
   # Unlike test_func, will_fail_test_func assumes the command for the test, thus you should specify it the arguments.
   function(will_fail_test_func TEST_NAME)
-    will_fail_test_func_impl(${TEST_NAME} ${NUM_PROCS} ${ARGN})
+    test_func_impl(${TEST_NAME} ${NUM_PROCS} ${ARGN})
     set_property(TEST ${TEST_NAME} PROPERTY WILL_FAIL TRUE)
     if(TEST ${TEST_NAME})
       set_property(TEST ${TEST_NAME} PROPERTY LABELS "mesh")
@@ -452,7 +431,7 @@ if(BUILD_TESTING)
 
   osh_add_exe(load_2d)
   set(TEST_EXES ${TEST_EXES} load_2d)
-  will_fail_test_func(load_2d 1 box_100.osh)
+  will_fail_test_func(load_2d_box_100 1 ./load_2d box_100.osh)
 
   osh_add_exe(osh_scale2d)
   set(TEST_EXES ${TEST_EXES} osh_scale2d)

@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
-  if( argc != 3 && argc != 4 ) {
+  if(argc != 2) {
     fprintf(stderr, "Usage: %s inputMesh.osh\n", argv[0]);
     exit(EXIT_FAILURE);
   }
