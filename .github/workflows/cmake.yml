@@ -60,6 +60,10 @@ jobs:
       shell: bash
       run: cmake --build $GITHUB_WORKSPACE/kokkos/build --target install
 
+    - name: check env
+      run: 
+       printf 'CXX = %s\n' "$CXX" 
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/omega_h
