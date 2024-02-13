@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         compiler: [g++, clang++]
+        mpi: [on, off]
         kokkos: [on, off]
         mempool: [on, off]
         exclude:
@@ -31,6 +32,12 @@ jobs:
       with:
         repository: kokkos/kokkos
         path: kokkos
+
+    - name: install mpich
+      if: ${{ matrix.mpi == 'on' }}
+      run: |
+           sudo apt update
+           sudo apt install mpich
 
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
