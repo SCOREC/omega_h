@@ -23,6 +23,11 @@ jobs:
       run: |
            env
            printf "0.1 %s\n" "$CXX"
-           echo "CXX=mpicxx" >> "$GITHUB_ENV"
+           export CXX=mpicxx
            printf "0.2 %s\n" "$CXX"
            env
+
+    - name: check env
+      run: |
+        env
+        printf "0.3 %s\n" "$CXX"
