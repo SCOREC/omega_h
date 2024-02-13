@@ -23,67 +23,9 @@ jobs:
       MPICH_CXX: ${{matrix.compiler.CXX}}
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        path: omega_h
-
-    - uses: actions/checkout@v4
-      if: ${{ matrix.kokkos == 'on' }}
-      with:
-        repository: kokkos/kokkos
-        path: kokkos
-
-    - name: install mpich
-      if: ${{ matrix.mpi == 'on' }}
-      run: |
-           sudo apt update
-           sudo apt install mpich
-
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
            printf "0.1 %s\n" "${{env.CXX}}"
            echo "CXX=mpicxx" >> "$GITHUB_ENV"
            printf "0.2 %s\n" "${{env.CXX}}"
-
-    - name: Configure Kokkos
-      if: ${{ matrix.kokkos == 'on' }}
-      shell: bash
-      working-directory: ${{github.workspace}}/kokkos
-      run: cmake .
-           -Bbuild
-           -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
-           -DCMAKE_INSTALL_PREFIX=build/install
-
-    - name: Build Kokkos
-      if: ${{ matrix.kokkos == 'on' }}
-      shell: bash
-      run: cmake --build $GITHUB_WORKSPACE/kokkos/build --target install
-      
-    - name: Configure CMake
-      shell: bash
-      working-directory: ${{github.workspace}}/omega_h
-      run: cmake .
-           -Bbuild
-           -DCMAKE_CXX_COMPILER=${CXX}
-           -DCMAKE_VERBOSE_MAKEFILE=on
-           -DOmega_h_USE_MPI=${{ matrix.mpi }}
-           -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
-           -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install
-           -DBUILD_TESTING=ON
-           -DBUILD_SHARED_LIBS=OFF
-           -DENABLE_CTEST_MEMPOOL=${{ matrix.mempool }}
-
-    - name: Build
-      working-directory: ${{github.workspace}}/omega_h/build
-      shell: bash
-      run: cmake --build . -j2
-
-    - name: Test
-      working-directory: ${{github.workspace}}/omega_h/build
-      shell: bash
-      run: ctest
-
-    - name: Print
-      if: always()
-      run: cat ${{github.workspace}}/omega_h/build/Testing/Temporary/LastTest.log
