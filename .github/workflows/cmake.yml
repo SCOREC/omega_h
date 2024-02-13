@@ -18,6 +18,10 @@ jobs:
         - kokkos: off
           mempool: on
 
+    env:
+      CXX: ${{matrix.compiler.CXX}}
+      MPICH_CXX: ${{matrix.compiler.CXX}}
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -38,13 +42,9 @@ jobs:
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
+           echo "0.1 CXX = ${{env.CXX}}"
            echo "CXX=mpicxx" >> "$GITHUB_ENV"
-           echo "MPICH_CXX=${{matrix.compiler.CXX}}" >> "$GITHUB_ENV"
-
-    - name: set base compiler
-      if: ${{ matrix.mpi == 'off' }}
-      run: |
-           echo "CXX=${{matrix.compiler.CXX}}" >> "$GITHUB_ENV"
+           echo "0.2 CXX = ${{env.CXX}}"
 
     - name: Configure Kokkos
       if: ${{ matrix.kokkos == 'on' }}
@@ -59,11 +59,7 @@ jobs:
       if: ${{ matrix.kokkos == 'on' }}
       shell: bash
       run: cmake --build $GITHUB_WORKSPACE/kokkos/build --target install
-
-    - name: check env
-      run: |
-           printf 'CXX = %s\n' "${{env.CXX}}" 
-
+      
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/omega_h
