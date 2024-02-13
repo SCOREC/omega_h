@@ -13,6 +13,7 @@ jobs:
         compiler: [g++, clang++]
         kokkos: [on, off]
         mempool: [on, off]
+        mpi: [on, off]
         exclude:
         - kokkos: off
           mempool: on
@@ -49,7 +50,7 @@ jobs:
            -Bbuild
            -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
            -DCMAKE_VERBOSE_MAKEFILE=on
-           -DOmega_h_USE_MPI=off
+           -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
            -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install
            -DBUILD_TESTING=ON
