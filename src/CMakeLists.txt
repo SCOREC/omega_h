@@ -389,6 +389,7 @@ if(BUILD_TESTING)
     endif()
   endfunction(test_func)
 
+  # Unlike test_func, will_fail_test_func assumes the command for the test, thus you should specify it the arguments.
   function(will_fail_test_func TEST_NAME)
     will_fail_test_func_impl(${TEST_NAME} ${NUM_PROCS} ${ARGN})
     set_property(TEST ${TEST_NAME} PROPERTY WILL_FAIL TRUE)
@@ -452,6 +453,10 @@ if(BUILD_TESTING)
   osh_add_exe(load_2d)
   set(TEST_EXES ${TEST_EXES} load_2d)
   will_fail_test_func(load_2d 1 box_100.osh)
+
+  osh_add_exe(osh_scale2d)
+  set(TEST_EXES ${TEST_EXES} osh_scale2d)
+  test_func(osh_scale2d 1 ./osh_scale2d ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh 100 plate_100.osh)
 
   test_basefunc(run_arrayops 1 ./arrayops_test)
   set(TEST_EXES ${TEST_EXES} reprosum_test)
