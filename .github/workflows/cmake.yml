@@ -11,12 +11,7 @@ jobs:
     strategy:
       matrix:
         compiler: [g++, clang++]
-        kokkos: [on, off]
-        mempool: [on, off]
         mpi: [on, off]
-        exclude:
-        - kokkos: off
-          mempool: on
 
     env:
       CXX: ${{matrix.compiler.CXX}}
@@ -26,6 +21,8 @@ jobs:
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
-           printf "0.1 %s\n" "${{env.CXX}}"
+           env
+           printf "0.1 %s\n" "$CXX"
            echo "CXX=mpicxx" >> "$GITHUB_ENV"
-           printf "0.2 %s\n" "${{env.CXX}}"
+           printf "0.2 %s\n" "$CXX"
+           env
