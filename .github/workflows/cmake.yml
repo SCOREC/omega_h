@@ -14,16 +14,15 @@ jobs:
         mpi: [on, off]
 
     env:
-      compiler: foobar
-      CXX: ${{matrix.compiler.CXX}}
-      MPICH_CXX: ${{matrix.compiler.CXX}}
+      CXX: ${{matrix.compiler}}
+      MPICH_CXX: ${{matrix.compiler}}
 
     steps:
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
            env
-           printf "0.1 %s %s\n" "$CXX" "$compiler"
+           printf "0.1 %s\n" "$CXX"
            echo "CXX=mpicxx" >> "$GITHUB_ENV"
            printf "0.2 %s\n" "$CXX"
            env
