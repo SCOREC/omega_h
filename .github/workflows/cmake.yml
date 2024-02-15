@@ -11,11 +11,16 @@ jobs:
     strategy:
       matrix:
         compiler: [g++, clang++]
+        mpi: [on, off]
         kokkos: [on, off]
         mempool: [on, off]
         exclude:
         - kokkos: off
           mempool: on
+
+    env:
+      CXX: ${{matrix.compiler}}
+      MPICH_CXX: ${{matrix.compiler}}
 
     steps:
     - uses: actions/checkout@v4
@@ -27,6 +32,17 @@ jobs:
       with:
         repository: kokkos/kokkos
         path: kokkos
+
+    - name: install mpich
+      if: ${{ matrix.mpi == 'on' }}
+      run: |
+           sudo apt update
+           sudo apt install mpich
+
+    - name: set mpi compiler wrapper
+      if: ${{ matrix.mpi == 'on' }}
+      run: |
+           echo "CXX=mpicxx" >> $GITHUB_ENV
 
     - name: Configure Kokkos
       if: ${{ matrix.kokkos == 'on' }}
@@ -47,9 +63,9 @@ jobs:
       working-directory: ${{github.workspace}}/omega_h
       run: cmake .
            -Bbuild
-           -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+           -DCMAKE_CXX_COMPILER=$CXX
            -DCMAKE_VERBOSE_MAKEFILE=on
-           -DOmega_h_USE_MPI=off
+           -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
            -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install
            -DBUILD_TESTING=ON

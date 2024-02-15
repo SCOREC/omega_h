@@ -72,11 +72,11 @@ int main(int argc, char** argv)
     const int rank = comm->rank();
 
     std::array<Omega_h::GO, 4> counts;
-    for(int dim=0; dim < mesh.dim(); dim++)
+    for(int dim=0; dim <= mesh.dim(); dim++)
        counts[dim] = mesh.nglobal_ents(dim);
 
     std::array<double, 4> imb;
-    for(int dim=0; dim < mesh.dim(); dim++)
+    for(int dim=0; dim <= mesh.dim(); dim++)
        imb[dim] = mesh.imbalance(dim);
 
     std::ostringstream oss;
@@ -86,14 +86,14 @@ int main(int argc, char** argv)
     oss << std::fixed;
 
     if(!rank) {
-        oss << "\nMesh Entity Type: " << Omega_h::topological_singular_name(mesh.family(), mesh.dim()-1) << "\n";
+        oss << "\nMesh Entity Type: " << Omega_h::topological_singular_name(mesh.family(), mesh.dim()) << "\n";
 
         oss << "\nGlobal Mesh Entity Count and Imbalance (max/avg): (Dim, Entity Count, Imbalance)\n";
-        for(int dim=0; dim < mesh.dim(); dim++)
+        for(int dim=0; dim <= mesh.dim(); dim++)
             oss << "(" << dim << ", " << counts[dim] << ", " << imb[dim] << ")\n";
 
         oss << "\nTag Properties by Dimension: (Name, Dim, Type, Number of Components, Min. Value, Max. Value)\n";
-        for (int dim=0; dim < mesh.dim(); dim++)
+        for (int dim=0; dim <= mesh.dim(); dim++)
         for (int tag=0; tag < mesh.ntags(dim); tag++) {
             auto tagbase = mesh.get_tag(dim, tag);
             if (tagbase->type() == OMEGA_H_I8)
@@ -117,7 +117,7 @@ int main(int argc, char** argv)
         oss.str(""); // clear the stream
 
         std::array<Omega_h::LO, 4> counts = {0,0,0,0};
-        for(int dim=0; dim < mesh.dim(); dim++)
+        for(int dim=0; dim <= mesh.dim(); dim++)
             counts[dim] = mesh.nents(dim);
         oss << "(" << rank << ": " << counts[0] << ", "
                                         << counts[1] << ", "
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
         comm->barrier();
         if (!rank) std::cout << "\nPer Rank Mesh Entity Owned: (Rank: Entity Owned by Dim <0,1,2,3>)\n";
         oss.str(""); // clear the stream
-        for (int dim=0; dim < mesh.dim(); dim++)
+        for (int dim=0; dim <= mesh.dim(); dim++)
             counts[dim] = mesh.nents_owned(dim);
         oss << "(" << rank << ": " << counts[0] << ", "
                                         << counts[1] << ", "
