@@ -12,4 +12,13 @@ void Mesh2D::set_dim(Int dim_in) {
   dim_ = dim_in;
 }
 
+std::optional<Model2D> Mesh2D::getModel() const {
+  return model;
+}
+
+Model2D Mesh2D::updateModel() {
+  model = Model2D(*this);
+  return *model;
+}
+
 } // Omega_h
