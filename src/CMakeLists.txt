@@ -108,7 +108,8 @@ set(Omega_h_SOURCES
   Omega_h_xml_lite.cpp
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
-  )
+  Omega_h_model2d.cpp
+)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 else()
