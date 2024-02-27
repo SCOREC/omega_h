@@ -9,16 +9,16 @@ namespace Omega_h {
 class Model2D {
 private:
   float vtxTol, edgeTol;
-  Write<size_t> vtxIds, edgeIds, loopIds, faceIds;
-  Write<size_t> looptoLoopUse;
+  LOs vtxIds, edgeIds, loopIds, faceIds;
+  LOs looptoLoopUse;
   Graph edgeToEdgeUse;
   Graph faceToLoopUse;
   Graph loopUseToEdgeUse;
-  Write<size_t> edgeUseToVtx;
+  LOs edgeUseToVtx;
   Graph vtxToEdgeUse;
-  Write<size_t> edgeUseToLoopUse;
-  Write<size_t> loopUseToFace;
-  Write<size_t> vtxCoords, edgeUseOrientation, loopUseOrientation;
+  LOs edgeUseToLoopUse;
+  LOs loopUseToFace;
+  LOs vtxCoords, edgeUseOrientation, loopUseOrientation;
 };
 
 }
