@@ -156,12 +156,6 @@ static void print_time_sorted_recursive(History const& h, std::size_t frame,
     percent = "% ";
     scale = 100.0/total_runtime;
   }
-  std::string seconds = "seconds ";
-  std::stringstream header;
-  header << "function_name time ( "
-         << (h.do_percent ? percent : seconds)
-         << ") number_of_calls\n";
-  std::cout << header.str();
   std::vector<std::size_t> child_frames;
   for (std::size_t child = h.first(frame); child != invalid;
        child = h.next(child)) {
@@ -207,13 +201,17 @@ void print_top_down_and_bottom_up(History const& h, double total_runtime) {
   if (h.do_percent) {
     std::cout << std::setprecision(2) << std::fixed;
   }
+  std::stringstream header;
+  header << "(function_name time("
+         << (h.do_percent ? "% total time" : "seconds")
+         << ") number_of_calls)";
   std::cout << "\n";
-  std::cout << "TOP-DOWN:\n";
+  std::cout << "TOP-DOWN " << header.str() << ":\n";
   std::cout << "=========\n";
   print_time_sorted(h, total_runtime);
   auto h_inv = invert(h);
   std::cout << "\n";
-  std::cout << "BOTTOM-UP:\n";
+  std::cout << "BOTTOM-UP " << header.str() << ":\n";
   std::cout << "==========\n";
   print_time_sorted(h_inv, total_runtime);
   std::cout.flags(coutflags);
