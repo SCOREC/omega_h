@@ -157,8 +157,10 @@ static void print_time_sorted_recursive(History const& h, std::size_t frame,
     scale = 100.0/total_runtime;
   }
   std::string seconds = "seconds ";
-  std::stringstream header = "function_name time ( " 
-     << h.do_percent ? percent : seconds << ") number_of_calls\n";
+  std::stringstream header;
+  header << "function_name time ( "
+         << (h.do_percent ? percent : seconds)
+         << ") number_of_calls\n";
   std::cout << header.str();
   std::vector<std::size_t> child_frames;
   for (std::size_t child = h.first(frame); child != invalid;
