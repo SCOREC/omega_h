@@ -436,6 +436,7 @@ if(BUILD_TESTING)
   osh_add_exe(osh_scale2d)
   set(TEST_EXES ${TEST_EXES} osh_scale2d)
   test_func(osh_scale2d 1 ./osh_scale2d ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh 100 plate_100.osh)
+  test_func(osh_scale2d_profile 1 ./osh_scale2d --osh-time ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh 100 plate_100.osh)
 
   test_basefunc(run_arrayops 1 ./arrayops_test)
   set(TEST_EXES ${TEST_EXES} reprosum_test)
