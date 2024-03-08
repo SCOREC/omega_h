@@ -101,7 +101,7 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
   cmdline.add_flag(
       "--osh-time-percent", "print amount of time spend in certain functions by percentage");
   auto& osh_time_chop_flag = cmdline.add_flag(
-      "--osh-time-chop", "only print functions whose percent time is greater than given value (e.g. --osh-time-chop=2)");
+      "--osh-time-chop", "only print functions whose percent time is greater than given value (e.g. --osh-time[-percent] --osh-time-chop 2)");
   osh_time_chop_flag.add_arg<double>("0.0");
   cmdline.add_flag("--osh-time-with-filename", "add file name to function name in profile output");
 
