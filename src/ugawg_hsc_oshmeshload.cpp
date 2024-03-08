@@ -28,7 +28,9 @@ int main(int argc, char** argv) {
 
   fprintf(stderr, "rank %d: nverts %d nelms %d\n",
       lib.world()->rank(), mesh.nverts(), mesh.nelems());
-  
+
+  mesh.set_parting(OMEGA_H_GHOSTED); //adds one layer of ghosts, used in
+                                     //ugawg_parallel_adapt
   Omega_h::add_implied_metric_tag(&mesh);
   mesh.ask_qualities();
   auto opts = Omega_h::AdaptOpts(&mesh);
