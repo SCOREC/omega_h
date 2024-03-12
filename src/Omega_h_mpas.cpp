@@ -108,7 +108,7 @@ HostWrite<Real> createCoordinates(int ncid, bool useCartesianCoords,
 template <class T>
 bool anyZeros(T& arr, const size_t start, const size_t end) {
   for(size_t i=start; i<end; i++) {
-    if(arr[i] == 0) return true;
+    if(arr[i] <= 0) return true;
   }
   return false;
 }
