@@ -9,9 +9,11 @@ namespace Omega_h {
 
 class Model2D {
 public:
-  explicit Model2D(Mesh2D& mesh);
+#ifdef OMEGA_H_USE_SIMMODSUITE
+  static Model2D SimModel2D_load(std::string const& filename);
+#endif
+  static Model2D MeshModel2D_load(Mesh& mesh);
 
-private:
   float vtxTol, edgeTol;
   LOs vtxIds, edgeIds, loopIds, faceIds;
   LOs looptoLoopUse;
@@ -23,6 +25,8 @@ private:
   LOs edgeUseToLoopUse;
   LOs loopUseToFace;
   LOs vtxCoords, edgeUseOrientation, loopUseOrientation;
+private:
+  Model2D();
 };
 
 }

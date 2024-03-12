@@ -166,6 +166,7 @@ if(Omega_h_USE_SimModSuite)
   set(CMAKE_MODULE_PATH ${OLD_CMAKE_MODULE_PATH})
   set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshsim.cpp)
   set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_matchMeshsim.cpp)
+  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_simModel2d.cpp)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/Omega_h_simConfig.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_simConfig.h")
