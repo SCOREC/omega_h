@@ -17,6 +17,7 @@ public:
   static Model2D MeshModel2D_load(Mesh2D& mesh);
 
   Real vtxTol, edgeTol;
+  Reals vtxCoords;
   LOs vtxIds, edgeIds, loopIds, faceIds;
   LOs looptoLoopUse;
   Graph edgeToEdgeUse;
@@ -26,7 +27,7 @@ public:
   Graph vtxToEdgeUse;
   LOs edgeUseToLoopUse;
   LOs loopUseToFace;
-  LOs vtxCoords, edgeUseOrientation, loopUseOrientation;
+  LOs edgeUseOrientation, loopUseOrientation;
 private:
   Model2D() = default;
 };
