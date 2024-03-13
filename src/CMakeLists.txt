@@ -460,8 +460,10 @@ if(BUILD_TESTING)
 
     osh_add_exe(simModel2dLoad)
     set(TEST_EXES ${TEST_EXES} simModel2dLoad)
-    test_func(simModel2dLoad 1 ./simModel2dLoad
-      ${CMAKE_SOURCE_DIR}/meshes/longPlate.smd)
+    test_func(simModel2dLoad_square 1 ./simModel2dLoad
+      ${CMAKE_SOURCE_DIR}/meshes/square.smd)
+    will_fail_test_func(simModel2dLoad_3d 1 ./simModel2dLoad
+      ${CMAKE_SOURCE_DIR}/meshes/Example_hex.smd)
   endif()
 
   if(Omega_h_USE_SEACASExodus)
