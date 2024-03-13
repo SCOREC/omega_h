@@ -429,6 +429,11 @@ if(BUILD_TESTING)
       ${CMAKE_SOURCE_DIR}/meshes)
 
     osh_add_exe(periodic_test)
+
+    osh_add_exe(simModel2dLoad)
+    set(TEST_EXES ${TEST_EXES} simModel2dLoad)
+    test_func(simModel2dLoad 1 ./simModel2dLoad
+      ${CMAKE_SOURCE_DIR}/meshes/longPlate.smd)
   endif()
 
   osh_add_exe(load_2d)
