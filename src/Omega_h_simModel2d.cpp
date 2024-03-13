@@ -16,9 +16,29 @@ bool isValid(pGModel mdl, bool checkGeo = false) {
   return (GM_isValid(mdl,geoCheck,errList) == valid);
 }
 
-LOs getVtxIds(pGModel mdl) {
-  auto vtxIds = LOs(GM_numVertices(mdl));
-  return vtxIds;
+struct VtxIdsAndCoords {
+  LOs ids;
+  Reals coords;
+};
+
+VtxIdsAndCoords getVtxIdsAndCoords(pGModel mdl) {
+  const auto numSpatialDims = 3;
+  auto numVtx = GM_numVertices(mdl);
+  auto vtxIds_h = HostWrite<LO>(numVtx);
+  auto vtxCoords_h = HostWrite<Real>(numVtx*numSpatialDims);
+  GVIter modelVertices = GM_vertexIter(mdl);
+  int idx = 0;
+  pGVertex modelVertex;
+  double vpoint[3];
+  while(modelVertex=GVIter_next(modelVertices)) {
+    vtxIds_h[idx] = GEN_tag(modelVertex);
+    GV_point(modelVertex, vpoint);
+    for(int i=0; i<numSpatialDims; i++)
+      vtxCoords_h[idx*numSpatialDims+i] = vpoint[i];
+    idx++;
+  }
+  GVIter_delete(modelVertices);
+  return VtxIdsAndCoords{LOs(vtxIds_h), Reals(vtxCoords_h)};
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
@@ -30,7 +50,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
   OMEGA_H_CHECK_MSG(isValid(g), msgValid);
   auto mdl = Model2D();
-  mdl.vtxIds = getVtxIds(g);
+  auto vtxInfo = getVtxIdsAndCoords(g);
+  mdl.vtxIds = vtxInfo.ids;
+  mdl.vtxCoords = vtxInfo.coords;
   return mdl;
 }
   
