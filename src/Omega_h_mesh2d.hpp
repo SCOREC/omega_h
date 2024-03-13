@@ -3,6 +3,7 @@
 
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_model2d.hpp>
+#include <optional>
 
 namespace Omega_h {
 
@@ -19,6 +20,11 @@ public:
   }
 
   [[nodiscard]] std::optional<Model2D> getModel() const;
+
+  /**
+   * update the model based on the current mesh
+   * and its classification
+   */
   Model2D updateModel();
 
 private:
