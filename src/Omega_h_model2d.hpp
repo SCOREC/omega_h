@@ -16,7 +16,7 @@ public:
 #endif
   static Model2D MeshModel2D_load(Mesh2D& mesh);
 
-  float vtxTol, edgeTol;
+  Real vtxTol, edgeTol;
   LOs vtxIds, edgeIds, loopIds, faceIds;
   LOs looptoLoopUse;
   Graph edgeToEdgeUse;
