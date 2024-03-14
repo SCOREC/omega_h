@@ -17,9 +17,10 @@ bool isValid(pGModel mdl, bool checkGeo = false) {
   return (GM_isValid(mdl,geoCheck,errList) == valid);
 }
 
-struct VtxIdsAndCoords {
+struct VtxInfo {
   LOs ids;
   Reals coords;
+  std::map<int,int> idToIdx;
 };
 
 struct EdgeInfo {
@@ -40,16 +41,31 @@ LOs getFaceIds(pGModel mdl) {
   return LOs(ids_h);
 }
 
+void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity ent) {
+  const auto id = GEN_tag(ent);
+  const auto idx = idToIdx.at(id);
+  degree[idx] = degree[idx]+1;
+}
+
+HostWrite<LO> createArray(size_t size, const LO init=0) {
+  auto array = HostWrite<LO>(size);
+  for( int i=0; i<size; i++ ) array[i] = init; //better way?
+  return array;
+}
+
 /*
- * retreive the entity-to-use adjacencies
+ * retrieve the entity-to-use adjacencies
  *
  * SimModSuite has a limited set of APIs for accessing
  * this info ... I've prepared some spaghetti below
  */
-LOs getUses(pGModel mdl, const EdgeInfo& edgeInfo) {
+LOs getUses(pGModel mdl, const VtxInfo& vtxInfo, const EdgeInfo& edgeInfo) {
   const auto numEdges = GM_numEdges(mdl);
-  auto edgeToEdgeUseDegree = HostWrite<LO>(numEdges);
-  for( int i=0; i<numEdges; i++ ) edgeToEdgeUseDegree[i] = 0; //better way?
+  auto edgeToEdgeUseDegree = createArray(numEdges);
+
+  const auto numVtx = GM_numVertices(mdl);
+  auto vtxToEdgeUseDegree = createArray(numVtx);
+
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
   pGFace modelFace;
@@ -64,11 +80,11 @@ LOs getUses(pGModel mdl, const EdgeInfo& edgeInfo) {
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
           auto edge = GEU_edge(edgeUse);
-          const auto edgeId = GEN_tag(edge);
-          const auto edgeIdx = edgeInfo.idToIdx.at(edgeId);
-          edgeToEdgeUseDegree[edgeIdx] = edgeToEdgeUseDegree[edgeIdx]+1;
+          incrementDegree(edgeToEdgeUseDegree, edgeInfo.idToIdx, edge);
           auto vtx0 = GE_vertex(edge,0);
+          incrementDegree(vtxToEdgeUseDegree, vtxInfo.idToIdx, vtx0);
           auto vtx1 = GE_vertex(edge,1);
+          incrementDegree(vtxToEdgeUseDegree, vtxInfo.idToIdx, vtx1);
         }
         GEUIter_delete(edgeUses);
       }
@@ -96,24 +112,27 @@ EdgeInfo getEdgeIds(pGModel mdl) {
   return EdgeInfo{LOs(ids_h),idToIdx};
 }
 
-VtxIdsAndCoords getVtxIdsAndCoords(pGModel mdl) {
+VtxInfo getVtxInfo(pGModel mdl) {
   const auto numSpatialDims = 3;
   auto numVtx = GM_numVertices(mdl);
   auto vtxIds_h = HostWrite<LO>(numVtx);
   auto vtxCoords_h = HostWrite<Real>(numVtx*numSpatialDims);
+  std::map<int,int> idToIdx;
   GVIter modelVertices = GM_vertexIter(mdl);
   int idx = 0;
   pGVertex modelVertex;
   double vpoint[3];
   while(modelVertex=GVIter_next(modelVertices)) {
-    vtxIds_h[idx] = GEN_tag(modelVertex);
+    const auto id = GEN_tag(modelVertex);
+    vtxIds_h[idx] = id;
+    idToIdx[id] = idx;
     GV_point(modelVertex, vpoint);
     for(int i=0; i<numSpatialDims; i++)
       vtxCoords_h[idx*numSpatialDims+i] = vpoint[i];
     idx++;
   }
   GVIter_delete(modelVertices);
-  return VtxIdsAndCoords{LOs(vtxIds_h), Reals(vtxCoords_h)};
+  return VtxInfo{LOs(vtxIds_h), Reals(vtxCoords_h), idToIdx};
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
@@ -125,13 +144,13 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
   OMEGA_H_CHECK_MSG(isValid(g), msgValid);
   auto mdl = Model2D();
-  const auto vtxInfo = getVtxIdsAndCoords(g);
+  const auto vtxInfo = getVtxInfo(g);
   mdl.vtxIds = vtxInfo.ids;
   mdl.vtxCoords = vtxInfo.coords;
   const auto edgeInfo = getEdgeIds(g);
   mdl.edgeIds = edgeInfo.ids;
   mdl.faceIds = getFaceIds(g);
-  getUses(g,edgeInfo);
+  getUses(g,vtxInfo,edgeInfo);
   GM_release(g);
   return mdl;
 }
