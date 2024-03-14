@@ -17,28 +17,30 @@ bool isValid(pGModel mdl, bool checkGeo = false) {
   return (GM_isValid(mdl,geoCheck,errList) == valid);
 }
 
-struct VtxInfo {
+struct EntInfo {
   LOs ids;
+  std::map<int,int> idToIdx;
+};
+
+struct VtxInfo : public EntInfo {
   Reals coords;
-  std::map<int,int> idToIdx;
 };
 
-struct EdgeInfo {
-  LOs ids;
+EntInfo getFaceIds(pGModel mdl) {
   std::map<int,int> idToIdx;
-};
-
-LOs getFaceIds(pGModel mdl) {
   auto numFaces = GM_numFaces(mdl);
   auto ids_h = HostWrite<LO>(numFaces);
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
   pGFace modelFace;
   while(modelFace=GFIter_next(modelFaces)) {
-    ids_h[idx++] = GEN_tag(modelFace);
+    const auto id = GEN_tag(modelFace);
+    ids_h[idx] = id;
+    idToIdx[id] = idx;
+    idx++;
   }
   GFIter_delete(modelFaces);
-  return LOs(ids_h);
+  return EntInfo{LOs(ids_h), idToIdx};
 }
 
 void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity ent) {
@@ -59,12 +61,16 @@ HostWrite<LO> createArray(size_t size, const LO init=0) {
  * SimModSuite has a limited set of APIs for accessing
  * this info ... I've prepared some spaghetti below
  */
-LOs getUses(pGModel mdl, const VtxInfo& vtxInfo, const EdgeInfo& edgeInfo) {
+LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
+    const EntInfo& edgeInfo, const EntInfo& faceInfo) {
   const auto numEdges = GM_numEdges(mdl);
   auto edgeToEdgeUseDegree = createArray(numEdges);
 
   const auto numVtx = GM_numVertices(mdl);
   auto vtxToEdgeUseDegree = createArray(numVtx);
+
+  const auto numFaces = GM_numFaces(mdl);
+  auto faceToLoopUseDegree = createArray(numFaces);
 
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -76,6 +82,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo, const EdgeInfo& edgeInfo) {
       auto loopUses = GFU_loopIter(faceUse);
       pGLoopUse loopUse;
       while(loopUse=GLUIter_next(loopUses)) {
+        incrementDegree(faceToLoopUseDegree, faceInfo.idToIdx, modelFace);
         auto edgeUses = GLU_edgeUseIter(loopUse);
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
@@ -95,7 +102,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo, const EdgeInfo& edgeInfo) {
   return LOs();
 }
 
-EdgeInfo getEdgeIds(pGModel mdl) {
+EntInfo getEdgeIds(pGModel mdl) {
   std::map<int,int> idToIdx;
   const auto numEdges = GM_numEdges(mdl);
   auto ids_h = HostWrite<LO>(numEdges);
@@ -109,7 +116,7 @@ EdgeInfo getEdgeIds(pGModel mdl) {
     idx++;
   }
   GEIter_delete(modelEdges);
-  return EdgeInfo{LOs(ids_h),idToIdx};
+  return EntInfo{LOs(ids_h),idToIdx};
 }
 
 VtxInfo getVtxInfo(pGModel mdl) {
@@ -132,7 +139,7 @@ VtxInfo getVtxInfo(pGModel mdl) {
     idx++;
   }
   GVIter_delete(modelVertices);
-  return VtxInfo{LOs(vtxIds_h), Reals(vtxCoords_h), idToIdx};
+  return VtxInfo{LOs(vtxIds_h), idToIdx, Reals(vtxCoords_h)};
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
@@ -149,10 +156,11 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.vtxCoords = vtxInfo.coords;
   const auto edgeInfo = getEdgeIds(g);
   mdl.edgeIds = edgeInfo.ids;
-  mdl.faceIds = getFaceIds(g);
-  getUses(g,vtxInfo,edgeInfo);
+  const auto faceInfo = getFaceIds(g);
+  mdl.faceIds = faceInfo.ids;
+  getUses(g,vtxInfo,edgeInfo,faceInfo);
   GM_release(g);
   return mdl;
 }
-  
+
 }//end namespace Omega_h
