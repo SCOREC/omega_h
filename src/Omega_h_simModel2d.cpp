@@ -109,6 +109,7 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.edgeIds = getEdgeIds(g);
   mdl.faceIds = getFaceIds(g);
   getUses(g);
+  GM_release(g);
   return mdl;
 }
   
