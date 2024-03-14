@@ -1,6 +1,7 @@
 #include <SimModel.h>
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
+#include <map>
 
 namespace Omega_h {
 
@@ -21,6 +22,11 @@ struct VtxIdsAndCoords {
   Reals coords;
 };
 
+struct EdgeInfo {
+  LOs ids;
+  std::map<int,int> idToIdx;
+};
+
 LOs getFaceIds(pGModel mdl) {
   auto numFaces = GM_numFaces(mdl);
   auto ids_h = HostWrite<LO>(numFaces);
@@ -34,7 +40,16 @@ LOs getFaceIds(pGModel mdl) {
   return LOs(ids_h);
 }
 
-LOs getUses(pGModel mdl) {
+/*
+ * retreive the entity-to-use adjacencies
+ *
+ * SimModSuite has a limited set of APIs for accessing
+ * this info ... I've prepared some spaghetti below
+ */
+LOs getUses(pGModel mdl, const EdgeInfo& edgeInfo) {
+  const auto numEdges = GM_numEdges(mdl);
+  auto edgeToEdgeUseDegree = HostWrite<LO>(numEdges);
+  for( int i=0; i<numEdges; i++ ) edgeToEdgeUseDegree[i] = 0; //better way?
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
   pGFace modelFace;
@@ -49,6 +64,9 @@ LOs getUses(pGModel mdl) {
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
           auto edge = GEU_edge(edgeUse);
+          const auto edgeId = GEN_tag(edge);
+          const auto edgeIdx = edgeInfo.idToIdx.at(edgeId);
+          edgeToEdgeUseDegree[edgeIdx] = edgeToEdgeUseDegree[edgeIdx]+1;
           auto vtx0 = GE_vertex(edge,0);
           auto vtx1 = GE_vertex(edge,1);
         }
@@ -61,17 +79,21 @@ LOs getUses(pGModel mdl) {
   return LOs();
 }
 
-LOs getEdgeIds(pGModel mdl) {
-  auto numEdges = GM_numEdges(mdl);
+EdgeInfo getEdgeIds(pGModel mdl) {
+  std::map<int,int> idToIdx;
+  const auto numEdges = GM_numEdges(mdl);
   auto ids_h = HostWrite<LO>(numEdges);
   GEIter modelEdges = GM_edgeIter(mdl);
   int idx = 0;
   pGEdge modelEdge;
   while(modelEdge=GEIter_next(modelEdges)) {
-    ids_h[idx++] = GEN_tag(modelEdge);
+    const auto id =GEN_tag(modelEdge);
+    ids_h[idx] = id;
+    idToIdx[id] = idx;
+    idx++;
   }
   GEIter_delete(modelEdges);
-  return LOs(ids_h);
+  return EdgeInfo{LOs(ids_h),idToIdx};
 }
 
 VtxIdsAndCoords getVtxIdsAndCoords(pGModel mdl) {
@@ -103,12 +125,13 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
   OMEGA_H_CHECK_MSG(isValid(g), msgValid);
   auto mdl = Model2D();
-  auto vtxInfo = getVtxIdsAndCoords(g);
+  const auto vtxInfo = getVtxIdsAndCoords(g);
   mdl.vtxIds = vtxInfo.ids;
   mdl.vtxCoords = vtxInfo.coords;
-  mdl.edgeIds = getEdgeIds(g);
+  const auto edgeInfo = getEdgeIds(g);
+  mdl.edgeIds = edgeInfo.ids;
   mdl.faceIds = getFaceIds(g);
-  getUses(g);
+  getUses(g,edgeInfo);
   GM_release(g);
   return mdl;
 }
