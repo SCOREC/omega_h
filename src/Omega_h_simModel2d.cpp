@@ -126,6 +126,26 @@ struct EdgeToEdgeUse : public CSR {
   EdgeToEdgeUse();
 };
 
+struct VtxToEdgeUse : public CSR {
+  VtxToEdgeUse(int size, const EntInfo& vtxInfo_in)
+    : vtxInfo(vtxInfo_in), CSR(size) {}
+  const EntInfo& vtxInfo;
+  template<int mode>
+    void countOrSet(pGEntity vtx, pGEdgeUse use) {
+      static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+      if constexpr (mode == 0 ) {
+        incrementDegree(offset, vtxInfo.idToIdx, vtx);
+      } else {
+        const auto entId = GEN_tag(vtx);
+        const auto entIdx = vtxInfo.idToIdx.at(entId);
+        const auto useId = GEN_tag(use);
+        const auto useIdx = 0; //FIXME
+        setValue(entIdx, useIdx);
+      }
+    }
+  private:
+  VtxToEdgeUse();
+};
 
 
 /*
@@ -135,12 +155,9 @@ struct EdgeToEdgeUse : public CSR {
  * this info ... I've prepared some spaghetti below
  */
 template<int mode>
-LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
+LOs getUses(pGModel mdl, VtxToEdgeUse& v2eu,
     EdgeToEdgeUse& e2eu, FaceToLoopUse& f2lu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
-
-  const auto numVtx = GM_numVertices(mdl);
-  auto vtxToEdgeUseDegree = createArray(numVtx);
 
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -159,9 +176,9 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
           auto edge = GEU_edge(edgeUse);
           e2eu.countOrSet<mode>(edge,edgeUse);
           auto vtx0 = GE_vertex(edge,0);
-          incrementDegree(vtxToEdgeUseDegree, vtxInfo.idToIdx, vtx0);
+          v2eu.countOrSet<mode>(vtx0,edgeUse);
           auto vtx1 = GE_vertex(edge,1);
-          incrementDegree(vtxToEdgeUseDegree, vtxInfo.idToIdx, vtx1);
+          v2eu.countOrSet<mode>(vtx1,edgeUse);
         }
         GEUIter_delete(edgeUses);
       }
@@ -173,6 +190,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
   if constexpr (mode==0) {
     f2lu.degreeToOffset();
     e2eu.degreeToOffset();
+    v2eu.degreeToOffset();
   }
   return LOs();
 }
@@ -234,6 +252,10 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
 
+  const auto numVtx = GM_numVertices(g);
+  auto vtxToEdgeUseDegree = createArray(numVtx);
+  VtxToEdgeUse v2eu(numVtx, vtxInfo);
+
   const auto numEdges = GM_numEdges(g);
   auto edgeToEdgeUseDegree = createArray(numEdges);
   EdgeToEdgeUse e2eu(numEdges, edgeInfo);
@@ -242,8 +264,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   auto faceToLoopUseDegree = createArray(numFaces);
   FaceToLoopUse f2lu(numFaces, faceInfo);
 
-  getUses<0>(g,vtxInfo,e2eu,f2lu);
-  getUses<1>(g,vtxInfo,e2eu,f2lu);
+  getUses<0>(g,v2eu,e2eu,f2lu);
+  getUses<1>(g,v2eu,e2eu,f2lu);
   GM_release(g);
   return mdl;
 }
