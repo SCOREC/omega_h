@@ -49,11 +49,28 @@ void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity 
   degree[idx] = degree[idx]+1;
 }
 
+void setUse() {
+}
+
 HostWrite<LO> createArray(size_t size, const LO init=0) {
   auto array = HostWrite<LO>(size);
   for( int i=0; i<size; i++ ) array[i] = init; //better way?
   return array;
 }
+
+struct FaceToLoopUse {
+  const EntInfo& faceInfo;
+  HostWrite<LO> f2luDeg;
+  template<int mode>
+  void countOrSet(pGEntity face, pGLoopUse use) {
+    static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+    if constexpr (mode == 0 ) {
+      incrementDegree(f2luDeg, faceInfo.idToIdx, face);
+    } else {
+      std::cout << "mode 1\n"; //TODO
+    }
+  }
+};
 
 /*
  * retrieve the entity-to-use adjacencies
@@ -61,8 +78,11 @@ HostWrite<LO> createArray(size_t size, const LO init=0) {
  * SimModSuite has a limited set of APIs for accessing
  * this info ... I've prepared some spaghetti below
  */
+template<int mode>
 LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
     const EntInfo& edgeInfo, const EntInfo& faceInfo) {
+  static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+
   const auto numEdges = GM_numEdges(mdl);
   auto edgeToEdgeUseDegree = createArray(numEdges);
 
@@ -71,6 +91,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
 
   const auto numFaces = GM_numFaces(mdl);
   auto faceToLoopUseDegree = createArray(numFaces);
+  FaceToLoopUse f2lu{faceInfo, createArray(numFaces)};
 
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -82,7 +103,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
       auto loopUses = GFU_loopIter(faceUse);
       pGLoopUse loopUse;
       while(loopUse=GLUIter_next(loopUses)) {
-        incrementDegree(faceToLoopUseDegree, faceInfo.idToIdx, modelFace);
+        f2lu.countOrSet<mode>(modelFace,loopUse);
         auto edgeUses = GLU_edgeUseIter(loopUse);
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
@@ -99,6 +120,11 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
     } //sides
   }
   GFIter_delete(modelFaces);
+
+  if constexpr (mode==0) {
+    std::cout << "converting degree to offset and alloc array\n"; //TODO
+  }
+
   return LOs();
 }
 
@@ -158,7 +184,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.edgeIds = edgeInfo.ids;
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
-  getUses(g,vtxInfo,edgeInfo,faceInfo);
+  getUses<0>(g,vtxInfo,edgeInfo,faceInfo);
+  getUses<1>(g,vtxInfo,edgeInfo,faceInfo);
   GM_release(g);
   return mdl;
 }
