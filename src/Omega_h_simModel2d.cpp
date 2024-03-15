@@ -86,8 +86,8 @@ struct CSR {
 
 template<typename UseType>
 struct EntToAdjUse : public CSR {
-  EntToAdjUse(int size, const EntInfo& entInfo_in)
-    : entInfo(entInfo_in), CSR(size) {}
+  EntToAdjUse(const EntInfo& entInfo_in)
+    : entInfo(entInfo_in), CSR(entInfo_in.ids.size()) {}
   const EntInfo& entInfo;
   template<int mode>
   void countOrSet(pGEntity ent, UseType use) {
@@ -212,14 +212,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
 
-  const auto numVtx = GM_numVertices(g);
-  EntToAdjUse<pGEdgeUse> v2eu(numVtx, vtxInfo);
-
-  const auto numEdges = GM_numEdges(g);
-  EntToAdjUse<pGEdgeUse> e2eu(numEdges, edgeInfo);
-
-  const auto numFaces = GM_numFaces(g);
-  EntToAdjUse<pGLoopUse> f2lu(numFaces, faceInfo);
+  EntToAdjUse<pGEdgeUse> v2eu(vtxInfo);
+  EntToAdjUse<pGEdgeUse> e2eu(edgeInfo);
+  EntToAdjUse<pGLoopUse> f2lu(faceInfo);
 
   getUses<0>(g,v2eu,e2eu,f2lu);
   getUses<1>(g,v2eu,e2eu,f2lu);
