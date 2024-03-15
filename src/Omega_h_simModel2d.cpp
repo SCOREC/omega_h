@@ -2,6 +2,8 @@
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
 #include <map>
+#include <algorithm> //std::fill
+#include <numeric> //std::exclusive_scan
 
 namespace Omega_h {
 
@@ -49,27 +51,60 @@ void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity 
   degree[idx] = degree[idx]+1;
 }
 
-void setUse() {
-}
-
-HostWrite<LO> createArray(size_t size, const LO init=0) {
+HostWrite<LO> createAndInitArray(size_t size, const LO init=0) {
   auto array = HostWrite<LO>(size);
-  for( int i=0; i<size; i++ ) array[i] = init; //better way?
+  std::fill(array.data(), array.data()+array.size(), init);
   return array;
 }
 
-struct FaceToLoopUse {
+HostWrite<LO> createArray(size_t size) {
+  return HostWrite<LO>(size);
+}
+
+struct CSR {
+  CSR(int size) {
+    degree = createAndInitArray(size+1);
+    offset = createArray(size+1);
+    count = createAndInitArray(size);
+    //values array is allocated once degree is populated
+  }
+  HostWrite<LO> degree;
+  HostWrite<LO> offset;
+  HostWrite<LO> count;
+  HostWrite<LO> values;
+  void degreeToOffset() {
+    std::exclusive_scan(degree.data(), degree.data()+degree.size(), offset.data(), 0);
+    values = createArray(offset[offset.size()]);
+  };
+  void setValue(int entIdx, LO value) {
+    const auto adjIdx = offset[entIdx];
+    const auto adjCount = count[entIdx];
+    values[adjIdx+adjCount] = value;
+    count[entIdx]++;
+  }
+  private:
+  CSR();
+};
+
+struct FaceToLoopUse : public CSR {
+  FaceToLoopUse(int size, const EntInfo& faceInfo_in)
+    : faceInfo(faceInfo_in), CSR(size) {}
   const EntInfo& faceInfo;
-  HostWrite<LO> f2luDeg;
   template<int mode>
   void countOrSet(pGEntity face, pGLoopUse use) {
     static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
     if constexpr (mode == 0 ) {
-      incrementDegree(f2luDeg, faceInfo.idToIdx, face);
+      incrementDegree(degree, faceInfo.idToIdx, face);
     } else {
-      std::cout << "mode 1\n"; //TODO
+      const auto faceId = GEN_tag(face);
+      const auto faceIdx = faceInfo.idToIdx.at(faceId);
+      const auto loopUseId = GEN_tag(use);
+      const auto loopUseIdx = 0; //FIXME
+      setValue(faceIdx, loopUseIdx);
     }
   }
+  private:
+  FaceToLoopUse();
 };
 
 /*
@@ -80,7 +115,7 @@ struct FaceToLoopUse {
  */
 template<int mode>
 LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
-    const EntInfo& edgeInfo, const EntInfo& faceInfo) {
+    const EntInfo& edgeInfo, FaceToLoopUse& f2lu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
 
   const auto numEdges = GM_numEdges(mdl);
@@ -89,9 +124,7 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
   const auto numVtx = GM_numVertices(mdl);
   auto vtxToEdgeUseDegree = createArray(numVtx);
 
-  const auto numFaces = GM_numFaces(mdl);
-  auto faceToLoopUseDegree = createArray(numFaces);
-  FaceToLoopUse f2lu{faceInfo, createArray(numFaces)};
+;
 
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -122,9 +155,8 @@ LOs getUses(pGModel mdl, const VtxInfo& vtxInfo,
   GFIter_delete(modelFaces);
 
   if constexpr (mode==0) {
-    std::cout << "converting degree to offset and alloc array\n"; //TODO
+    f2lu.degreeToOffset();
   }
-
   return LOs();
 }
 
@@ -184,8 +216,12 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.edgeIds = edgeInfo.ids;
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
-  getUses<0>(g,vtxInfo,edgeInfo,faceInfo);
-  getUses<1>(g,vtxInfo,edgeInfo,faceInfo);
+
+  const auto numFaces = GM_numFaces(g);
+  auto faceToLoopUseDegree = createArray(numFaces);
+  FaceToLoopUse f2lu(numFaces, faceInfo);
+  getUses<0>(g,vtxInfo,edgeInfo,f2lu);
+  getUses<1>(g,vtxInfo,edgeInfo,f2lu);
   GM_release(g);
   return mdl;
 }
