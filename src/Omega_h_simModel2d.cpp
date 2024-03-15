@@ -63,7 +63,7 @@ HostWrite<LO> createArray(size_t size) {
 
 struct CSR {
   CSR(int size) {
-    degree = createAndInitArray(size+1);
+    degree = createAndInitArray(size);
     offset = createArray(size+1);
     count = createAndInitArray(size);
     //values array is allocated once degree is populated
@@ -73,7 +73,8 @@ struct CSR {
   HostWrite<LO> count;
   HostWrite<LO> values;
   void degreeToOffset() {
-    std::exclusive_scan(degree.data(), degree.data()+degree.size(), offset.data(), 0);
+    offset[0] = 0;
+    std::exclusive_scan(degree.data(), degree.data()+degree.size(), offset.data()+1, 0);
     values = createArray(offset[offset.size()]);
   };
   void setValue(int entIdx, LO value) {
