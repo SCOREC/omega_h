@@ -213,15 +213,12 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.faceIds = faceInfo.ids;
 
   const auto numVtx = GM_numVertices(g);
-  auto vtxToEdgeUseDegree = createArray(numVtx);
   EntToAdjUse<pGEdgeUse> v2eu(numVtx, vtxInfo);
 
   const auto numEdges = GM_numEdges(g);
-  auto edgeToEdgeUseDegree = createArray(numEdges);
   EntToAdjUse<pGEdgeUse> e2eu(numEdges, edgeInfo);
 
   const auto numFaces = GM_numFaces(g);
-  auto faceToLoopUseDegree = createArray(numFaces);
   EntToAdjUse<pGLoopUse> f2lu(numFaces, faceInfo);
 
   getUses<0>(g,v2eu,e2eu,f2lu);
