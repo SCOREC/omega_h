@@ -84,69 +84,27 @@ struct CSR {
   CSR();
 };
 
-struct FaceToLoopUse : public CSR {
-  FaceToLoopUse(int size, const EntInfo& faceInfo_in)
-    : faceInfo(faceInfo_in), CSR(size) {}
-  const EntInfo& faceInfo;
+template<typename UseType>
+struct EntToAdjUse : public CSR {
+  EntToAdjUse(int size, const EntInfo& entInfo_in)
+    : entInfo(entInfo_in), CSR(size) {}
+  const EntInfo& entInfo;
   template<int mode>
-  void countOrSet(pGEntity face, pGLoopUse use) {
-    static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+  void countOrSet(pGEntity ent, UseType use) {
+    static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
     if constexpr (mode == 0 ) {
-      incrementDegree(offset, faceInfo.idToIdx, face);
+      incrementDegree(offset, entInfo.idToIdx, ent);
     } else {
-      const auto faceId = GEN_tag(face);
-      const auto faceIdx = faceInfo.idToIdx.at(faceId);
-      const auto loopUseId = GEN_tag(use);
-      const auto loopUseIdx = 0; //FIXME
-      setValue(faceIdx, loopUseIdx);
-    }
-  }
-  private:
-  FaceToLoopUse();
-};
-
-struct EdgeToEdgeUse : public CSR {
-  EdgeToEdgeUse(int size, const EntInfo& edgeInfo_in)
-    : edgeInfo(edgeInfo_in), CSR(size) {}
-  const EntInfo& edgeInfo;
-  template<int mode>
-  void countOrSet(pGEntity edge, pGEdgeUse use) {
-    static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
-    if constexpr (mode == 0 ) {
-      incrementDegree(offset, edgeInfo.idToIdx, edge);
-    } else {
-      const auto entId = GEN_tag(edge);
-      const auto entIdx = edgeInfo.idToIdx.at(entId);
+      const auto entId = GEN_tag(ent);
+      const auto entIdx = entInfo.idToIdx.at(entId);
       const auto useId = GEN_tag(use);
       const auto useIdx = 0; //FIXME
       setValue(entIdx, useIdx);
     }
   }
   private:
-  EdgeToEdgeUse();
+  EntToAdjUse();
 };
-
-struct VtxToEdgeUse : public CSR {
-  VtxToEdgeUse(int size, const EntInfo& vtxInfo_in)
-    : vtxInfo(vtxInfo_in), CSR(size) {}
-  const EntInfo& vtxInfo;
-  template<int mode>
-    void countOrSet(pGEntity vtx, pGEdgeUse use) {
-      static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
-      if constexpr (mode == 0 ) {
-        incrementDegree(offset, vtxInfo.idToIdx, vtx);
-      } else {
-        const auto entId = GEN_tag(vtx);
-        const auto entIdx = vtxInfo.idToIdx.at(entId);
-        const auto useId = GEN_tag(use);
-        const auto useIdx = 0; //FIXME
-        setValue(entIdx, useIdx);
-      }
-    }
-  private:
-  VtxToEdgeUse();
-};
-
 
 /*
  * retrieve the entity-to-use adjacencies
@@ -155,8 +113,10 @@ struct VtxToEdgeUse : public CSR {
  * this info ... I've prepared some spaghetti below
  */
 template<int mode>
-LOs getUses(pGModel mdl, VtxToEdgeUse& v2eu,
-    EdgeToEdgeUse& e2eu, FaceToLoopUse& f2lu) {
+LOs getUses(pGModel mdl,
+    EntToAdjUse<pGEdgeUse>& v2eu,
+    EntToAdjUse<pGEdgeUse>& e2eu,
+    EntToAdjUse<pGLoopUse>& f2lu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
 
   GFIter modelFaces = GM_faceIter(mdl);
@@ -254,15 +214,15 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
 
   const auto numVtx = GM_numVertices(g);
   auto vtxToEdgeUseDegree = createArray(numVtx);
-  VtxToEdgeUse v2eu(numVtx, vtxInfo);
+  EntToAdjUse<pGEdgeUse> v2eu(numVtx, vtxInfo);
 
   const auto numEdges = GM_numEdges(g);
   auto edgeToEdgeUseDegree = createArray(numEdges);
-  EdgeToEdgeUse e2eu(numEdges, edgeInfo);
+  EntToAdjUse<pGEdgeUse> e2eu(numEdges, edgeInfo);
 
   const auto numFaces = GM_numFaces(g);
   auto faceToLoopUseDegree = createArray(numFaces);
-  FaceToLoopUse f2lu(numFaces, faceInfo);
+  EntToAdjUse<pGLoopUse> f2lu(numFaces, faceInfo);
 
   getUses<0>(g,v2eu,e2eu,f2lu);
   getUses<1>(g,v2eu,e2eu,f2lu);
