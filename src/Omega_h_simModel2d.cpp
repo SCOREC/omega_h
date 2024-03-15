@@ -63,19 +63,16 @@ HostWrite<LO> createArray(size_t size) {
 
 struct CSR {
   CSR(int size) {
-    degree = createAndInitArray(size);
-    offset = createArray(size+1);
+    offset = createAndInitArray(size+1);
     count = createAndInitArray(size);
     //values array is allocated once degree is populated
   }
-  HostWrite<LO> degree;
   HostWrite<LO> offset;
   HostWrite<LO> count;
   HostWrite<LO> values;
   void degreeToOffset() {
-    offset[0] = 0;
-    std::exclusive_scan(degree.data(), degree.data()+degree.size(), offset.data()+1, 0);
-    values = createArray(offset[offset.size()]);
+    std::exclusive_scan(offset.data(), offset.data()+offset.size(), offset.data(), 0);
+    values = createArray(offset[offset.size()-1]);
   };
   void setValue(int entIdx, LO value) {
     const auto adjIdx = offset[entIdx];
@@ -95,7 +92,7 @@ struct FaceToLoopUse : public CSR {
   void countOrSet(pGEntity face, pGLoopUse use) {
     static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
     if constexpr (mode == 0 ) {
-      incrementDegree(degree, faceInfo.idToIdx, face);
+      incrementDegree(offset, faceInfo.idToIdx, face);
     } else {
       const auto faceId = GEN_tag(face);
       const auto faceIdx = faceInfo.idToIdx.at(faceId);
