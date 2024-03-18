@@ -256,6 +256,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto faceInfo = getFaceInfo(g);
   mdl.faceIds = faceInfo.ids;
   const auto loopUseInfo = getLoopUseInfo(g);
+  mdl.loopUseIds = loopUseInfo.ids;
+  mdl.edgeUseIds = LOs(0); //FIXME
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
