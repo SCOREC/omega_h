@@ -84,13 +84,13 @@ struct CSR {
   CSR();
 };
 
-template<typename UseType>
+template<typename EntType, typename UseType>
 struct EntToAdjUse : public CSR {
   EntToAdjUse(const EntInfo& entInfo_in)
     : entInfo(entInfo_in), CSR(entInfo_in.ids.size()) {}
   const EntInfo& entInfo;
   template<int mode>
-  void countOrSet(pGEntity ent, UseType use) {
+  void countOrSet(EntType ent, UseType use) {
     static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
     if constexpr (mode == 0 ) {
       incrementDegree(offset, entInfo.idToIdx, ent);
@@ -114,9 +114,9 @@ struct EntToAdjUse : public CSR {
  */
 template<int mode>
 LOs getUses(pGModel mdl,
-    EntToAdjUse<pGEdgeUse>& v2eu,
-    EntToAdjUse<pGEdgeUse>& e2eu,
-    EntToAdjUse<pGLoopUse>& f2lu) {
+    EntToAdjUse<pGVertex, pGEdgeUse>& v2eu,
+    EntToAdjUse<pGEdge, pGEdgeUse>& e2eu,
+    EntToAdjUse<pGFace, pGLoopUse>& f2lu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
 
   GFIter modelFaces = GM_faceIter(mdl);
@@ -212,9 +212,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
 
-  EntToAdjUse<pGEdgeUse> v2eu(vtxInfo);
-  EntToAdjUse<pGEdgeUse> e2eu(edgeInfo);
-  EntToAdjUse<pGLoopUse> f2lu(faceInfo);
+  EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
+  EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
+  EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
 
   getUses<0>(g,v2eu,e2eu,f2lu);
   getUses<1>(g,v2eu,e2eu,f2lu);
