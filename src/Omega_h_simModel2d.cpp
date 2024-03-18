@@ -53,7 +53,7 @@ VtxInfo getVtxInfo(pGModel mdl) {
   return VtxInfo{LOs(vtxIds_h), idToIdx, Reals(vtxCoords_h)};
 }
 
-EntInfo getEdgeIds(pGModel mdl) {
+EntInfo getEdgeInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   const auto numEdges = GM_numEdges(mdl);
@@ -71,7 +71,7 @@ EntInfo getEdgeIds(pGModel mdl) {
   return EntInfo{LOs(ids_h),idToIdx};
 }
 
-EntInfo getFaceIds(pGModel mdl) {
+EntInfo getFaceInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   auto numFaces = GM_numFaces(mdl);
@@ -250,9 +250,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto vtxInfo = getVtxInfo(g);
   mdl.vtxIds = vtxInfo.ids;
   mdl.vtxCoords = vtxInfo.coords;
-  const auto edgeInfo = getEdgeIds(g);
+  const auto edgeInfo = getEdgeInfo(g);
   mdl.edgeIds = edgeInfo.ids;
-  const auto faceInfo = getFaceIds(g);
+  const auto faceInfo = getFaceInfo(g);
   mdl.faceIds = faceInfo.ids;
   const auto loopUseInfo = getLoopUseInfo(g);
 
