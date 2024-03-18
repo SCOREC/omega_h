@@ -106,6 +106,32 @@ struct EntToAdjUse : public CSR {
   EntToAdjUse();
 };
 
+EntInfo getLoopUseInfo(pGModel mdl) {
+  std::map<int,int> idToIdx;
+  std::vector<int> ids_h;
+  int numLoopUses = 0;
+  GFIter modelFaces = GM_faceIter(mdl);
+  int idx = 0;
+  pGFace modelFace;
+  while(modelFace=GFIter_next(modelFaces)) {
+    for(int side=0; side<2; side++) {
+      auto faceUse = GF_use(modelFace,side);
+      auto loopUses = GFU_loopIter(faceUse);
+      pGLoopUse loopUse;
+      while(loopUse=GLUIter_next(loopUses)) {
+        numLoopUses++;
+        const auto id = GEN_tag(loopUse);
+        ids_h.push_back(id);
+        idToIdx[id] = idx;
+        idx++;
+      }
+      GLUIter_delete(loopUses);
+    } //sides
+  }
+  GFIter_delete(modelFaces);
+  return EntInfo();
+}
+
 /*
  * retrieve the entity-to-use adjacencies
  *
@@ -125,7 +151,6 @@ LOs getUses(pGModel mdl,
   while(modelFace=GFIter_next(modelFaces)) {
     for(int side=0; side<2; side++) {
       auto faceUse = GF_use(modelFace,side);
-      auto numLoops = GF_numLoops(modelFace);
       auto loopUses = GFU_loopIter(faceUse);
       pGLoopUse loopUse;
       while(loopUse=GLUIter_next(loopUses)) {
@@ -133,6 +158,7 @@ LOs getUses(pGModel mdl,
         auto edgeUses = GLU_edgeUseIter(loopUse);
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
+          //lu2eu.countOrSet<mode>(loopUse,edgeUse);
           auto edge = GEU_edge(edgeUse);
           e2eu.countOrSet<mode>(edge,edgeUse);
           auto vtx0 = GE_vertex(edge,0);
@@ -215,6 +241,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
   EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
+
+  const auto loopUseInfo = getLoopUseInfo(g);
+  //Graph loopUseToEdgeUse;
 
   getUses<0>(g,v2eu,e2eu,f2lu);
   getUses<1>(g,v2eu,e2eu,f2lu);
