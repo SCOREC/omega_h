@@ -29,6 +29,48 @@ struct VtxInfo : public EntInfo {
   Reals coords;
 };
 
+VtxInfo getVtxInfo(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
+  const auto numSpatialDims = 3;
+  auto numVtx = GM_numVertices(mdl);
+  auto vtxIds_h = HostWrite<LO>(numVtx);
+  auto vtxCoords_h = HostWrite<Real>(numVtx*numSpatialDims);
+  std::map<int,int> idToIdx;
+  GVIter modelVertices = GM_vertexIter(mdl);
+  int idx = 0;
+  pGVertex modelVertex;
+  double vpoint[3];
+  while(modelVertex=GVIter_next(modelVertices)) {
+    const auto id = GEN_tag(modelVertex);
+    vtxIds_h[idx] = id;
+    idToIdx[id] = idx;
+    GV_point(modelVertex, vpoint);
+    for(int i=0; i<numSpatialDims; i++)
+      vtxCoords_h[idx*numSpatialDims+i] = vpoint[i];
+    idx++;
+  }
+  GVIter_delete(modelVertices);
+  return VtxInfo{LOs(vtxIds_h), idToIdx, Reals(vtxCoords_h)};
+}
+
+EntInfo getEdgeIds(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
+  std::map<int,int> idToIdx;
+  const auto numEdges = GM_numEdges(mdl);
+  auto ids_h = HostWrite<LO>(numEdges);
+  GEIter modelEdges = GM_edgeIter(mdl);
+  int idx = 0;
+  pGEdge modelEdge;
+  while(modelEdge=GEIter_next(modelEdges)) {
+    const auto id =GEN_tag(modelEdge);
+    ids_h[idx] = id;
+    idToIdx[id] = idx;
+    idx++;
+  }
+  GEIter_delete(modelEdges);
+  return EntInfo{LOs(ids_h),idToIdx};
+}
+
 EntInfo getFaceIds(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
@@ -45,6 +87,35 @@ EntInfo getFaceIds(pGModel mdl) {
   }
   GFIter_delete(modelFaces);
   return EntInfo{LOs(ids_h), idToIdx};
+}
+
+EntInfo getLoopUseInfo(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
+  std::map<int,int> idToIdx;
+  std::vector<int> ids;
+  int numLoopUses = 0;
+  GFIter modelFaces = GM_faceIter(mdl);
+  int idx = 0;
+  pGFace modelFace;
+  while(modelFace=GFIter_next(modelFaces)) {
+    for(int side=0; side<2; side++) {
+      auto faceUse = GF_use(modelFace,side);
+      auto loopUses = GFU_loopIter(faceUse);
+      pGLoopUse loopUse;
+      while(loopUse=GLUIter_next(loopUses)) {
+        numLoopUses++;
+        const auto id = GEN_tag(loopUse);
+        ids.push_back(id);
+        idToIdx[id] = idx;
+        idx++;
+      }
+      GLUIter_delete(loopUses);
+    } //sides
+  }
+  GFIter_delete(modelFaces);
+  HostWrite<LO> ids_h(ids.size());
+  for(int i=0; i<ids.size(); i++) ids_h[i] = ids[i];
+  return EntInfo{LOs(ids_h),idToIdx};
 }
 
 void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity ent) {
@@ -120,35 +191,6 @@ struct EntToAdjUse : public CSR {
   EntToAdjUse();
 };
 
-EntInfo getLoopUseInfo(pGModel mdl) {
-  OMEGA_H_TIME_FUNCTION;
-  std::map<int,int> idToIdx;
-  std::vector<int> ids;
-  int numLoopUses = 0;
-  GFIter modelFaces = GM_faceIter(mdl);
-  int idx = 0;
-  pGFace modelFace;
-  while(modelFace=GFIter_next(modelFaces)) {
-    for(int side=0; side<2; side++) {
-      auto faceUse = GF_use(modelFace,side);
-      auto loopUses = GFU_loopIter(faceUse);
-      pGLoopUse loopUse;
-      while(loopUse=GLUIter_next(loopUses)) {
-        numLoopUses++;
-        const auto id = GEN_tag(loopUse);
-        ids.push_back(id);
-        idToIdx[id] = idx;
-        idx++;
-      }
-      GLUIter_delete(loopUses);
-    } //sides
-  }
-  GFIter_delete(modelFaces);
-  HostWrite<LO> ids_h(ids.size());
-  for(int i=0; i<ids.size(); i++) ids_h[i] = ids[i];
-  return EntInfo{LOs(ids_h),idToIdx};
-}
-
 /*
  * retrieve the entity-to-use adjacencies
  *
@@ -193,48 +235,6 @@ LOs getUses(pGModel mdl,
   GFIter_delete(modelFaces);
 
   return LOs();
-}
-
-EntInfo getEdgeIds(pGModel mdl) {
-  OMEGA_H_TIME_FUNCTION;
-  std::map<int,int> idToIdx;
-  const auto numEdges = GM_numEdges(mdl);
-  auto ids_h = HostWrite<LO>(numEdges);
-  GEIter modelEdges = GM_edgeIter(mdl);
-  int idx = 0;
-  pGEdge modelEdge;
-  while(modelEdge=GEIter_next(modelEdges)) {
-    const auto id =GEN_tag(modelEdge);
-    ids_h[idx] = id;
-    idToIdx[id] = idx;
-    idx++;
-  }
-  GEIter_delete(modelEdges);
-  return EntInfo{LOs(ids_h),idToIdx};
-}
-
-VtxInfo getVtxInfo(pGModel mdl) {
-  OMEGA_H_TIME_FUNCTION;
-  const auto numSpatialDims = 3;
-  auto numVtx = GM_numVertices(mdl);
-  auto vtxIds_h = HostWrite<LO>(numVtx);
-  auto vtxCoords_h = HostWrite<Real>(numVtx*numSpatialDims);
-  std::map<int,int> idToIdx;
-  GVIter modelVertices = GM_vertexIter(mdl);
-  int idx = 0;
-  pGVertex modelVertex;
-  double vpoint[3];
-  while(modelVertex=GVIter_next(modelVertices)) {
-    const auto id = GEN_tag(modelVertex);
-    vtxIds_h[idx] = id;
-    idToIdx[id] = idx;
-    GV_point(modelVertex, vpoint);
-    for(int i=0; i<numSpatialDims; i++)
-      vtxCoords_h[idx*numSpatialDims+i] = vpoint[i];
-    idx++;
-  }
-  GVIter_delete(modelVertices);
-  return VtxInfo{LOs(vtxIds_h), idToIdx, Reals(vtxCoords_h)};
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
