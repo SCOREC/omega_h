@@ -108,7 +108,7 @@ struct EntToAdjUse : public CSR {
 
 EntInfo getLoopUseInfo(pGModel mdl) {
   std::map<int,int> idToIdx;
-  std::vector<int> ids_h;
+  std::vector<int> ids;
   int numLoopUses = 0;
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -121,7 +121,7 @@ EntInfo getLoopUseInfo(pGModel mdl) {
       while(loopUse=GLUIter_next(loopUses)) {
         numLoopUses++;
         const auto id = GEN_tag(loopUse);
-        ids_h.push_back(id);
+        ids.push_back(id);
         idToIdx[id] = idx;
         idx++;
       }
@@ -129,7 +129,9 @@ EntInfo getLoopUseInfo(pGModel mdl) {
     } //sides
   }
   GFIter_delete(modelFaces);
-  return EntInfo();
+  HostWrite<LO> ids_h(ids.size());
+  for(int i=0; i<ids.size(); i++) ids_h[i] = ids[i];
+  return EntInfo{LOs(ids_h),idToIdx};
 }
 
 /*
@@ -142,7 +144,8 @@ template<int mode>
 LOs getUses(pGModel mdl,
     EntToAdjUse<pGVertex, pGEdgeUse>& v2eu,
     EntToAdjUse<pGEdge, pGEdgeUse>& e2eu,
-    EntToAdjUse<pGFace, pGLoopUse>& f2lu) {
+    EntToAdjUse<pGFace, pGLoopUse>& f2lu,
+    EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
 
   GFIter modelFaces = GM_faceIter(mdl);
@@ -158,7 +161,7 @@ LOs getUses(pGModel mdl,
         auto edgeUses = GLU_edgeUseIter(loopUse);
         pGEdgeUse edgeUse;
         while(edgeUse=GEUIter_next(edgeUses)) {
-          //lu2eu.countOrSet<mode>(loopUse,edgeUse);
+          lu2eu.countOrSet<mode>(loopUse,edgeUse);
           auto edge = GEU_edge(edgeUse);
           e2eu.countOrSet<mode>(edge,edgeUse);
           auto vtx0 = GE_vertex(edge,0);
@@ -173,11 +176,6 @@ LOs getUses(pGModel mdl,
   }
   GFIter_delete(modelFaces);
 
-  if constexpr (mode==0) {
-    f2lu.degreeToOffset();
-    e2eu.degreeToOffset();
-    v2eu.degreeToOffset();
-  }
   return LOs();
 }
 
@@ -237,16 +235,19 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.edgeIds = edgeInfo.ids;
   const auto faceInfo = getFaceIds(g);
   mdl.faceIds = faceInfo.ids;
+  const auto loopUseInfo = getLoopUseInfo(g);
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
   EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
+  EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu(loopUseInfo);
 
-  const auto loopUseInfo = getLoopUseInfo(g);
-  //Graph loopUseToEdgeUse;
-
-  getUses<0>(g,v2eu,e2eu,f2lu);
-  getUses<1>(g,v2eu,e2eu,f2lu);
+  getUses<0>(g,v2eu,e2eu,f2lu,lu2eu);
+  f2lu.degreeToOffset();
+  e2eu.degreeToOffset();
+  v2eu.degreeToOffset();
+  lu2eu.degreeToOffset();
+  getUses<1>(g,v2eu,e2eu,f2lu,lu2eu);
   GM_release(g);
   return mdl;
 }
