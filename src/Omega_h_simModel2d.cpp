@@ -1,6 +1,7 @@
 #include <SimModel.h>
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
+#include "Omega_h_profile.hpp"
 #include <map>
 #include <algorithm> //std::fill
 #include <numeric> //std::exclusive_scan
@@ -29,6 +30,7 @@ struct VtxInfo : public EntInfo {
 };
 
 EntInfo getFaceIds(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   auto numFaces = GM_numFaces(mdl);
   auto ids_h = HostWrite<LO>(numFaces);
@@ -63,6 +65,7 @@ HostWrite<LO> createArray(size_t size) {
 
 struct CSR {
   CSR(int size) {
+    OMEGA_H_TIME_FUNCTION;
     offset = createAndInitArray(size+1);
     count = createAndInitArray(size);
     //values array is allocated once degree is populated
@@ -71,10 +74,12 @@ struct CSR {
   HostWrite<LO> count;
   HostWrite<LO> values;
   void degreeToOffset() {
+    OMEGA_H_TIME_FUNCTION;
     std::exclusive_scan(offset.data(), offset.data()+offset.size(), offset.data(), 0);
     values = createArray(offset[offset.size()-1]);
   };
   void setValue(int entIdx, LO value) {
+    OMEGA_H_TIME_FUNCTION;
     const auto adjIdx = offset[entIdx];
     const auto adjCount = count[entIdx];
     values[adjIdx+adjCount] = value;
@@ -95,9 +100,12 @@ struct EntToAdjUse : public CSR {
   template<int mode>
   void countOrSet(EntType ent, UseType use) {
     static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
+    OMEGA_H_TIME_FUNCTION;
     if constexpr (mode == 0 ) {
+      ScopedTimer timer("EntToAdjUse::set");
       incrementDegree(offset, entInfo.idToIdx, ent);
     } else {
+      ScopedTimer timer("EntToAdjUse::count");
       const auto entId = GEN_tag(ent);
       const auto entIdx = entInfo.idToIdx.at(entId);
       const auto useId = GEN_tag(use);
@@ -113,6 +121,7 @@ struct EntToAdjUse : public CSR {
 };
 
 EntInfo getLoopUseInfo(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   std::vector<int> ids;
   int numLoopUses = 0;
@@ -153,6 +162,7 @@ LOs getUses(pGModel mdl,
     EntToAdjUse<pGFace, pGLoopUse>& f2lu,
     EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu) {
   static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+  OMEGA_H_TIME_FUNCTION;
 
   GFIter modelFaces = GM_faceIter(mdl);
   int idx = 0;
@@ -186,6 +196,7 @@ LOs getUses(pGModel mdl,
 }
 
 EntInfo getEdgeIds(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   const auto numEdges = GM_numEdges(mdl);
   auto ids_h = HostWrite<LO>(numEdges);
@@ -203,6 +214,7 @@ EntInfo getEdgeIds(pGModel mdl) {
 }
 
 VtxInfo getVtxInfo(pGModel mdl) {
+  OMEGA_H_TIME_FUNCTION;
   const auto numSpatialDims = 3;
   auto numVtx = GM_numVertices(mdl);
   auto vtxIds_h = HostWrite<LO>(numVtx);
@@ -226,6 +238,7 @@ VtxInfo getVtxInfo(pGModel mdl) {
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
+  OMEGA_H_TIME_FUNCTION;
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(filename.c_str(), nm, p);
