@@ -118,11 +118,7 @@ EntInfo getLoopUseInfo(pGModel mdl) {
   return EntInfo{LOs(ids_h),idToIdx};
 }
 
-void incrementDegree(HostWrite<LO>& degree, std::map<int,int> idToIdx, pGEntity ent) {
-  const auto id = GEN_tag(ent);
-  const auto idx = idToIdx.at(id);
-  degree[idx] = degree[idx]+1;
-}
+
 
 HostWrite<LO> createAndInitArray(size_t size, const LO init=0) {
   auto array = HostWrite<LO>(size);
@@ -149,6 +145,9 @@ struct CSR {
     std::exclusive_scan(offset.data(), offset.data()+offset.size(), offset.data(), 0);
     values = createArray(offset[offset.size()-1]);
   };
+  void incrementDegree(const int entIdx) {
+    offset[entIdx] = offset[entIdx]+1;
+  }
   void setValue(int entIdx, LO value) {
     OMEGA_H_TIME_FUNCTION;
     const auto adjIdx = offset[entIdx];
@@ -174,7 +173,9 @@ struct EntToAdjUse : public CSR {
     OMEGA_H_TIME_FUNCTION;
     if constexpr (mode == 0 ) {
       ScopedTimer timer("EntToAdjUse::count");
-      incrementDegree(offset, entInfo.idToIdx, ent);
+      const auto entId = GEN_tag(ent);
+      const auto entIdx = entInfo.idToIdx.at(entId);
+      incrementDegree(entIdx);
     } else {
       ScopedTimer timer("EntToAdjUse::set");
       const auto entId = GEN_tag(ent);
