@@ -173,10 +173,10 @@ struct EntToAdjUse : public CSR {
     static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
     OMEGA_H_TIME_FUNCTION;
     if constexpr (mode == 0 ) {
-      ScopedTimer timer("EntToAdjUse::set");
+      ScopedTimer timer("EntToAdjUse::count");
       incrementDegree(offset, entInfo.idToIdx, ent);
     } else {
-      ScopedTimer timer("EntToAdjUse::count");
+      ScopedTimer timer("EntToAdjUse::set");
       const auto entId = GEN_tag(ent);
       const auto entIdx = entInfo.idToIdx.at(entId);
       const auto useId = GEN_tag(use);
