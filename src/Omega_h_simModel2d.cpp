@@ -87,8 +87,11 @@ struct CSR {
 template<typename EntType, typename UseType>
 struct EntToAdjUse : public CSR {
   EntToAdjUse(const EntInfo& entInfo_in)
-    : entInfo(entInfo_in), CSR(entInfo_in.ids.size()) {}
+    : entInfo(entInfo_in), useCount(0),
+      CSR(entInfo_in.ids.size()) {}
   const EntInfo& entInfo;
+  std::map<int, int> useIdToIdx;
+  int useCount;
   template<int mode>
   void countOrSet(EntType ent, UseType use) {
     static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
@@ -98,7 +101,10 @@ struct EntToAdjUse : public CSR {
       const auto entId = GEN_tag(ent);
       const auto entIdx = entInfo.idToIdx.at(entId);
       const auto useId = GEN_tag(use);
-      const auto useIdx = 0; //FIXME
+      if( ! useIdToIdx.count(useId) ) {
+        useIdToIdx[useId] = useCount++;
+      }
+      const auto useIdx = useIdToIdx[useId];
       setValue(entIdx, useIdx);
     }
   }
