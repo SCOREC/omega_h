@@ -16,8 +16,10 @@ public:
   static Model2D SimModel2D_load(std::string const& filename);
 #endif
   static Model2D MeshModel2D_load(Mesh2D& mesh);
+  void printInfo();
   //ids
   LOs vtxIds /*x*/, edgeIds /*x*/, faceIds /*x*/;
+  LOs edgeUseIds, loopUseIds;
   //equal order adjacencies
   Graph edgeToEdgeUse;
   //downward adjacencies
