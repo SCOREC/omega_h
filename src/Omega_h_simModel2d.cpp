@@ -199,7 +199,7 @@ struct EntToAdjUse : public CSR {
  * this info ... I've prepared some spaghetti below
  */
 template<int mode>
-LOs getUses(pGModel mdl,
+void getUses(pGModel mdl,
     EntToAdjUse<pGVertex, pGEdgeUse>& v2eu,
     EntToAdjUse<pGEdge, pGEdgeUse>& e2eu,
     EntToAdjUse<pGFace, pGLoopUse>& f2lu,
@@ -234,8 +234,6 @@ LOs getUses(pGModel mdl,
     } //sides
   }
   GFIter_delete(modelFaces);
-
-  return LOs();
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
