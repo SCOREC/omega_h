@@ -159,6 +159,12 @@ struct CSR {
   CSR();
 };
 
+enum GetUsesMode {
+  StoreIds = 0,
+  CountAdj = 1,
+  SetAdj = 2
+};
+
 template<typename EntType, typename UseType>
 struct EntToAdjUse : public CSR {
   EntToAdjUse(const EntInfo& entInfo_in)
@@ -167,11 +173,12 @@ struct EntToAdjUse : public CSR {
   const EntInfo& entInfo;
   std::map<int, int> useIdToIdx;
   int useCount;
-  template<int mode>
+  template<GetUsesMode mode>
   void countOrSet(EntType ent, UseType use) {
-    static_assert((mode == 0 || mode == 1), "countOrSet<mode> called with invalid mode");
+    static_assert((mode == GetUsesMode::CountAdj || mode == GetUsesMode::SetAdj),
+        "countOrSet<mode> called with invalid mode");
     OMEGA_H_TIME_FUNCTION;
-    if constexpr (mode == 0 ) {
+    if constexpr (mode == GetUsesMode::CountAdj) {
       ScopedTimer timer("EntToAdjUse::count");
       const auto entId = GEN_tag(ent);
       const auto entIdx = entInfo.idToIdx.at(entId);
@@ -198,13 +205,15 @@ struct EntToAdjUse : public CSR {
  * SimModSuite has a limited set of APIs for accessing
  * this info ... I've prepared some spaghetti below
  */
-template<int mode>
+template<GetUsesMode mode>
 void getUses(pGModel mdl,
     EntToAdjUse<pGVertex, pGEdgeUse>& v2eu,
     EntToAdjUse<pGEdge, pGEdgeUse>& e2eu,
     EntToAdjUse<pGFace, pGLoopUse>& f2lu,
     EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu) {
-  static_assert((mode == 0 || mode == 1), "getUses<mode> called with invalid mode");
+  static_assert((mode == GetUsesMode::StoreIds ||
+                 mode == GetUsesMode::CountAdj ||
+                 mode == GetUsesMode::SetAdj), "getUses<mode> called with invalid mode");
   OMEGA_H_TIME_FUNCTION;
 
   GFIter modelFaces = GM_faceIter(mdl);
@@ -262,12 +271,12 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
   EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu(loopUseInfo);
 
-  getUses<0>(g,v2eu,e2eu,f2lu,lu2eu);
+  getUses<GetUsesMode::CountAdj>(g,v2eu,e2eu,f2lu,lu2eu);
   f2lu.degreeToOffset();
   e2eu.degreeToOffset();
   v2eu.degreeToOffset();
   lu2eu.degreeToOffset();
-  getUses<1>(g,v2eu,e2eu,f2lu,lu2eu);
+  getUses<GetUsesMode::SetAdj>(g,v2eu,e2eu,f2lu,lu2eu);
   GM_release(g);
   return mdl;
 }
