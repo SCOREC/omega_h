@@ -36,6 +36,12 @@ struct UseInfo : public EntInfo {
   int idx;
 };
 
+struct LoopUseInfo : public UseInfo {
+};
+
+struct EdgeUseInfo : public UseInfo {
+};
+
 VtxInfo getVtxInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   const auto numSpatialDims = 3;
@@ -182,7 +188,7 @@ struct Adjacencies {
   EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu;
 };
 
-using VisitorTypes = std::variant< Adjacencies, UseInfo >;
+using VisitorTypes = std::variant< Adjacencies, LoopUseInfo, EdgeUseInfo >;
 
 template<GetUsesMode Mode>
 struct LoopUseVisitor {
@@ -195,11 +201,13 @@ struct LoopUseVisitor {
       void();
     }
   }
-  void operator()(UseInfo& useInfo) { 
+  void operator()(LoopUseInfo& useInfo) {
     const auto id = GEN_tag(loopUse_);
     useInfo.ids.push_back(id);
     useInfo.idToIdx[id] = useInfo.idx;
     useInfo.idx++;
+  }
+  void operator()(EdgeUseInfo&) {
   }
   pGFace modelFace_;
   pGLoopUse loopUse_;
@@ -222,11 +230,13 @@ struct EdgeUseVisitor {
       void();
     }
   }
-  void operator()(UseInfo& useInfo) { 
+  void operator()(EdgeUseInfo& useInfo) {
     const auto id = GEN_tag(edgeUse_);
     useInfo.ids.push_back(id);
     useInfo.idToIdx[id] = useInfo.idx;
     useInfo.idx++;
+  }
+  void operator()(LoopUseInfo&) {
   }
   pGLoopUse loopUse_;
   pGEdgeUse edgeUse_;
@@ -285,9 +295,9 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.edgeIds = edgeInfo.ids;
   const auto faceInfo = getFaceInfo(g);
   mdl.faceIds = faceInfo.ids;
-  auto loopUseInfo = UseInfo();
+  auto loopUseInfo = LoopUseInfo();
   traverseUses<GetUsesMode::StoreIds>(g,VisitorTypes{loopUseInfo});
-  auto edgeUseInfo = UseInfo();
+  auto edgeUseInfo = EdgeUseInfo();
   traverseUses<GetUsesMode::StoreIds>(g,VisitorTypes{edgeUseInfo});
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
