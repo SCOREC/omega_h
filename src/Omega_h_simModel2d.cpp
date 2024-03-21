@@ -317,6 +317,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   setUseIds.run(g);
   loopUseInfo.idsToDevice();
   edgeUseInfo.idsToDevice();
+  mdl.loopUseIds = loopUseInfo.ids;
+  mdl.edgeUseIds = edgeUseInfo.ids;
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
