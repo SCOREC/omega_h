@@ -30,6 +30,9 @@ struct VtxInfo : public EntInfo {
   Reals coords;
 };
 
+struct EdgeInfo : public EntInfo {};
+struct FaceInfo : public EntInfo {};
+
 struct UseInfo : public EntInfo {
   UseInfo() : idx(0) {}
   std::vector<LO> ids_h;
@@ -71,7 +74,7 @@ VtxInfo getVtxInfo(pGModel mdl) {
   return VtxInfo{LOs(vtxIds_h), idToIdx, Reals(vtxCoords_h)};
 }
 
-EntInfo getEdgeInfo(pGModel mdl) {
+EdgeInfo getEdgeInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   const auto numEdges = GM_numEdges(mdl);
@@ -86,10 +89,10 @@ EntInfo getEdgeInfo(pGModel mdl) {
     idx++;
   }
   GEIter_delete(modelEdges);
-  return EntInfo{LOs(ids_h),idToIdx};
+  return EdgeInfo{LOs(ids_h),idToIdx};
 }
 
-EntInfo getFaceInfo(pGModel mdl) {
+FaceInfo getFaceInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
   std::map<int,int> idToIdx;
   auto numFaces = GM_numFaces(mdl);
@@ -104,7 +107,7 @@ EntInfo getFaceInfo(pGModel mdl) {
     idx++;
   }
   GFIter_delete(modelFaces);
-  return EntInfo{LOs(ids_h), idToIdx};
+  return FaceInfo{LOs(ids_h), idToIdx};
 }
 
 HostWrite<LO> createAndInitArray(size_t size, const LO init=0) {
@@ -294,6 +297,30 @@ struct SetUses : public ITraverseUses {
   }
 };
 
+void setVertexInfo(Model2D& mdl, const VtxInfo& vtxInfo) {
+  mdl.vtxIds = vtxInfo.ids;
+  mdl.vtxCoords = vtxInfo.coords;
+}
+
+void setEdgeIds(Model2D& mdl, const EdgeInfo& edgeInfo) {
+  mdl.edgeIds = edgeInfo.ids;
+}
+
+void setFaceIds(Model2D& mdl, const FaceInfo& faceInfo) {
+  mdl.faceIds = faceInfo.ids;
+}
+
+void setLoopUseIds(Model2D& mdl, const LoopUseInfo& loopUseInfo) {
+  mdl.loopUseIds = loopUseInfo.ids;
+}
+
+void setEdgeUseIds(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
+  mdl.edgeUseIds = edgeUseInfo.ids;
+}
+
+void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
+}
+
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_TIME_FUNCTION;
   pNativeModel nm = NULL;
@@ -303,22 +330,15 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_CHECK_MSG(isModel2D(g), msg2d);
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
   OMEGA_H_CHECK_MSG(isValid(g), msgValid);
-  auto mdl = Model2D();
   const auto vtxInfo = getVtxInfo(g);
-  mdl.vtxIds = vtxInfo.ids;
-  mdl.vtxCoords = vtxInfo.coords;
   const auto edgeInfo = getEdgeInfo(g);
-  mdl.edgeIds = edgeInfo.ids;
   const auto faceInfo = getFaceInfo(g);
-  mdl.faceIds = faceInfo.ids;
   auto loopUseInfo = LoopUseInfo();
   auto edgeUseInfo = EdgeUseInfo();
   SetUseIds setUseIds(loopUseInfo, edgeUseInfo);
   setUseIds.run(g);
   loopUseInfo.idsToDevice();
   edgeUseInfo.idsToDevice();
-  mdl.loopUseIds = loopUseInfo.ids;
-  mdl.edgeUseIds = edgeUseInfo.ids;
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
@@ -334,6 +354,15 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   lu2eu.degreeToOffset();
   SetUses setUses(adj);
   setUses.run(g);
+
+  //setup model
+  auto mdl = Model2D();
+  setVertexInfo(mdl, vtxInfo);
+  setEdgeIds(mdl, edgeInfo);
+  setFaceIds(mdl, faceInfo);
+  setLoopUseIds(mdl, loopUseInfo);
+  setEdgeUseIds(mdl, edgeUseInfo);
+  setAdjInfo(mdl, adj);
 
   GM_release(g);
   return mdl;
