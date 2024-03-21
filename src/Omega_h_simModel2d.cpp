@@ -317,6 +317,16 @@ void setEdgeUseIds(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
 }
 
 void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
+  mdl.vtxToEdgeUse = Graph(LOs(adj.v2eu.offset), LOs(adj.v2eu.values));
+  mdl.edgeToEdgeUse = Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values));
+  mdl.faceToLoopUse = Graph(LOs(adj.f2lu.offset), LOs(adj.f2lu.values));
+  mdl.loopUseToEdgeUse = Graph(LOs(adj.lu2eu.offset), LOs(adj.lu2eu.values));
+  //TODO
+    //LOs edgeUseToVtx
+    //LOs edgeUseToLoopUse
+    //LOs loopUseToFace
+    //LOs edgeUseOrientation
+    //LOs loopUseOrientation
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
