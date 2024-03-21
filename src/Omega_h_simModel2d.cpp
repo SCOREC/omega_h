@@ -2,6 +2,8 @@
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
 #include "Omega_h_profile.hpp"
+#include "Omega_h_map.hpp"  // invert_map_by_atomics
+#include "Omega_h_array_ops.hpp" // operator==(LOs,LOs)
 #include <map>
 #include <algorithm> //std::fill
 #include <numeric> //std::exclusive_scan
@@ -321,8 +323,20 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
   mdl.edgeToEdgeUse = Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values));
   mdl.faceToLoopUse = Graph(LOs(adj.f2lu.offset), LOs(adj.f2lu.values));
   mdl.loopUseToEdgeUse = Graph(LOs(adj.lu2eu.offset), LOs(adj.lu2eu.values));
+
+  LOs two(deg.size(),2);
+  const auto eu2v = invert_map_by_atomics(mdl.vtxToEdgeUse.ab2b, mdl.edgeUseIds.size());
+  LOs deg = get_degrees(eu2v.a2ab);
+  assert(deg == two);
+  mdl.edgeUseToVtx = eu2v.ab2b;
+
+  const auto eu2lu = invert_map_by_atomics(mdl.loopUseToEdgeUse.ab2b, mdl.edgeUseIds.size());
+  LOs deg = get_degrees(eu2lu.a2ab);
+  assert(deg == two); //HERE FIXME
+  mdl.edgeUseToVtx = eu2v.ab2b;
+
+
   //TODO
-    //LOs edgeUseToVtx
     //LOs edgeUseToLoopUse
     //LOs loopUseToFace
     //LOs edgeUseOrientation

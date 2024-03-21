@@ -25,7 +25,7 @@ public:
   //downward adjacencies
   Graph faceToLoopUse;
   Graph loopUseToEdgeUse;
-  LOs edgeUseToVtx;
+  LOs edgeUseToVtx; //each edgeUse has exactly two adjacent vertices
   //upward adjacencies
   Graph vtxToEdgeUse;
   LOs edgeUseToLoopUse;
