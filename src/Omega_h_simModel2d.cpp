@@ -32,15 +32,20 @@ struct VtxInfo : public EntInfo {
 
 struct UseInfo : public EntInfo {
   UseInfo() : idx(0) {}
-  std::vector<LO> ids;
+  std::vector<LO> ids_h;
   int idx;
+  void idsToDevice() {
+    auto array = HostWrite<LO>(ids_h.size());
+    std::copy(ids_h.begin(), ids_h.end(), array.data());
+//    for(int i=0; i<ids_h.size(); i++) {
+//      ids[i] = ids_h[i];
+//    }
+    ids = LOs(array);
+  }
 };
 
-struct LoopUseInfo : public UseInfo {
-};
-
-struct EdgeUseInfo : public UseInfo {
-};
+struct LoopUseInfo : public UseInfo {};
+struct EdgeUseInfo : public UseInfo {};
 
 VtxInfo getVtxInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
@@ -142,7 +147,6 @@ struct CSR {
 };
 
 enum GetUsesMode {
-  StoreIds = 0,
   CountAdj = 1,
   SetAdj = 2
 };
@@ -181,6 +185,66 @@ struct EntToAdjUse : public CSR {
   EntToAdjUse();
 };
 
+/*
+ * retrieve the entity-to-use adjacencies
+ *
+ * SimModSuite has a limited set of APIs for accessing
+ * this info ... I've prepared some spaghetti below
+ */
+struct ITraverseUses {
+  // abstract operators
+  virtual void loopUseOperator(pGFace modelFace, pGLoopUse loopUse) = 0;
+  virtual void edgeUseOperator(pGLoopUse loopUse, pGEdgeUse edgeUse) = 0;
+
+  // algorithm that calls abstract operators
+  virtual void run(pGModel mdl) final {
+    OMEGA_H_TIME_FUNCTION;
+
+    GFIter modelFaces = GM_faceIter(mdl);
+    int idx = 0;
+    pGFace modelFace;
+    while(modelFace=GFIter_next(modelFaces)) {
+      for(int side=0; side<2; side++) {
+        auto faceUse = GF_use(modelFace,side);
+        auto loopUses = GFU_loopIter(faceUse);
+        pGLoopUse loopUse;
+        while(loopUse=GLUIter_next(loopUses)) {
+          loopUseOperator(modelFace, loopUse);
+          auto edgeUses = GLU_edgeUseIter(loopUse);
+          pGEdgeUse edgeUse;
+          while(edgeUse=GEUIter_next(edgeUses)) {
+            edgeUseOperator(loopUse, edgeUse);
+          }
+          GEUIter_delete(edgeUses);
+        }
+        GLUIter_delete(loopUses);
+      } //sides
+    }
+    GFIter_delete(modelFaces);
+  }
+};
+
+struct SetUseIds : public ITraverseUses {
+  LoopUseInfo& loopUseInfo_;
+  EdgeUseInfo& edgeUseInfo_;
+  SetUseIds(LoopUseInfo& loopUseInfo, EdgeUseInfo& edgeUseInfo)
+    : loopUseInfo_(loopUseInfo), edgeUseInfo_(edgeUseInfo) {}
+
+  void loopUseOperator(pGFace modelFace, pGLoopUse loopUse) override {
+    const auto id = GEN_tag(loopUse);
+    loopUseInfo_.ids_h.push_back(id);
+    loopUseInfo_.idToIdx[id] = loopUseInfo_.idx;
+    loopUseInfo_.idx++;
+  }
+
+  virtual void edgeUseOperator(pGLoopUse loopUse, pGEdgeUse edgeUse) override {
+    const auto id = GEN_tag(edgeUse);
+    edgeUseInfo_.ids_h.push_back(id);
+    edgeUseInfo_.idToIdx[id] = edgeUseInfo_.idx;
+    edgeUseInfo_.idx++;
+  }
+};
+
 struct Adjacencies {
   EntToAdjUse<pGVertex, pGEdgeUse>& v2eu;
   EntToAdjUse<pGEdge, pGEdgeUse>& e2eu;
@@ -188,95 +252,47 @@ struct Adjacencies {
   EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu;
 };
 
-using VisitorTypes = std::variant< Adjacencies, LoopUseInfo, EdgeUseInfo >;
+struct CountUses : public ITraverseUses {
+  Adjacencies& adj_;
+  CountUses(Adjacencies& adj) : adj_(adj) {}
 
-template<GetUsesMode Mode>
-struct LoopUseVisitor {
-  LoopUseVisitor(pGFace modelFace, pGLoopUse loopUse) : 
-    modelFace_(modelFace), loopUse_(loopUse) {}
-  void operator()(Adjacencies& adj) { 
-    if constexpr ( Mode == GetUsesMode::CountAdj || Mode == GetUsesMode::SetAdj ) { //FIXME
-      adj.f2lu.countOrSet<Mode>(modelFace_, loopUse_);
-    } else {
-      void();
-    }
+  void loopUseOperator(pGFace modelFace, pGLoopUse loopUse) override {
+    const auto Mode = GetUsesMode::CountAdj;
+    adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
   }
-  void operator()(LoopUseInfo& useInfo) {
-    const auto id = GEN_tag(loopUse_);
-    useInfo.ids.push_back(id);
-    useInfo.idToIdx[id] = useInfo.idx;
-    useInfo.idx++;
+
+  virtual void edgeUseOperator(pGLoopUse loopUse, pGEdgeUse edgeUse) override {
+    const auto Mode = GetUsesMode::CountAdj;
+    auto edge = GEU_edge(edgeUse);
+    adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+    adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+    auto vtx0 = GE_vertex(edge,0);
+    adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+    auto vtx1 = GE_vertex(edge,1);
+    adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
   }
-  void operator()(EdgeUseInfo&) {
-  }
-  pGFace modelFace_;
-  pGLoopUse loopUse_;
 };
 
-template<GetUsesMode Mode>
-struct EdgeUseVisitor {
-  EdgeUseVisitor(pGLoopUse loopUse, pGEdgeUse edgeUse) : 
-    loopUse_(loopUse), edgeUse_(edgeUse) {}
-  void operator()(Adjacencies& adj) { 
-    if constexpr ( Mode == GetUsesMode::CountAdj || Mode == GetUsesMode::SetAdj ) { //FIXME
-      auto edge = GEU_edge(edgeUse_);
-      adj.lu2eu.countOrSet<Mode>(loopUse_,edgeUse_);
-      adj.e2eu.countOrSet<Mode>(edge,edgeUse_);
-      auto vtx0 = GE_vertex(edge,0);
-      adj.v2eu.countOrSet<Mode>(vtx0,edgeUse_);
-      auto vtx1 = GE_vertex(edge,1);
-      adj.v2eu.countOrSet<Mode>(vtx1,edgeUse_);
-    } else {
-      void();
-    }
+struct SetUses : public ITraverseUses {
+  Adjacencies& adj_;
+  SetUses(Adjacencies& adj) : adj_(adj) {}
+
+  void loopUseOperator(pGFace modelFace, pGLoopUse loopUse) override {
+    const auto Mode = GetUsesMode::SetAdj;
+    adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
   }
-  void operator()(EdgeUseInfo& useInfo) {
-    const auto id = GEN_tag(edgeUse_);
-    useInfo.ids.push_back(id);
-    useInfo.idToIdx[id] = useInfo.idx;
-    useInfo.idx++;
+
+  virtual void edgeUseOperator(pGLoopUse loopUse, pGEdgeUse edgeUse) override {
+    const auto Mode = GetUsesMode::SetAdj;
+    auto edge = GEU_edge(edgeUse);
+    adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+    adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+    auto vtx0 = GE_vertex(edge,0);
+    adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+    auto vtx1 = GE_vertex(edge,1);
+    adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
   }
-  void operator()(LoopUseInfo&) {
-  }
-  pGLoopUse loopUse_;
-  pGEdgeUse edgeUse_;
 };
-
-/*
- * retrieve the entity-to-use adjacencies
- *
- * SimModSuite has a limited set of APIs for accessing
- * this info ... I've prepared some spaghetti below
- */
-template<GetUsesMode mode>
-void traverseUses(pGModel mdl, VisitorTypes visitorTypes) {
-  static_assert((mode == GetUsesMode::StoreIds ||
-                 mode == GetUsesMode::CountAdj ||
-                 mode == GetUsesMode::SetAdj), "getUses<mode> called with invalid mode");
-  OMEGA_H_TIME_FUNCTION;
-
-  GFIter modelFaces = GM_faceIter(mdl);
-  int idx = 0;
-  pGFace modelFace;
-  while(modelFace=GFIter_next(modelFaces)) {
-    for(int side=0; side<2; side++) {
-      auto faceUse = GF_use(modelFace,side);
-      auto loopUses = GFU_loopIter(faceUse);
-      pGLoopUse loopUse;
-      while(loopUse=GLUIter_next(loopUses)) {
-        std::visit(LoopUseVisitor<mode>{modelFace, loopUse}, visitorTypes);
-        auto edgeUses = GLU_edgeUseIter(loopUse);
-        pGEdgeUse edgeUse;
-        while(edgeUse=GEUIter_next(edgeUses)) {
-          std::visit(EdgeUseVisitor<mode>{loopUse, edgeUse}, visitorTypes);
-        }
-        GEUIter_delete(edgeUses);
-      }
-      GLUIter_delete(loopUses);
-    } //sides
-  }
-  GFIter_delete(modelFaces);
-}
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_TIME_FUNCTION;
@@ -296,9 +312,11 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto faceInfo = getFaceInfo(g);
   mdl.faceIds = faceInfo.ids;
   auto loopUseInfo = LoopUseInfo();
-  traverseUses<GetUsesMode::StoreIds>(g,VisitorTypes{loopUseInfo});
   auto edgeUseInfo = EdgeUseInfo();
-  traverseUses<GetUsesMode::StoreIds>(g,VisitorTypes{edgeUseInfo});
+  SetUseIds setUseIds(loopUseInfo, edgeUseInfo);
+  setUseIds.run(g);
+  loopUseInfo.idsToDevice();
+  edgeUseInfo.idsToDevice();
 
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
@@ -306,13 +324,15 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu(loopUseInfo);
   Adjacencies adj{v2eu, e2eu, f2lu, lu2eu};
 
-  VisitorTypes adjType{adj};
-  traverseUses<GetUsesMode::CountAdj>(g,adjType);
+  CountUses countUses(adj);
+  countUses.run(g);
   f2lu.degreeToOffset();
   e2eu.degreeToOffset();
   v2eu.degreeToOffset();
   lu2eu.degreeToOffset();
-  traverseUses<GetUsesMode::SetAdj>(g,adjType);
+  SetUses setUses(adj);
+  setUses.run(g);
+
   GM_release(g);
   return mdl;
 }
