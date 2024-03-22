@@ -34,24 +34,30 @@ struct VtxInfo : public EntInfo {
 struct EdgeInfo : public EntInfo {};
 struct FaceInfo : public EntInfo {};
 
-struct UseInfo : public EntInfo {
-  UseInfo() : idx(0) {}
+struct UseInfoPrecursor {
+  UseInfoPrecursor() : idx(0) {}
+  std::map<int,int> idToIdx;
   std::vector<LO> ids_h;
+  std::vector<LO> dir_h;
   int idx;
-  void idsToDevice() {
+};
+
+struct UseInfo : public EntInfo {
+  LOs dir;
+  LOs toDevice(const std::vector<LO>& ids_h) {
     auto array = HostWrite<LO>(ids_h.size());
     std::copy(ids_h.begin(), ids_h.end(), array.data());
-    ids = LOs(array);
+    return LOs(array);
+  }
+  UseInfo(UseInfoPrecursor& uip) {
+    ids = toDevice(uip.ids_h);
+    idToIdx = uip.idToIdx;
+    dir = toDevice(uip.dir_h);
   }
 };
 
-struct LoopUseInfo : public UseInfo {
-  HostWrite<LO> ludir;
-};
-
-struct EdgeUseInfo : public UseInfo {
-  HostWrite<LO> eudir;
-};
+using LoopUseInfo = UseInfo;
+using EdgeUseInfo = UseInfo;
 
 VtxInfo getVtxInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
@@ -228,10 +234,10 @@ void traverseUses(pGModel mdl, Operator& op) {
   GFIter_delete(modelFaces);
 }
 
-struct SetUseIds {
-  LoopUseInfo& loopUseInfo_;
-  EdgeUseInfo& edgeUseInfo_;
-  SetUseIds(LoopUseInfo& loopUseInfo, EdgeUseInfo& edgeUseInfo)
+struct SetUseIdsAndDir {
+  UseInfoPrecursor& loopUseInfo_;
+  UseInfoPrecursor& edgeUseInfo_;
+  SetUseIdsAndDir(UseInfoPrecursor& loopUseInfo, UseInfoPrecursor& edgeUseInfo)
     : loopUseInfo_(loopUseInfo), edgeUseInfo_(edgeUseInfo) {}
 
   void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
@@ -246,25 +252,9 @@ struct SetUseIds {
     edgeUseInfo_.ids_h.push_back(id);
     edgeUseInfo_.idToIdx[id] = edgeUseInfo_.idx;
     edgeUseInfo_.idx++;
-  }
-};
-
-struct SetUseDir {
-  LoopUseInfo& loopUseInfo_;
-  EdgeUseInfo& edgeUseInfo_;
-  SetUseDir(LoopUseInfo& loopUseInfo, EdgeUseInfo& edgeUseInfo)
-    : loopUseInfo_(loopUseInfo), edgeUseInfo_(edgeUseInfo) {}
-
-  void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
-    //FIXME
-  }
-
-  void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
-    const auto id = GEN_tag(edgeUse);
-    const auto idx = edgeUseInfo_.idToIdx.at(id);
     const auto edge = GEU_edge(edgeUse);
     const int dir = GE_geomDir(edge);
-    edgeUseInfo_.eudir[idx] = dir;
+    edgeUseInfo_.dir_h.push_back(dir);
   }
 };
 
@@ -390,16 +380,14 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   const auto vtxInfo = getVtxInfo(g);
   const auto edgeInfo = getEdgeInfo(g);
   const auto faceInfo = getFaceInfo(g);
-  auto loopUseInfo = LoopUseInfo();
-  auto edgeUseInfo = EdgeUseInfo();
-  SetUseIds setUseIds(loopUseInfo, edgeUseInfo);
-  traverseUses(g, setUseIds);
-  loopUseInfo.idsToDevice();
-  edgeUseInfo.idsToDevice();
 
-  edgeUseInfo.eudir = createArray(edgeUseInfo.ids.size()); //FIXME
-  SetUseDir setUseDir(loopUseInfo, edgeUseInfo);
-  traverseUses(g, setUseDir);
+  // use info requires a traveral
+  auto loopUsePre = UseInfoPrecursor();
+  auto edgeUsePre = UseInfoPrecursor();
+  SetUseIdsAndDir setUseIdsAndDir(loopUsePre, edgeUsePre);
+  traverseUses(g, setUseIdsAndDir);
+  auto edgeUseInfo = EdgeUseInfo(edgeUsePre);
+  auto loopUseInfo = LoopUseInfo(loopUsePre);
 
   //collect adjacency info
   Adjacencies adj(g, vtxInfo, edgeInfo, faceInfo, loopUseInfo);
@@ -411,7 +399,7 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   setFaceIds(mdl, faceInfo);
   setLoopUseIds(mdl, loopUseInfo);
   setEdgeUseIds(mdl, edgeUseInfo);
-  mdl.edgeUseOrientation = LOs(edgeUseInfo.eudir); //FIXME
+  mdl.edgeUseOrientation = edgeUseInfo.dir; //FIXME
   setAdjInfo(mdl, adj);
 
   GM_release(g);
