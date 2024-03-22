@@ -41,9 +41,6 @@ struct UseInfo : public EntInfo {
   void idsToDevice() {
     auto array = HostWrite<LO>(ids_h.size());
     std::copy(ids_h.begin(), ids_h.end(), array.data());
-//    for(int i=0; i<ids_h.size(); i++) {
-//      ids[i] = ids_h[i];
-//    }
     ids = LOs(array);
   }
 };
