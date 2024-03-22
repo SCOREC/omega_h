@@ -30,8 +30,12 @@ public:
   Graph vtxToEdgeUse;
   LOs edgeUseToLoopUse; //each edgeUse has one adjacent loop use
   LOs loopUseToFace; //each loopUse has one adjacent face use
-  //use orientation
-  LOs edgeUseOrientation, loopUseOrientation;
+  //for each edgeUse, indicates which vertex in the associated edge
+  //is the 'head’ vertex
+  LOs edgeUseOrientation;
+  //for each loopUse, indicates forward or backward traversal order
+  //of the edgeUses belonging to the loop
+  LOs loopUseOrientation;
   //geometry
   Real vtxTol, edgeTol;
   Reals vtxCoords; //x
