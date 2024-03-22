@@ -269,51 +269,64 @@ struct SetUseDir {
 };
 
 struct Adjacencies {
-  EntToAdjUse<pGVertex, pGEdgeUse>& v2eu;
-  EntToAdjUse<pGEdge, pGEdgeUse>& e2eu;
-  EntToAdjUse<pGFace, pGLoopUse>& f2lu;
-  EntToAdjUse<pGLoopUse, pGEdgeUse>& lu2eu;
-};
+  EntToAdjUse<pGVertex, pGEdgeUse> v2eu;
+  EntToAdjUse<pGEdge, pGEdgeUse> e2eu;
+  EntToAdjUse<pGFace, pGLoopUse> f2lu;
+  EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu;
 
-struct CountUses {
-  Adjacencies& adj_;
-  CountUses(Adjacencies& adj) : adj_(adj) {}
+  struct CountUses {
+    Adjacencies& adj_;
+    CountUses(Adjacencies& adj) : adj_(adj) {}
 
-  void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
-    const auto Mode = GetUsesMode::CountAdj;
-    adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
-  }
+    void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
+      const auto Mode = GetUsesMode::CountAdj;
+      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
+    }
 
-  void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
-    const auto Mode = GetUsesMode::CountAdj;
-    auto edge = GEU_edge(edgeUse);
-    adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
-    adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
-    auto vtx0 = GE_vertex(edge,0);
-    adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
-    auto vtx1 = GE_vertex(edge,1);
-    adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
-  }
-};
+    void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
+      const auto Mode = GetUsesMode::CountAdj;
+      auto edge = GEU_edge(edgeUse);
+      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+      adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+      auto vtx0 = GE_vertex(edge,0);
+      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+      auto vtx1 = GE_vertex(edge,1);
+      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
+    }
+  };
 
-struct SetUses {
-  Adjacencies& adj_;
-  SetUses(Adjacencies& adj) : adj_(adj) {}
+  struct SetUses {
+    Adjacencies& adj_;
+    SetUses(Adjacencies& adj) : adj_(adj) {}
 
-  void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
-    const auto Mode = GetUsesMode::SetAdj;
-    adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
-  }
+    void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
+      const auto Mode = GetUsesMode::SetAdj;
+      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
+    }
 
-  void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
-    const auto Mode = GetUsesMode::SetAdj;
-    auto edge = GEU_edge(edgeUse);
-    adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
-    adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
-    auto vtx0 = GE_vertex(edge,0);
-    adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
-    auto vtx1 = GE_vertex(edge,1);
-    adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
+    void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
+      const auto Mode = GetUsesMode::SetAdj;
+      auto edge = GEU_edge(edgeUse);
+      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+      adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+      auto vtx0 = GE_vertex(edge,0);
+      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+      auto vtx1 = GE_vertex(edge,1);
+      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
+    }
+  };
+
+  Adjacencies(pGModel g, const VtxInfo& vi, const EdgeInfo& ei,
+              const FaceInfo& fi, const LoopUseInfo& lui) :
+      v2eu(vi), e2eu(ei), f2lu(fi), lu2eu(lui) {
+    CountUses countUses(*this);
+    traverseUses(g, countUses);
+    f2lu.degreeToOffset();
+    e2eu.degreeToOffset();
+    v2eu.degreeToOffset();
+    lu2eu.degreeToOffset();
+    SetUses setUses(*this);
+    traverseUses(g, setUses);
   }
 };
 
@@ -372,6 +385,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_CHECK_MSG(isModel2D(g), msg2d);
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
   OMEGA_H_CHECK_MSG(isValid(g), msgValid);
+
+  //collect per entity info
   const auto vtxInfo = getVtxInfo(g);
   const auto edgeInfo = getEdgeInfo(g);
   const auto faceInfo = getFaceInfo(g);
@@ -386,22 +401,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   SetUseDir setUseDir(loopUseInfo, edgeUseInfo);
   traverseUses(g, setUseDir);
 
-  EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
-  EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
-  EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
-  EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu(loopUseInfo);
-  auto eudir = createArray(edgeUseInfo.ids.size());
-  auto ludir = createArray(loopUseInfo.ids.size());
-  Adjacencies adj{v2eu, e2eu, f2lu, lu2eu};
-
-  CountUses countUses(adj);
-  traverseUses(g, countUses);
-  f2lu.degreeToOffset();
-  e2eu.degreeToOffset();
-  v2eu.degreeToOffset();
-  lu2eu.degreeToOffset();
-  SetUses setUses(adj);
-  traverseUses(g, setUses);
+  //collect adjacency info
+  Adjacencies adj(g, vtxInfo, edgeInfo, faceInfo, loopUseInfo);
 
   //setup model
   auto mdl = Model2D();
