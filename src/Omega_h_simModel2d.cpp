@@ -245,6 +245,7 @@ struct SetUseIdsAndDir {
     loopUseInfo_.ids_h.push_back(id);
     loopUseInfo_.idToIdx[id] = loopUseInfo_.idx;
     loopUseInfo_.idx++;
+    //TODO add loop use dir
   }
 
   void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
@@ -333,12 +334,14 @@ void setFaceIds(Model2D& mdl, const FaceInfo& faceInfo) {
   mdl.faceIds = faceInfo.ids;
 }
 
-void setLoopUseIds(Model2D& mdl, const LoopUseInfo& loopUseInfo) {
+void setLoopUseIdsAndDir(Model2D& mdl, const LoopUseInfo& loopUseInfo) {
   mdl.loopUseIds = loopUseInfo.ids;
+  //mdl.loopUseOrientation = loopUseInfo.dir;
 }
 
-void setEdgeUseIds(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
+void setEdgeUseIdsAndDir(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
   mdl.edgeUseIds = edgeUseInfo.ids;
+  mdl.edgeUseOrientation = edgeUseInfo.dir;
 }
 
 void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
@@ -397,9 +400,8 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   setVertexInfo(mdl, vtxInfo);
   setEdgeIds(mdl, edgeInfo);
   setFaceIds(mdl, faceInfo);
-  setLoopUseIds(mdl, loopUseInfo);
-  setEdgeUseIds(mdl, edgeUseInfo);
-  mdl.edgeUseOrientation = edgeUseInfo.dir; //FIXME
+  setLoopUseIdsAndDir(mdl, loopUseInfo);
+  setEdgeUseIdsAndDir(mdl, edgeUseInfo);
   setAdjInfo(mdl, adj);
 
   GM_release(g);
