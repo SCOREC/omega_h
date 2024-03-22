@@ -324,21 +324,22 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
   mdl.faceToLoopUse = Graph(LOs(adj.f2lu.offset), LOs(adj.f2lu.values));
   mdl.loopUseToEdgeUse = Graph(LOs(adj.lu2eu.offset), LOs(adj.lu2eu.values));
 
-  LOs two(deg.size(),2);
   const auto eu2v = invert_map_by_atomics(mdl.vtxToEdgeUse.ab2b, mdl.edgeUseIds.size());
   LOs deg = get_degrees(eu2v.a2ab);
-  assert(deg == two);
+  assert(deg == LOs(deg.size(),2));
   mdl.edgeUseToVtx = eu2v.ab2b;
 
   const auto eu2lu = invert_map_by_atomics(mdl.loopUseToEdgeUse.ab2b, mdl.edgeUseIds.size());
-  LOs deg = get_degrees(eu2lu.a2ab);
-  assert(deg == two); //HERE FIXME
-  mdl.edgeUseToVtx = eu2v.ab2b;
+  deg = get_degrees(eu2lu.a2ab);
+  assert(deg == LOs(deg.size(),1));
+  mdl.edgeUseToLoopUse = eu2lu.ab2b;
 
+  const auto lu2f = invert_map_by_atomics(mdl.faceToLoopUse.ab2b, mdl.loopUseIds.size());
+  deg = get_degrees(lu2f.a2ab);
+  assert(deg == LOs(deg.size(),1));
+  mdl.loopUseToFace = lu2f.ab2b;
 
   //TODO
-    //LOs edgeUseToLoopUse
-    //LOs loopUseToFace
     //LOs edgeUseOrientation
     //LOs loopUseOrientation
 }
