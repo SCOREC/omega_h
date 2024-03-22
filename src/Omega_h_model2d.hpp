@@ -28,8 +28,8 @@ public:
   LOs edgeUseToVtx; //each edgeUse has exactly two adjacent vertices
   //upward adjacencies
   Graph vtxToEdgeUse;
-  LOs edgeUseToLoopUse;
-  LOs loopUseToFace;
+  LOs edgeUseToLoopUse; //each edgeUse has one adjacent loop use
+  LOs loopUseToFace; //each loopUse has one adjacent face use
   //use orientation
   LOs edgeUseOrientation, loopUseOrientation;
   //geometry
