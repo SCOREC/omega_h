@@ -7,7 +7,6 @@
 #include <map>
 #include <algorithm> //std::fill
 #include <numeric> //std::exclusive_scan
-#include <variant> //std::visit, std::variant
 
 namespace Omega_h {
 
