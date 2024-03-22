@@ -45,8 +45,13 @@ struct UseInfo : public EntInfo {
   }
 };
 
-struct LoopUseInfo : public UseInfo {};
-struct EdgeUseInfo : public UseInfo {};
+struct LoopUseInfo : public UseInfo {
+  HostWrite<LO> ludir;
+};
+
+struct EdgeUseInfo : public UseInfo {
+  HostWrite<LO> eudir;
+};
 
 VtxInfo getVtxInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
@@ -244,6 +249,25 @@ struct SetUseIds {
   }
 };
 
+struct SetUseDir {
+  LoopUseInfo& loopUseInfo_;
+  EdgeUseInfo& edgeUseInfo_;
+  SetUseDir(LoopUseInfo& loopUseInfo, EdgeUseInfo& edgeUseInfo)
+    : loopUseInfo_(loopUseInfo), edgeUseInfo_(edgeUseInfo) {}
+
+  void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
+    //FIXME
+  }
+
+  void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
+    const auto id = GEN_tag(edgeUse);
+    const auto idx = edgeUseInfo_.idToIdx.at(id);
+    const auto edge = GEU_edge(edgeUse);
+    const int dir = GE_geomDir(edge);
+    edgeUseInfo_.eudir[idx] = dir;
+  }
+};
+
 struct Adjacencies {
   EntToAdjUse<pGVertex, pGEdgeUse>& v2eu;
   EntToAdjUse<pGEdge, pGEdgeUse>& e2eu;
@@ -336,7 +360,6 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
   mdl.loopUseToFace = lu2f.ab2b;
 
   //TODO
-    //LOs edgeUseOrientation
     //LOs loopUseOrientation
 }
 
@@ -359,10 +382,16 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   loopUseInfo.idsToDevice();
   edgeUseInfo.idsToDevice();
 
+  edgeUseInfo.eudir = createArray(edgeUseInfo.ids.size()); //FIXME
+  SetUseDir setUseDir(loopUseInfo, edgeUseInfo);
+  traverseUses(g, setUseDir);
+
   EntToAdjUse<pGVertex, pGEdgeUse> v2eu(vtxInfo);
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu(edgeInfo);
   EntToAdjUse<pGFace, pGLoopUse> f2lu(faceInfo);
   EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu(loopUseInfo);
+  auto eudir = createArray(edgeUseInfo.ids.size());
+  auto ludir = createArray(loopUseInfo.ids.size());
   Adjacencies adj{v2eu, e2eu, f2lu, lu2eu};
 
   CountUses countUses(adj);
@@ -381,6 +410,7 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   setFaceIds(mdl, faceInfo);
   setLoopUseIds(mdl, loopUseInfo);
   setEdgeUseIds(mdl, edgeUseInfo);
+  mdl.edgeUseOrientation = LOs(edgeUseInfo.eudir); //FIXME
   setAdjInfo(mdl, adj);
 
   GM_release(g);
