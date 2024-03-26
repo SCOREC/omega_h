@@ -18,7 +18,7 @@ public:
   static Model2D MeshModel2D_load(Mesh2D& mesh);
   void printInfo();
   //ids
-  LOs vtxIds /*x*/, edgeIds /*x*/, faceIds /*x*/;
+  LOs vtxIds, edgeIds , faceIds;
   LOs edgeUseIds, loopUseIds;
   //equal order adjacencies
   Graph edgeToEdgeUse;
@@ -30,15 +30,18 @@ public:
   Graph vtxToEdgeUse;
   LOs edgeUseToLoopUse; //each edgeUse has one adjacent loop use
   LOs loopUseToFace; //each loopUse has one adjacent face use
-  //for each edgeUse, indicates which vertex in the associated edge
-  //is the 'head’ vertex
+
+  //For each edgeUse, indicates the direction of the edge use 
+  //relative to its owning edge. 1: same dir, 0: opposite dir
   LOs edgeUseOrientation;
-  //for each loopUse, indicates forward or backward traversal order
-  //of the edgeUses belonging to the loop
+
+  //For each loopUse, indicates forward or backward traversal order
+  //of the edgeUses belonging to the loop.  1: forward, 0: backward
   LOs loopUseOrientation;
+
   //geometry
   Real vtxTol, edgeTol;
-  Reals vtxCoords; //x
+  Reals vtxCoords;
 private:
   Model2D() = default;
 };
