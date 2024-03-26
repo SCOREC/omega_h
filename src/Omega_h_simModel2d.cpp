@@ -2,7 +2,7 @@
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
 #include "Omega_h_profile.hpp"
-#include "Omega_h_map.hpp"  // invert_map_by_atomics
+#include "Omega_h_adj.hpp"  // invert_adj
 #include "Omega_h_array_ops.hpp" // operator==(LOs,LOs)
 #include <map>
 #include <algorithm> //std::fill
@@ -386,7 +386,10 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
   mdl.faceToLoopUse = Graph(LOs(adj.f2lu.offset), LOs(adj.f2lu.values));
   mdl.loopUseToEdgeUse = Graph(LOs(adj.lu2eu.offset), LOs(adj.lu2eu.values));
 
-  const auto eu2v = invert_map_by_atomics(mdl.vtxToEdgeUse.ab2b, mdl.edgeUseIds.size());
+  //FIXME - vtxToEdgeUse, loopUseToEdgeUse, and faceToLoopUse are not degree one in 
+  //        there 'source' set of nodes (vtx, loop, face)
+  //        invert_map_by_atomic requires degree=1 of items in set A
+  const auto eu2v = invert_adj(mdl.vtxToEdgeUse.ab2b, mdl.edgeUseIds.size());
   LOs deg = get_degrees(eu2v.a2ab);
   assert(deg == LOs(deg.size(),2));
   mdl.edgeUseToVtx = eu2v.ab2b;
