@@ -21,6 +21,7 @@ public:
   LOs vtxIds, edgeIds , faceIds;
   LOs edgeUseIds, loopUseIds;
   //equal order adjacencies
+  //each edge will have at most two uses, edges bounding a single face will only have one
   Graph edgeToEdgeUse;
   //downward adjacencies
   Graph faceToLoopUse;
