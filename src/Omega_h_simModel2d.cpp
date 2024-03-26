@@ -307,18 +307,18 @@ struct Adjacencies {
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
       const auto Mode = GetUsesMode::CountAdj;
-      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
+      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse); //FIXME - switch to lu2f
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
       const auto Mode = GetUsesMode::CountAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse); //FIXME - switch to eu2lu
       adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse); //FIXME - switch to eu2v
       auto vtx1 = GE_vertex(edge,1);
-      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
+      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse); //FIXME - switch to eu2v
     }
   };
 
@@ -328,18 +328,18 @@ struct Adjacencies {
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
       const auto Mode = GetUsesMode::SetAdj;
-      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse);
+      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse); //FIXME - switch to lu2f
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
       const auto Mode = GetUsesMode::SetAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse);
+      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse); //FIXME - switch to eu2lu
       adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse);
+      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse); //FIXME - switch to eu2v
       auto vtx1 = GE_vertex(edge,1);
-      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse);
+      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse); //FIXME - switch to eu2v
     }
   };
 
