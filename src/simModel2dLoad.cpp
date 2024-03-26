@@ -1,6 +1,7 @@
 #include <Omega_h_library.hpp>
 #include <Omega_h_model2d.hpp>
 #include <Omega_h_array_ops.hpp> // operator==(LOs,LOs)
+#include "Omega_h_map.hpp"  // invert_map_by_atomics
 #include <string_view> // operator==(LOs,LOs)
 
 void printGraph(const Omega_h::Graph& g, std::string_view name) {
@@ -40,13 +41,8 @@ int main(int argc, char** argv) {
   OMEGA_H_CHECK(model.edgeIds == expectedEdgeIds);
   Omega_h::LOs expectedFaceIds = {2};
   OMEGA_H_CHECK(model.faceIds == expectedFaceIds);
-  //TODO check adjs
 
-  printGraph(model.vtxToEdgeUse, "vtxToEdgeUse");
-  //Omega_h::Graph expected_v2e = Omega_h::Graph({0,2,4,6,8},{3,4,2,5,1,6,0,7});
-  //OMEGA_H_CHECK(model.edgeToEdgeUse == expected_e2eu);
-
-  //use ids and adjacencies are **not** accessible in SimModeler
+  //use ids and their adjacencies are **not** accessible in SimModeler
   Omega_h::LOs expectedEdgeUseIds = {8,6,4,2,1,3,5,7};
   OMEGA_H_CHECK(model.edgeUseIds == expectedEdgeUseIds);
   Omega_h::LOs expectedLoopUseIds = {2,1};
@@ -57,6 +53,21 @@ int main(int argc, char** argv) {
 
   Omega_h::Graph expected_lu2eu = Omega_h::Graph({0,4,8},{0,1,2,3,4,5,6,7});
   OMEGA_H_CHECK(model.loopUseToEdgeUse == expected_lu2eu);
+
+  Omega_h::Graph expected_v2eu = Omega_h::Graph({0,4,8,12,16},
+                                                {0,1,6,7,
+                                                 1,2,5,6,
+                                                 2,3,4,5,
+                                                 0,3,4,7});
+  OMEGA_H_CHECK(model.vtxToEdgeUse == expected_v2eu);
+
+  printLOs(model.edgeUseToVtx, "edgeUseToVtx"); //something wrong here, idx > 3
+  //OMEGA_H_CHECK(model.edgeUseToVtx == Omega_h::invert_map_by_atomics(expected_v2eu.ab2b, model.vtxIds.size()).ab2b);
+
+  Omega_h::Graph expected_f2lu = Omega_h::Graph({0,2},{0,1});
+  OMEGA_H_CHECK(model.faceToLoopUse == expected_f2lu);
+
+  printGraph(model.faceToLoopUse, "faceToLoopUse");
 
   return 0;
 }
