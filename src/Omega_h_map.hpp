@@ -53,8 +53,26 @@ void inject_map(LOs a2b, Write<LO> b2a);
 
 LOs invert_injective_map(LOs a2b, LO nb);
 
+/**
+ * \brief given the source node index in A for a list of edges
+ *        between nodes in set A and B, sorted by their source
+ *        node in A, and the number of nodes in A, construct the
+ *        map from source nodes to edges (the 'offset' array, 'a2ab').
+ * \details the term 'funnel' is in the context of 'incoming' edges
+ *          being collected/grouped into the source nodes.  This interface
+ *          counts the degree/offset for the source nodes in the 'outgoing'
+ *          graph.  The implementation does not use atomics.
+ * \param ab2a (in) list of source node indices for edges between nodes in A and
+ *                  B, sorted by source node index
+ * \param na (in) number of nodes in set A
+ * \return map from source nodes to edges (the 'offset' array, 'a2ab')
+ *         with size = na + 1
+ */
 LOs invert_funnel(LOs ab2a, LO na);
 
+/**
+ * \brief see invert_map_by_atomics
+ */
 Graph invert_map_by_sorting(LOs a2b, LO nb);
 
 /**
@@ -66,8 +84,8 @@ Graph invert_map_by_sorting(LOs a2b, LO nb);
  *  "CONFORMAL MESH ADAPTATION ON HETEROGENEOUS SUPERCOMPUTERS"
  * \param a2b (in) map of indices in A to B
  * \param nb (in) size of set B
- * \b2ba_name (in) name of offset array in returned Graph
- * \ba2a_name (in) name of values array in returned Graph
+ * \param b2ba_name (in) name of offset array in returned Graph
+ * \param ba2a_name (in) name of values array in returned Graph
  * \return Graph of B to A
  */
 Graph invert_map_by_atomics(LOs const a2b, LO const nb,
@@ -75,6 +93,13 @@ Graph invert_map_by_atomics(LOs const a2b, LO const nb,
 
 LOs get_degrees(LOs offsets, std::string const& name = "");
 
+/**
+ * \brief the opposite of invert_funnel
+ * \param a2b (in) map from source nodes to edges (the 'offset' array, 'a2ab')
+ *        with size = na + 1
+ * \return list of source node indices for edges between nodes in A and
+ *         B, sorted by source node index
+ */
 LOs invert_fan(LOs a2b);
 
 Bytes mark_fan_preimage(LOs a2b);
