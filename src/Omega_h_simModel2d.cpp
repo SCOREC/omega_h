@@ -2,6 +2,7 @@
 #include <SimUtil.h>
 #include "Omega_h_model2d.hpp"
 #include "Omega_h_profile.hpp"
+#include "Omega_h_map.hpp"  // get_degrees
 #include "Omega_h_adj.hpp"  // invert_adj
 #include "Omega_h_array_ops.hpp" // operator==(LOs,LOs)
 #include <map>
@@ -345,6 +346,12 @@ struct Adjacencies {
     }
   };
 
+  void checkDegree(const HostWrite<LO>& offset, int degree) {
+    const auto deg = get_degrees(LOs(offset));
+    const auto exp_deg = LOs(deg.size(), degree);
+    OMEGA_H_CHECK(deg == exp_deg);
+  }
+
   Adjacencies(pGModel g, const EdgeInfo& ei, const EdgeUseInfo& eui, 
               const LoopUseInfo& lui) :
       eu2v(eui), e2eu(ei), lu2f(lui), eu2lu(eui) {
@@ -356,12 +363,11 @@ struct Adjacencies {
     eu2lu.degreeToOffset();
     SetUses setUses(*this);
     traverseUses(g, setUses);
-    //TODO check degree
-    //lu2f.deg == 1
-    //eu2lu.deg == 1
-    //eu2v.deg == 2
-    //max(e2eu.deg) == 2
-    //min(e2eu.deg) == 1
+    //check degree
+    checkDegree(lu2f.offset, 1);
+    checkDegree(eu2lu.offset, 1);
+    checkDegree(eu2v.offset, 2);
+    checkDegree(e2eu.offset, 2);
   }
 };
 
