@@ -38,6 +38,7 @@ struct EntInfo {
 };
 
 struct VtxInfo : public EntInfo {
+  using EntType = pGVertex;
   Reals coords;
 };
 
@@ -177,11 +178,12 @@ struct CSR {
   CSR();
 };
 
-enum GetUsesMode {
+enum GetUsesMode { //FIXME - remove this
   CountAdj = 1,
   SetAdj = 2
 };
 
+//TODO determine EntType from EntInfo... they need to match
 template<typename EntType, typename UseType>
 struct EntToAdjUse : public CSR {
   EntToAdjUse(const EntInfo& entInfo_in)
@@ -190,8 +192,8 @@ struct EntToAdjUse : public CSR {
   const EntInfo& entInfo;
   std::map<int, int> useIdToIdx;
   int useCount;
-  template<GetUsesMode mode>
-  void countOrSet(EntType ent, UseType use) {
+  template<GetUsesMode mode> //FIXME - remove this
+  void countOrSet(EntType ent, UseType use) { //split into two functions: count and set
     static_assert((mode == GetUsesMode::CountAdj || mode == GetUsesMode::SetAdj),
         "countOrSet<mode> called with invalid mode");
     OMEGA_H_TIME_FUNCTION;
@@ -296,10 +298,10 @@ struct SetUseDir {
 
 
 struct Adjacencies {
-  EntToAdjUse<pGVertex, pGEdgeUse> v2eu;
+  EntToAdjUse<pGEdgeUse, pGVertex> eu2v;
   EntToAdjUse<pGEdge, pGEdgeUse> e2eu;
-  EntToAdjUse<pGFace, pGLoopUse> f2lu;
-  EntToAdjUse<pGLoopUse, pGEdgeUse> lu2eu;
+  EntToAdjUse<pGLoopUse, pGFace> lu2f;
+  EntToAdjUse<pGEdgeUse, pGLoopUse> eu2lu;
 
   struct CountUses {
     Adjacencies& adj_;
@@ -307,18 +309,18 @@ struct Adjacencies {
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
       const auto Mode = GetUsesMode::CountAdj;
-      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse); //FIXME - switch to lu2f
+      adj_.lu2f.countOrSet<Mode>(loopUse, modelFace);
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
       const auto Mode = GetUsesMode::CountAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse); //FIXME - switch to eu2lu
+      adj_.eu2lu.countOrSet<Mode>(edgeUse, loopUse);
       adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse); //FIXME - switch to eu2v
+      adj_.eu2v.countOrSet<Mode>(edgeUse,vtx0);
       auto vtx1 = GE_vertex(edge,1);
-      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse); //FIXME - switch to eu2v
+      adj_.eu2v.countOrSet<Mode>(edgeUse,vtx1);
     }
   };
 
@@ -328,32 +330,38 @@ struct Adjacencies {
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
       const auto Mode = GetUsesMode::SetAdj;
-      adj_.f2lu.countOrSet<Mode>(modelFace, loopUse); //FIXME - switch to lu2f
+      adj_.lu2f.countOrSet<Mode>(loopUse, modelFace);
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
       const auto Mode = GetUsesMode::SetAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.lu2eu.countOrSet<Mode>(loopUse,edgeUse); //FIXME - switch to eu2lu
+      adj_.eu2lu.countOrSet<Mode>(edgeUse, loopUse);
       adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.v2eu.countOrSet<Mode>(vtx0,edgeUse); //FIXME - switch to eu2v
+      adj_.eu2v.countOrSet<Mode>(edgeUse, vtx0);
       auto vtx1 = GE_vertex(edge,1);
-      adj_.v2eu.countOrSet<Mode>(vtx1,edgeUse); //FIXME - switch to eu2v
+      adj_.eu2v.countOrSet<Mode>(edgeUse, vtx1);
     }
   };
 
-  Adjacencies(pGModel g, const VtxInfo& vi, const EdgeInfo& ei,
-              const FaceInfo& fi, const LoopUseInfo& lui) :
-      v2eu(vi), e2eu(ei), f2lu(fi), lu2eu(lui) {
+  Adjacencies(pGModel g, const EdgeInfo& ei, const EdgeUseInfo& eui, 
+              const LoopUseInfo& lui) :
+      eu2v(eui), e2eu(ei), lu2f(lui), eu2lu(eui) {
     CountUses countUses(*this);
     traverseUses(g, countUses);
-    f2lu.degreeToOffset();
+    lu2f.degreeToOffset();
     e2eu.degreeToOffset();
-    v2eu.degreeToOffset();
-    lu2eu.degreeToOffset();
+    eu2v.degreeToOffset();
+    eu2lu.degreeToOffset();
     SetUses setUses(*this);
     traverseUses(g, setUses);
+    //TODO check degree
+    //lu2f.deg == 1
+    //eu2lu.deg == 1
+    //eu2v.deg == 2
+    //max(e2eu.deg) == 2
+    //min(e2eu.deg) == 1
   }
 };
 
@@ -381,28 +389,20 @@ void setEdgeUseIdsAndDir(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
 }
 
 void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
-  mdl.vtxToEdgeUse = Graph(LOs(adj.v2eu.offset), LOs(adj.v2eu.values));
   mdl.edgeToEdgeUse = Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values));
-  mdl.faceToLoopUse = Graph(LOs(adj.f2lu.offset), LOs(adj.f2lu.values));
-  mdl.loopUseToEdgeUse = Graph(LOs(adj.lu2eu.offset), LOs(adj.lu2eu.values));
+  mdl.edgeUseToVtx = LOs(adj.eu2v.values);
+  mdl.loopUseToFace = LOs(adj.lu2f.values);
+  mdl.edgeUseToLoopUse = LOs(adj.eu2lu.values);
 
   //FIXME - vtxToEdgeUse, loopUseToEdgeUse, and faceToLoopUse are not degree one in 
   //        there 'source' set of nodes (vtx, loop, face)
   //        invert_map_by_atomic requires degree=1 of items in set A
-  const auto eu2v = invert_adj(mdl.vtxToEdgeUse.ab2b, mdl.edgeUseIds.size());
-  LOs deg = get_degrees(eu2v.a2ab);
-  assert(deg == LOs(deg.size(),2));
-  mdl.edgeUseToVtx = eu2v.ab2b;
-
-  const auto eu2lu = invert_map_by_atomics(mdl.loopUseToEdgeUse.ab2b, mdl.edgeUseIds.size());
-  deg = get_degrees(eu2lu.a2ab);
-  assert(deg == LOs(deg.size(),1));
-  mdl.edgeUseToLoopUse = eu2lu.ab2b;
-
-  const auto lu2f = invert_map_by_atomics(mdl.faceToLoopUse.ab2b, mdl.loopUseIds.size());
-  deg = get_degrees(lu2f.a2ab);
-  assert(deg == LOs(deg.size(),1));
-  mdl.loopUseToFace = lu2f.ab2b;
+  //mdl.vtxToEdgeUse = invert_adj(Adj(mdl.edgeUseToVtx), 2,
+  //                              mdl.vtxIds.size(), 1, 0)
+  //mdl.loopUseToEdgeUse = invert_adj(Adj(mdl.edgeUseToLoopUse), 1,
+  //                                  mdl.loopUseIds.size(), 1, 1);
+  //mdl.faceToLoopUse = invert_adj(Adj(mdl.loopUseToFace), 1, 
+  //                               mdl.faceIds.size(), 1, 2);
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
@@ -433,7 +433,7 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   auto loopUseInfo = LoopUseInfo(loopUsePre);
 
   //collect adjacency info
-  Adjacencies adj(g, vtxInfo, edgeInfo, faceInfo, loopUseInfo);
+  Adjacencies adj(g, edgeInfo, edgeUseInfo, loopUseInfo);
 
   //setup model
   auto mdl = Model2D();
