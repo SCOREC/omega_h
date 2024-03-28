@@ -304,6 +304,11 @@ struct Adjacencies {
   EntToAdjUse<pGLoopUse, pGFace> lu2f;
   EntToAdjUse<pGEdgeUse, pGLoopUse> eu2lu;
 
+  static const int e2euDegree = 2;
+  static const int eu2vDegree = 2;
+  static const int eu2luDegree = 1;
+  static const int lu2fDegree = 1;
+
   struct CountUses {
     Adjacencies& adj_;
     CountUses(Adjacencies& adj) : adj_(adj) {}
@@ -364,10 +369,10 @@ struct Adjacencies {
     SetUses setUses(*this);
     traverseUses(g, setUses);
     //check degree
-    checkDegree(lu2f.offset, 1);
-    checkDegree(eu2lu.offset, 1);
-    checkDegree(eu2v.offset, 2);
-    checkDegree(e2eu.offset, 2);
+    checkDegree(lu2f.offset, lu2fDegree);
+    checkDegree(eu2lu.offset, eu2luDegree);
+    checkDegree(eu2v.offset, eu2vDegree);
+    checkDegree(e2eu.offset, e2euDegree);
   }
 };
 
@@ -400,15 +405,18 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
   mdl.loopUseToFace = LOs(adj.lu2f.values);
   mdl.edgeUseToLoopUse = LOs(adj.eu2lu.values);
 
-  //FIXME - vtxToEdgeUse, loopUseToEdgeUse, and faceToLoopUse are not degree one in 
-  //        there 'source' set of nodes (vtx, loop, face)
-  //        invert_map_by_atomic requires degree=1 of items in set A
-  //mdl.vtxToEdgeUse = invert_adj(Adj(mdl.edgeUseToVtx), 2,
-  //                              mdl.vtxIds.size(), 1, 0)
-  //mdl.loopUseToEdgeUse = invert_adj(Adj(mdl.edgeUseToLoopUse), 1,
-  //                                  mdl.loopUseIds.size(), 1, 1);
-  //mdl.faceToLoopUse = invert_adj(Adj(mdl.loopUseToFace), 1, 
-  //                               mdl.faceIds.size(), 1, 2);
+  //The last two arguments to 'invert_adj(...)' are 'high' and 'low' entity
+  //dimensions and are used to define names for the graph arrays. They have no
+  //impact on the graph inversion.
+  mdl.vtxToEdgeUse = invert_adj(Adj(mdl.edgeUseToVtx),
+                                Adjacencies::eu2vDegree,
+                                mdl.vtxIds.size(), 1, 0);
+  mdl.loopUseToEdgeUse = invert_adj(Adj(mdl.edgeUseToLoopUse),
+                                    Adjacencies::eu2luDegree,
+                                    mdl.loopUseIds.size(), 1, 1);
+  mdl.faceToLoopUse = invert_adj(Adj(mdl.loopUseToFace), 
+                                 Adjacencies::lu2fDegree, 
+                                 mdl.faceIds.size(), 1, 2);
 }
 
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
