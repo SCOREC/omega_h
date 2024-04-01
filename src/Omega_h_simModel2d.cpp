@@ -185,34 +185,31 @@ enum GetUsesMode { //FIXME - remove this
 };
 
 //TODO determine EntType from EntInfo... they need to match
-template<typename EntType, typename UseType>
+template<typename SrcEntType, typename DestEntType>
 struct EntToAdjUse : public CSR {
-  EntToAdjUse(const EntInfo& entInfo_in)
-    : entInfo(entInfo_in), useCount(0),
-      CSR(entInfo_in.ids.size()) {}
+  EntToAdjUse(const EntInfo& entInfo_in, const EntInfo& destEntInfo_in)
+    : entInfo(entInfo_in),
+      CSR(entInfo_in.ids.size()),
+      destEntIdToIdx(destEntInfo_in.idToIdx) {}
   const EntInfo& entInfo;
-  std::map<int, int> useIdToIdx;
-  int useCount;
+  const std::map<int, int>& destEntIdToIdx;
   template<GetUsesMode mode> //FIXME - remove this
-  void countOrSet(EntType ent, UseType use) { //split into two functions: count and set
+  void countOrSet(SrcEntType srcEnt, DestEntType destEnt) { //split into two functions: count and set
     static_assert((mode == GetUsesMode::CountAdj || mode == GetUsesMode::SetAdj),
         "countOrSet<mode> called with invalid mode");
     OMEGA_H_TIME_FUNCTION;
     if constexpr (mode == GetUsesMode::CountAdj) {
       ScopedTimer timer("EntToAdjUse::count");
-      const auto entId = GEN_tag(ent);
-      const auto entIdx = entInfo.idToIdx.at(entId);
-      incrementDegree(entIdx);
+      const auto srcEntId = GEN_tag(srcEnt);
+      const auto srcEntIdx = entInfo.idToIdx.at(srcEntId);
+      incrementDegree(srcEntIdx);
     } else {
       ScopedTimer timer("EntToAdjUse::set");
-      const auto entId = GEN_tag(ent);
-      const auto entIdx = entInfo.idToIdx.at(entId);
-      const auto useId = GEN_tag(use);
-      if( ! useIdToIdx.count(useId) ) {
-        useIdToIdx[useId] = useCount++;
-      }
-      const auto useIdx = useIdToIdx[useId];
-      setValue(entIdx, useIdx);
+      const auto srcEntId = GEN_tag(srcEnt);
+      const auto srcEntIdx = entInfo.idToIdx.at(srcEntId);
+      const auto destEntId = GEN_tag(destEnt);
+      const auto destEntIdx = destEntIdToIdx.at(destEntId);
+      setValue(srcEntIdx, destEntIdx);
     }
   }
   private:
@@ -357,9 +354,9 @@ struct Adjacencies {
     OMEGA_H_CHECK(deg == exp_deg);
   }
 
-  Adjacencies(pGModel g, const EdgeInfo& ei, const EdgeUseInfo& eui, 
-              const LoopUseInfo& lui) :
-      eu2v(eui), e2eu(ei), lu2f(lui), eu2lu(eui) {
+  Adjacencies(pGModel g, const VtxInfo& vi, const EdgeInfo& ei, const FaceInfo& fi,
+              const EdgeUseInfo& eui, const LoopUseInfo& lui) :
+      eu2v(eui, vi), e2eu(ei, eui), lu2f(lui, fi), eu2lu(eui, lui) {
     CountUses countUses(*this);
     traverseUses(g, countUses);
     lu2f.degreeToOffset();
@@ -447,7 +444,7 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
   auto loopUseInfo = LoopUseInfo(loopUsePre);
 
   //collect adjacency info
-  Adjacencies adj(g, edgeInfo, edgeUseInfo, loopUseInfo);
+  Adjacencies adj(g, vtxInfo, edgeInfo, faceInfo, edgeUseInfo, loopUseInfo);
 
   //setup model
   auto mdl = Model2D();
