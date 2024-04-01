@@ -1,7 +1,6 @@
 #include <Omega_h_library.hpp>
 #include <Omega_h_model2d.hpp>
 #include <Omega_h_array_ops.hpp> // operator==(LOs,LOs)
-#include "Omega_h_map.hpp"  // invert_map_by_atomics
 #include <string_view> // operator==(LOs,LOs)
 
 void printGraph(const Omega_h::Graph& g, std::string_view name) {
