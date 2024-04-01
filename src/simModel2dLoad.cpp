@@ -17,11 +17,13 @@ void printGraph(const Omega_h::Graph& g, std::string_view name) {
   std::cout << "}\n";
 }
 
-void printLOs(const Omega_h::LOs& arr, std::string_view name) {
-  std::cout << name << " { ";
+void printLOs(const Omega_h::LOs& arr, const int degree, std::string_view name) {
+  std::cout << name << " {\n";
   Omega_h::HostRead<Omega_h::LO> a(arr);
-  for(int i=0; i<a.size(); i++)
+  for(int i=0; i<a.size(); i++) {
     std::cout << a[i] << " ";
+    if( (i+1) % degree == 0 ) std::cout << "\n";
+  }
   std::cout << "}\n";
 }
 
@@ -61,7 +63,7 @@ int main(int argc, char** argv) {
   //                                               0,3,4,7});
   //OMEGA_H_CHECK(model.vtxToEdgeUse == expected_v2eu); //FIXME
 
-  printLOs(model.edgeUseToVtx, "edgeUseToVtx");
+  printLOs(model.edgeUseToVtx, 2, "edgeUseToVtx");
   //FIXME add check for eu2v
 
   Omega_h::Graph expected_f2lu = Omega_h::Graph({0,2},{0,1});
