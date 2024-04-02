@@ -43,8 +43,12 @@ struct VtxInfo : public EntInfo {
   Reals coords;
 };
 
-struct EdgeInfo : public EntInfo {};
-struct FaceInfo : public EntInfo {};
+struct EdgeInfo : public EntInfo {
+  using EntType = pGEdge;
+};
+struct FaceInfo : public EntInfo {
+  using EntType = pGFace;
+};
 
 struct UseInfoPrecursor {
   UseInfoPrecursor() : idx(0) {}
@@ -87,8 +91,15 @@ struct UseInfo : public EntInfo {
   }
 };
 
-using LoopUseInfo = UseInfo;
-using EdgeUseInfo = UseInfo;
+struct LoopUseInfo : public UseInfo {
+  LoopUseInfo(UseInfoPrecursor& uip) : UseInfo(uip) {}
+  using EntType = pGLoopUse;
+};
+
+struct EdgeUseInfo : public UseInfo {
+  EdgeUseInfo(UseInfoPrecursor& uip) : UseInfo(uip) {}
+  using EntType = pGEdgeUse;
+};
 
 VtxInfo getVtxInfo(pGModel mdl) {
   OMEGA_H_TIME_FUNCTION;
@@ -179,23 +190,22 @@ struct CSR {
   CSR();
 };
 
-//TODO determine EntType from EntInfo... they need to match
-template<typename SrcEntType, typename DestEntType>
+template<typename SrcEntInfo, typename DestEntInfo>
 struct Adjacency : public CSR {
-  Adjacency(const EntInfo& srcEntInfo_in, const EntInfo& destEntInfo_in)
+  Adjacency(const SrcEntInfo& srcEntInfo_in, const DestEntInfo& destEntInfo_in)
     : CSR(srcEntInfo_in.ids.size()),
       srcEntIdToIdx(srcEntInfo_in.idToIdx),
       destEntIdToIdx(destEntInfo_in.idToIdx) {}
   const std::map<int, int>& srcEntIdToIdx;
   const std::map<int, int>& destEntIdToIdx;
-  void count(SrcEntType srcEnt, DestEntType destEnt) {
+  void count(typename SrcEntInfo::EntType srcEnt, typename DestEntInfo::EntType destEnt) {
     OMEGA_H_TIME_FUNCTION;
     ScopedTimer timer("Adjacency::count");
     const auto srcEntId = GEN_tag(srcEnt);
     const auto srcEntIdx = srcEntIdToIdx.at(srcEntId);
     incrementDegree(srcEntIdx);
   }
-  void set(SrcEntType srcEnt, DestEntType destEnt) {
+  void set(typename SrcEntInfo::EntType srcEnt, typename DestEntInfo::EntType destEnt) {
     ScopedTimer timer("Adjacency::set");
     const auto srcEntId = GEN_tag(srcEnt);
     const auto srcEntIdx = srcEntIdToIdx.at(srcEntId);
@@ -287,10 +297,10 @@ struct SetUseDir {
 
 
 struct Adjacencies {
-  Adjacency<pGEdgeUse, pGVertex> eu2v;
-  Adjacency<pGEdge, pGEdgeUse> e2eu;
-  Adjacency<pGLoopUse, pGFace> lu2f;
-  Adjacency<pGEdgeUse, pGLoopUse> eu2lu;
+  Adjacency<EdgeUseInfo, VtxInfo> eu2v;
+  Adjacency<EdgeInfo, EdgeUseInfo> e2eu;
+  Adjacency<LoopUseInfo, FaceInfo> lu2f;
+  Adjacency<EdgeUseInfo, LoopUseInfo> eu2lu;
 
   static const int e2euDegree = 2;
   static const int eu2vDegree = 2;
