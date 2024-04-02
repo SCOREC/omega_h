@@ -179,41 +179,32 @@ struct CSR {
   CSR();
 };
 
-enum GetUsesMode { //FIXME - remove this
-  CountAdj = 1,
-  SetAdj = 2
-};
-
 //TODO determine EntType from EntInfo... they need to match
 template<typename SrcEntType, typename DestEntType>
-struct EntToAdjUse : public CSR {
-  EntToAdjUse(const EntInfo& entInfo_in, const EntInfo& destEntInfo_in)
-    : entInfo(entInfo_in),
-      CSR(entInfo_in.ids.size()),
+struct Adjacency : public CSR {
+  Adjacency(const EntInfo& srcEntInfo_in, const EntInfo& destEntInfo_in)
+    : CSR(srcEntInfo_in.ids.size()),
+      srcEntIdToIdx(srcEntInfo_in.idToIdx),
       destEntIdToIdx(destEntInfo_in.idToIdx) {}
-  const EntInfo& entInfo;
+  const std::map<int, int>& srcEntIdToIdx;
   const std::map<int, int>& destEntIdToIdx;
-  template<GetUsesMode mode> //FIXME - remove this
-  void countOrSet(SrcEntType srcEnt, DestEntType destEnt) { //split into two functions: count and set
-    static_assert((mode == GetUsesMode::CountAdj || mode == GetUsesMode::SetAdj),
-        "countOrSet<mode> called with invalid mode");
+  void count(SrcEntType srcEnt, DestEntType destEnt) {
     OMEGA_H_TIME_FUNCTION;
-    if constexpr (mode == GetUsesMode::CountAdj) {
-      ScopedTimer timer("EntToAdjUse::count");
-      const auto srcEntId = GEN_tag(srcEnt);
-      const auto srcEntIdx = entInfo.idToIdx.at(srcEntId);
-      incrementDegree(srcEntIdx);
-    } else {
-      ScopedTimer timer("EntToAdjUse::set");
-      const auto srcEntId = GEN_tag(srcEnt);
-      const auto srcEntIdx = entInfo.idToIdx.at(srcEntId);
-      const auto destEntId = GEN_tag(destEnt);
-      const auto destEntIdx = destEntIdToIdx.at(destEntId);
-      setValue(srcEntIdx, destEntIdx);
-    }
+    ScopedTimer timer("Adjacency::count");
+    const auto srcEntId = GEN_tag(srcEnt);
+    const auto srcEntIdx = srcEntIdToIdx.at(srcEntId);
+    incrementDegree(srcEntIdx);
+  }
+  void set(SrcEntType srcEnt, DestEntType destEnt) {
+    ScopedTimer timer("Adjacency::set");
+    const auto srcEntId = GEN_tag(srcEnt);
+    const auto srcEntIdx = srcEntIdToIdx.at(srcEntId);
+    const auto destEntId = GEN_tag(destEnt);
+    const auto destEntIdx = destEntIdToIdx.at(destEntId);
+    setValue(srcEntIdx, destEntIdx);
   }
   private:
-  EntToAdjUse();
+  Adjacency();
 };
 
 /*
@@ -296,10 +287,10 @@ struct SetUseDir {
 
 
 struct Adjacencies {
-  EntToAdjUse<pGEdgeUse, pGVertex> eu2v;
-  EntToAdjUse<pGEdge, pGEdgeUse> e2eu;
-  EntToAdjUse<pGLoopUse, pGFace> lu2f;
-  EntToAdjUse<pGEdgeUse, pGLoopUse> eu2lu;
+  Adjacency<pGEdgeUse, pGVertex> eu2v;
+  Adjacency<pGEdge, pGEdgeUse> e2eu;
+  Adjacency<pGLoopUse, pGFace> lu2f;
+  Adjacency<pGEdgeUse, pGLoopUse> eu2lu;
 
   static const int e2euDegree = 2;
   static const int eu2vDegree = 2;
@@ -311,19 +302,17 @@ struct Adjacencies {
     CountUses(Adjacencies& adj) : adj_(adj) {}
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
-      const auto Mode = GetUsesMode::CountAdj;
-      adj_.lu2f.countOrSet<Mode>(loopUse, modelFace);
+      adj_.lu2f.count(loopUse, modelFace);
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
-      const auto Mode = GetUsesMode::CountAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.eu2lu.countOrSet<Mode>(edgeUse, loopUse);
-      adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+      adj_.eu2lu.count(edgeUse, loopUse);
+      adj_.e2eu.count(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.eu2v.countOrSet<Mode>(edgeUse,vtx0);
+      adj_.eu2v.count(edgeUse,vtx0);
       auto vtx1 = GE_vertex(edge,1);
-      adj_.eu2v.countOrSet<Mode>(edgeUse,vtx1);
+      adj_.eu2v.count(edgeUse,vtx1);
     }
   };
 
@@ -332,19 +321,17 @@ struct Adjacencies {
     SetUses(Adjacencies& adj) : adj_(adj) {}
 
     void loopUseOp(pGFace modelFace, pGLoopUse loopUse) {
-      const auto Mode = GetUsesMode::SetAdj;
-      adj_.lu2f.countOrSet<Mode>(loopUse, modelFace);
+      adj_.lu2f.set(loopUse, modelFace);
     }
 
     void edgeUseOp(pGLoopUse loopUse, pGEdgeUse edgeUse) {
-      const auto Mode = GetUsesMode::SetAdj;
       auto edge = GEU_edge(edgeUse);
-      adj_.eu2lu.countOrSet<Mode>(edgeUse, loopUse);
-      adj_.e2eu.countOrSet<Mode>(edge,edgeUse);
+      adj_.eu2lu.set(edgeUse, loopUse);
+      adj_.e2eu.set(edge,edgeUse);
       auto vtx0 = GE_vertex(edge,0);
-      adj_.eu2v.countOrSet<Mode>(edgeUse, vtx0);
+      adj_.eu2v.set(edgeUse, vtx0);
       auto vtx1 = GE_vertex(edge,1);
-      adj_.eu2v.countOrSet<Mode>(edgeUse, vtx1);
+      adj_.eu2v.set(edgeUse, vtx1);
     }
   };
 
