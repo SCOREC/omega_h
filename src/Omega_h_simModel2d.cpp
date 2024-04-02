@@ -416,15 +416,22 @@ void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
                                  mdl.faceIds.size(), 1, 2);
 }
 
+void checkError(bool cond, std::string_view msg) {
+  if( !cond ) {
+    std::cerr << msg;
+    exit(EXIT_FAILURE);
+  }
+}
+
 Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_TIME_FUNCTION;
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(filename.c_str(), nm, p);
   const char* msg2d = "Simmetrix GeomSim model is not 2D... exiting\n";
-  OMEGA_H_CHECK_MSG(isModel2D(g), msg2d);
+  checkError(isModel2D(g), msg2d);
   const char* msgValid = "Simmetrix GeomSim model is not valid... exiting\n";
-  OMEGA_H_CHECK_MSG(isValid(g), msgValid);
+  checkError(isValid(g), msgValid);
 
   //collect per entity info
   const auto vtxInfo = getVtxInfo(g);
