@@ -17,8 +17,7 @@ std::optional<Model2D> Mesh2D::getModel() const {
 }
 
 Model2D Mesh2D::updateModel() {
-  model = Model2D::MeshModel2D_load(*this);
-  return *model;
+  return Model2D::MeshModel2D_load(*this);
 }
 
 } // Omega_h
