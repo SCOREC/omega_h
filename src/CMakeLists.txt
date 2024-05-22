@@ -479,6 +479,8 @@ if(BUILD_TESTING)
   osh_add_exe(coarsen_test)
   test_func(run_coarsen_test 1 ./coarsen_test)
 
+  osh_add_exe(gis_adapt)
+
   osh_add_exe(2d_conserve_test)
   test_func(serial_2d_conserve 1 ./2d_conserve_test)
   if(Omega_h_USE_MPI)
