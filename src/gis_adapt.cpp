@@ -101,6 +101,7 @@ void printTriCount(Mesh* mesh) {
 
 AdaptOpts setupFieldTransfer(Mesh& mesh) {
   auto opts = AdaptOpts(&mesh);
+  opts.xfer_opts.type_map["velocity"] = OMEGA_H_LINEAR_INTERP;
   opts.xfer_opts.type_map["ice_thickness"] = OMEGA_H_LINEAR_INTERP;
   const int numLayers = 11;
   for(int i=1; i<=numLayers; i++) {
@@ -122,13 +123,25 @@ int main(int argc, char** argv) {
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], world, &mesh);
 
+  //create analytic velocity field
+  auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
+  auto coords = mesh.coords();
+  auto f = OMEGA_H_LAMBDA(LO vert) {
+    auto x = get_vector<2>(coords, vert);
+    auto x2 = x[0] - 0.3;
+    auto w = sign(x2) * std::sqrt(std::abs(x2));
+    set_vector(velocity, vert, vector_2(1, 0) * w);
+  };
+  parallel_for(mesh.nverts(), f);
+  mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
+
+
   //set size field - TODO: use ice thickness
   mesh.set_parting(OMEGA_H_GHOSTED);
   {
-    auto metrics = get_implied_isos(&mesh);
-    auto scalar = metric_eigenvalue_from_length(0.5);
-    metrics = multiply_each_by(metrics, scalar);
-    mesh.add_tag(VERT, "metric", 1, metrics);
+    auto metrics = get_variation_metrics(&mesh, "velocity", 0.1);
+    auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
+    mesh.add_tag(VERT, "metric", ncomps, metrics);
   }
   mesh.set_parting(OMEGA_H_ELEM_BASED);
 
