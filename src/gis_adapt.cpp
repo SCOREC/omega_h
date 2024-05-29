@@ -14,6 +14,8 @@
 
 using namespace Omega_h;
 
+const Real ICE_DENSITY = 910; //kg/m^3
+
 template <typename T>
 void printTagInfo(Omega_h::Mesh& mesh, std::ostringstream& oss, int dim, int tag, std::string type) {
     auto tagbase = mesh.get_tag(dim, tag);
@@ -50,6 +52,33 @@ Reals getVolumeFromIceThickness(Omega_h::Mesh& mesh) {
   return vol;
 }
 
+Reals getIceMass(Mesh& mesh, Reals vol) {
+  return multiply_each_by(vol, ICE_DENSITY);
+}
+
+Reals getTriIceDensity(Mesh& mesh, Reals mass) {
+  auto triArea = mesh.ask_sizes();
+  return divide_each(mass, triArea);
+}
+
+void recoverIceThickness(Mesh& mesh) {
+  auto triDensity = mesh.get_array<Real>(OMEGA_H_FACE, "density");
+  auto avgIceThickness = divide_each_by(triDensity, ICE_DENSITY);
+  auto verts2faces = mesh.ask_up(OMEGA_H_VERT, OMEGA_H_FACE);
+  Write<Real> iceThickness(mesh.nverts()); 
+  auto setThickness = OMEGA_H_LAMBDA(LO vtxIdx) {
+    Real thickness = 0;
+    for(auto ab = verts2faces.a2ab[vtxIdx]; ab < verts2faces.a2ab[vtxIdx + 1]; ++ab) {
+       auto faceIdx = verts2faces.ab2b[ab];
+       thickness += avgIceThickness[faceIdx];
+    }
+    const auto numAdjTri = verts2faces.a2ab[vtxIdx+1] - verts2faces.a2ab[vtxIdx];
+    iceThickness[vtxIdx] = thickness / numAdjTri;
+  };
+  parallel_for(mesh.nverts(), setThickness);
+  mesh.add_tag(OMEGA_H_VERT, "ice_thickness", 1, read(iceThickness));
+}
+
 void printTags(Mesh& mesh) {
     std::ostringstream oss;
     // always print two places to the right of the decimal
@@ -78,9 +107,9 @@ void printTags(Mesh& mesh) {
 }
 
 static void check_total_mass(Mesh* mesh) {
-  const Real iceDensity = 910; //kg/m^3
-  auto sizes = mesh->ask_sizes();
-  Reals masses = multiply_each_by(sizes, iceDensity);
+  auto triDensity = mesh->get_array<Real>(OMEGA_H_FACE, "density");
+  auto area = mesh->ask_sizes();
+  Reals masses = multiply_each(area, triDensity);
   auto owned_masses = mesh->owned_array(mesh->dim(), masses, 1);
   auto mass = get_sum(mesh->comm(), owned_masses);
   if (!mesh->comm()->rank()) {
@@ -114,20 +143,24 @@ int main(int argc, char** argv) {
   }
   mesh.set_parting(OMEGA_H_ELEM_BASED);
 
+  auto vol = getVolumeFromIceThickness(mesh);
+  auto mass = getIceMass(mesh, vol);
+  auto triIceDensity = getTriIceDensity(mesh, mass);
+  mesh.add_tag(2, "density", 1, triIceDensity);
+
   auto opts = AdaptOpts(&mesh);
-  opts.xfer_opts.type_map["ice_thickness"] = OMEGA_H_CONSERVE;
-  opts.xfer_opts.integral_map["ice_thickness"] = "mass";
+  opts.xfer_opts.type_map["density"] = OMEGA_H_CONSERVE;
+  opts.xfer_opts.integral_map["density"] = "mass";
   opts.xfer_opts.integral_diffuse_map["mass"] =
       VarCompareOpts{VarCompareOpts::RELATIVE, 0.9, 0.0};
   opts.xfer_opts.validate(&mesh);
   check_total_mass(&mesh);
 
-  auto vol = getVolumeFromIceThickness(mesh);
-  mesh.add_tag(2, "volume", 1, vol);
   printTriCount(&mesh);  
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   adapt(&mesh, opts);
+  recoverIceThickness(mesh);
   printTriCount(&mesh);  
   printTags(mesh);
   check_total_mass(&mesh);
