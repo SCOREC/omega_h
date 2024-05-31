@@ -107,7 +107,6 @@ AdaptOpts setupFieldTransfer(Mesh& mesh) {
   for(int i=1; i<=numLayers; i++) {
     std::stringstream ss;
     ss << "temperature_" << std::setfill('0') << std::setw(2) << i;
-    std::cout << ss.str();
     opts.xfer_opts.type_map[ss.str()] = OMEGA_H_LINEAR_INTERP;
   }
   return opts;
