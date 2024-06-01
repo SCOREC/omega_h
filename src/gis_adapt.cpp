@@ -139,9 +139,10 @@ int main(int argc, char** argv) {
   //set size field - TODO: use ice thickness
   mesh.set_parting(OMEGA_H_GHOSTED);
   {
-    auto metrics = get_variation_metrics(&mesh, "velocity", 1.0);
-    auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
-    mesh.add_tag(VERT, "target_metric", ncomps, metrics);
+    auto metrics = get_implied_isos(&mesh);
+    auto scalar = metric_eigenvalue_from_length(0.5);
+    metrics = multiply_each_by(metrics, scalar);
+    mesh.add_tag(VERT, "metric", 1, metrics);
   }
   mesh.set_parting(OMEGA_H_ELEM_BASED);
 
@@ -151,14 +152,7 @@ int main(int argc, char** argv) {
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   check_total_mass(mesh);
 
-  //Create a tag named 'metric' based on the current element size and the ideal
-  //size.  As I understand, 'approach_metric(...)' uses the 'metric' tag as the
-  //starting point and 'approaches' the 'target_metric' defined above
-  //incrementally.
-  Omega_h::add_implied_metric_tag(&mesh);
-  while (Omega_h::approach_metric(&mesh, opts)) {
-    adapt(&mesh, opts);
-  }
+  adapt(&mesh, opts);
 
   printTriCount(&mesh);  
   printTags(mesh);
