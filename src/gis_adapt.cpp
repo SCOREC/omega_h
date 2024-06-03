@@ -138,11 +138,9 @@ int main(int argc, char** argv) {
 
   //set size field - TODO: use ice thickness
   mesh.set_parting(OMEGA_H_GHOSTED);
-  {
-    auto metrics = get_variation_metrics(&mesh, "velocity", 1.0);
-    auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
-    mesh.add_tag(VERT, "target_metric", ncomps, metrics);
-  }
+  auto metrics = get_variation_metrics(&mesh, "velocity", 1.0);
+  auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
+  mesh.add_tag(VERT, "target_metric", ncomps, metrics);
   mesh.set_parting(OMEGA_H_ELEM_BASED);
 
   auto opts = setupFieldTransfer(mesh);
