@@ -14,8 +14,6 @@
 
 using namespace Omega_h;
 
-const Real ICE_DENSITY = 910; //kg/m^3
-
 template <typename T>
 void printTagInfo(Omega_h::Mesh& mesh, std::ostringstream& oss, int dim, int tag, std::string type) {
     auto tagbase = mesh.get_tag(dim, tag);
@@ -31,29 +29,6 @@ void printTagInfo(Omega_h::Mesh& mesh, std::ostringstream& oss, int dim, int tag
         << std::setw(10) << std::left << min 
         << std::setw(10) << std::left << max 
         << "\n";
-}
-
-Reals getVolumeFromIceThickness(Omega_h::Mesh& mesh) {
-  auto coords = mesh.coords();
-  auto triArea = mesh.ask_sizes();
-  auto iceThickness = mesh.get_array<Real>(OMEGA_H_VERT, "ice_thickness");
-  auto faces2verts = mesh.ask_elem_verts();
-  Write<Real> vol(mesh.nfaces()); 
-  auto getVol = OMEGA_H_LAMBDA(LO faceIdx) {
-    auto triVerts = Omega_h::gather_verts<3>(faces2verts, faceIdx);
-    auto triThickness = Omega_h::gather_scalars<3>(iceThickness, triVerts);
-    Real avgThickness = 0;
-    for(LO i=0; i<3; i++)
-       avgThickness += triThickness[i];
-    avgThickness /= 3;
-    vol[faceIdx] = triArea[faceIdx]*avgThickness;
-  };
-  parallel_for(mesh.nfaces(), getVol);
-  return vol;
-}
-
-Reals getIceMass(Mesh& mesh, Reals vol) {
-  return multiply_each_by(vol, ICE_DENSITY);
 }
 
 void printTags(Mesh& mesh) {
@@ -83,34 +58,11 @@ void printTags(Mesh& mesh) {
 
 }
 
-static void check_total_mass(Mesh& mesh) {
-  auto vol = getVolumeFromIceThickness(mesh);
-  auto masses = getIceMass(mesh, vol);
-  auto owned_masses = mesh.owned_array(mesh.dim(), masses, 1);
-  auto mass = get_sum(mesh.comm(), owned_masses);
-  if (!mesh.comm()->rank()) {
-    std::cout << "mass " << mass << '\n';
-  }
-}
 
 void printTriCount(Mesh* mesh) {
   const auto nTri = mesh->nglobal_ents(2);
   if (!mesh->comm()->rank())
     std::cout << "nTri: " << nTri << "\n";
-}
-
-AdaptOpts setupFieldTransfer(Mesh& mesh) {
-  auto opts = AdaptOpts(&mesh);
-  opts.xfer_opts.type_map["velocity"] = OMEGA_H_LINEAR_INTERP;
-  opts.xfer_opts.type_map["ice_thickness"] = OMEGA_H_LINEAR_INTERP;
-  const int numLayers = 11;
-  for(int i=1; i<=numLayers; i++) {
-    std::stringstream ss;
-    ss << "temperature_" << std::setfill('0') << std::setw(2) << i;
-    std::cout << ss.str();
-    opts.xfer_opts.type_map[ss.str()] = OMEGA_H_LINEAR_INTERP;
-  }
-  return opts;
 }
 
 int main(int argc, char** argv) {
@@ -120,8 +72,8 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
-  Omega_h::Mesh mesh(&lib);
-  Omega_h::binary::read(argv[1], world, &mesh);
+  auto nx = 10;
+  auto mesh = build_box(world, OMEGA_H_SIMPLEX, 1, 1, 0, nx, nx, 0);
 
   //create analytic velocity field
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
@@ -138,16 +90,16 @@ int main(int argc, char** argv) {
 
   //set size field - TODO: use ice thickness
   mesh.set_parting(OMEGA_H_GHOSTED);
-  auto metrics = get_variation_metrics(&mesh, "velocity", 1.0);
+  const auto eps = 0.01;
+  auto metrics = get_variation_metrics(&mesh, "velocity", eps);
   auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
   mesh.add_tag(VERT, "target_metric", ncomps, metrics);
   mesh.set_parting(OMEGA_H_ELEM_BASED);
 
-  auto opts = setupFieldTransfer(mesh);
+  auto opts = AdaptOpts(&mesh);
   printTriCount(&mesh);  
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
-  check_total_mass(mesh);
 
   //Create a tag named 'metric' based on the current element size and the ideal
   //size.  As I understand, 'approach_metric(...)' uses the 'metric' tag as the
@@ -160,7 +112,6 @@ int main(int argc, char** argv) {
 
   printTriCount(&mesh);  
   printTags(mesh);
-  check_total_mass(mesh);
   const std::string vtkFileName = std::string(argv[2]) + ".vtk";
   Omega_h::vtk::write_parallel(vtkFileName, &mesh, 2);
   return 0;
