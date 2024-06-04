@@ -38,12 +38,17 @@ void MetricInput::add_source(MetricSource const& src) {
   sources.push_back(src);
 }
 
+
 static Reals get_variation_metrics(
     Mesh* mesh, Real knob, Int dim, Int ncomps, Reals data) {
+  static int call_num = 0;
   OMEGA_H_CHECK(data.size() == mesh->nents(dim) * ncomps);
   if (ncomps == 1) {
     if (dim == VERT) {
       auto hessians = recover_hessians(mesh, data);
+      const std::string name = "hessian_comp_" + std::to_string(call_num);
+      mesh->add_tag(VERT, name.c_str(), 3, hessians);
+      call_num++;
       return get_hessian_metrics(mesh->dim(), hessians, knob);
     } else if (dim == mesh->dim()) {
       auto vert_data = project_by_fit(mesh, data);
