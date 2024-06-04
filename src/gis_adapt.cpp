@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
-  auto nx = 10;
+  auto nx = 3;
   auto mesh = build_box(world, OMEGA_H_SIMPLEX, 1, 1, 0, nx, nx, 0);
 
   //create analytic velocity field
