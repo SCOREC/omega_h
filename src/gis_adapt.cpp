@@ -87,16 +87,27 @@ int main(int argc, char** argv) {
   parallel_for(mesh.nverts(), f);
   mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
 
-
   //set size field - TODO: use ice thickness
   mesh.set_parting(OMEGA_H_GHOSTED);
-  const auto eps = 0.01;
-  auto metrics = get_variation_metrics(&mesh, "velocity", eps);
-  auto ncomps = divide_no_remainder(metrics.size(), mesh.nverts());
-  mesh.add_tag(VERT, "target_metric", ncomps, metrics);
-  mesh.set_parting(OMEGA_H_ELEM_BASED);
+  auto maximum_size = Omega_h::Real(0.9);
+  auto target_error = Omega_h::Real(0.011);
+  auto gradation_rate = Omega_h::Real(1.0);
+  auto max_metric_length = Omega_h::Real(2.8);
 
-  auto opts = AdaptOpts(&mesh);
+  auto genopts = Omega_h::MetricInput();
+  genopts.sources.push_back(
+      Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
+  genopts.should_limit_lengths = true;
+  genopts.min_length = 0.0;
+  genopts.max_length = maximum_size;
+  genopts.should_limit_gradation = true;
+  genopts.max_gradation_rate = gradation_rate;
+  Omega_h::generate_target_metric_tag(&mesh, genopts);
+  Omega_h::add_implied_metric_tag(&mesh);
+  Omega_h::AdaptOpts opts(&mesh);
+  opts.xfer_opts.type_map["velocity"] = OMEGA_H_LINEAR_INTERP;
+  opts.max_length_allowed = max_metric_length;
+
   printTriCount(&mesh);  
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
@@ -105,7 +116,6 @@ int main(int argc, char** argv) {
   //size.  As I understand, 'approach_metric(...)' uses the 'metric' tag as the
   //starting point and 'approaches' the 'target_metric' defined above
   //incrementally.
-  Omega_h::add_implied_metric_tag(&mesh);
   while (Omega_h::approach_metric(&mesh, opts)) {
     adapt(&mesh, opts);
   }
