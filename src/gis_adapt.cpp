@@ -113,13 +113,17 @@ void setupFieldTransfer(AdaptOpts& opts) {
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  if( argc != 3 ) {
-    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix\n", argv[0]);
+  if( argc != 6 ) {
+    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix enforceMetricSize=[0:off|1:on] minLength maxLength\n", argv[0]);
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], world, &mesh);
+  const auto enforceSize = std::atoi(argv[3]) > 0 ? true : false;
+  const auto minLength = std::stof(argv[4]);
+  const auto maxLength = std::stof(argv[5]);
+  fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
 
   //create analytic velocity field
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
@@ -140,18 +144,18 @@ int main(int argc, char** argv) {
    * r4: set min_length=0, max_length = 10, should_limit_lengths=true -->  executes, 41k tri, nearly uniform
    */
   mesh.set_parting(OMEGA_H_GHOSTED);
-  auto maximum_size = Omega_h::Real(10);
 //  auto target_error = Omega_h::Real(0.01); //this is a measure of 'error' when computing a metric from a hessian - see Omega_h_metric.cpp metric_from_messian(...)
-    auto target_error = Omega_h::Real(1.0);
+  auto target_error = Omega_h::Real(1.0);
 //  auto gradation_rate = Omega_h::Real(1.0);
 //  auto max_metric_length = Omega_h::Real(2.8); // restrict edge length in metric space - how does this differ from MetricInput.max_length?
 
   auto genopts = Omega_h::MetricInput();
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
-  genopts.should_limit_lengths = true; //enforce [min|max]_length
-  genopts.min_length = 0.0;
-  genopts.max_length = maximum_size; //in metric space? restricts eigenvalues of metric, see Omega_h_metric.hpp
+  genopts.verbose = true;
+  genopts.should_limit_lengths = enforceSize; //enforce [min|max]_length
+  genopts.min_length = Omega_h::Real(minLength);
+  genopts.max_length = Omega_h::Real(maxLength); //in metric space? restricts eigenvalues of metric, see Omega_h_metric.hpp
 //  genopts.should_limit_gradation = true;
 //  genopts.max_gradation_rate = gradation_rate; //how should this be set?
   Omega_h::generate_target_metric_tag(&mesh, genopts);
