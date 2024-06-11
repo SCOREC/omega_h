@@ -218,6 +218,13 @@ static void test_intersect_subset_metrics() {
   OMEGA_H_CHECK(are_close(intersect_metrics(m1, m2), m1));
 }
 
+static void test_intersect_with_null_2d() {
+  auto m1 = Matrix<2,2>({6.55555555555555752e-02,0.,0.,0.});
+  auto m2 = zero_matrix<2, 2>();
+  OMEGA_H_CHECK(are_close(intersect_metrics(m1, m2), m1));
+  OMEGA_H_CHECK(are_close(intersect_metrics(m2, m1), m1));
+}
+
 static void test_intersect_with_null() {
   auto q =
       rotate(PI / 4., vector_3(0, 0, 1)) * rotate(PI / 4., vector_3(0, 1, 0));
@@ -228,6 +235,7 @@ static void test_intersect_with_null() {
 }
 
 static void test_intersect_degen_metrics() {
+  test_intersect_with_null_2d();
   test_intersect_with_null();
   // 2.a
   OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
