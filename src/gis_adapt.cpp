@@ -12,6 +12,9 @@
 #include <sstream> //ostringstream
 #include <iomanip> //precision
 
+//detect floating point exceptions
+#include <fenv.h>
+
 using namespace Omega_h;
 
 template <typename T>
@@ -66,6 +69,7 @@ void printTriCount(Mesh* mesh) {
 }
 
 int main(int argc, char** argv) {
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
   if( argc != 6 ) {
     fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix enforceMetricSize=[0:off|1:on] minLength maxLength\n", argv[0]);
