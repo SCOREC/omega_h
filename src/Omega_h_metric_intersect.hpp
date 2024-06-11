@@ -241,6 +241,10 @@ OMEGA_H_INLINE_BIG Tensor<dim> intersect_metrics(
     // The least degenerate metric is null... they must both be... return null
     return zero_matrix<dim, dim>();
   }
+  if (nm2_degen_ews == dim) {
+    // M_2 is degenerate, the intersection is M_1; case 2
+    return m1;
+  }
   if (nm1_degen_ews == 0) {
     // as long as M_1 is not degenerate, the "normal" procedure can be applied
     Vector<dim> l_m1_sqrt;
