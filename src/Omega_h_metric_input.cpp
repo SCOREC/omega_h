@@ -13,10 +13,11 @@
 namespace Omega_h {
 
 template <typename T>
-void writeArray(T array, std::string name, int iter) {
+void writeArray(T array, std::string name, int ncomps, int iter) {
   std::string outname = name + "_" + std::to_string(iter);
-  std::ofstream out(outname, std::ios::binary);
+  std::ofstream out(outname + ".bin", std::ios::binary);
   binary::write_array(out, array, false, false);
+  write_reals_txt(outname + ".txt", array, ncomps);
 }
 
 MetricSource::MetricSource(Omega_h_Source type_, Real knob_,
@@ -68,9 +69,13 @@ static Reals get_variation_metrics(
     Reals metrics;
     for (Int comp = 0; comp < ncomps; ++comp) {
       auto comp_data = get_component(data, ncomps, comp);
+      writeArray(comp_data,"1.0_comp_data",ncomps, comp);
       auto comp_metrics = get_variation_metrics(mesh, knob, dim, 1, comp_data);
       if (comp) {
+        writeArray(metrics,"1.1_metrics",3,comp);
+        writeArray(comp_metrics,"1.1_comp_metrics",3,comp);
         metrics = intersect_metrics(mesh->nverts(), metrics, comp_metrics);
+        writeArray(metrics,"1.2_metrics",3,comp);
       } else {
         metrics = comp_metrics;
       }
@@ -197,9 +202,9 @@ Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
         metrics = get_curvature_metrics(mesh, source.knob);
         break;
     }
-    writeArray(metrics,"0.1",0);
+    writeArray(metrics,"0.1",3,0);
     metrics = apply_isotropy(n, metrics, source.isotropy);
-    writeArray(metrics,"0.2",0);
+    writeArray(metrics,"0.2",3,0);
     auto source_dim = get_metrics_dim(n, metrics);
     if (mesh->dim() > 1 && source_dim == mesh->dim()) {
       metric_dim = mesh->dim();
@@ -225,11 +230,11 @@ Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
       if (input.should_limit_lengths) {
         in_metrics =
             clamp_metrics(n, in_metrics, input.min_length, input.max_length);
-        writeArray(in_metrics,"0.3",niters);
+        writeArray(in_metrics,"0.3",3,niters);
       }
       if (i) {
         metrics = intersect_metrics(n, metrics, in_metrics);
-        writeArray(metrics,"0.4",niters);
+        writeArray(metrics,"0.4",3,niters);
       } else {
         metrics = in_metrics;
       }
@@ -284,7 +289,7 @@ void generate_metric_tag(Mesh* mesh, MetricInput const& input) {
 void generate_target_metric_tag(Mesh* mesh, MetricInput const& input) {
   auto metrics = generate_metrics(mesh, input);
   add_metric_tag(mesh, metrics, "target_metric");
-  writeArray(metrics, "target_metric", 0);
+  writeArray(metrics, "target_metric", 3, 0);
 }
 
 void add_implied_metric_tag(Mesh* mesh) {
