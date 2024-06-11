@@ -5,10 +5,19 @@
 #include "Omega_h_profile.hpp"
 #include "Omega_h_recover.hpp"
 #include "Omega_h_timer.hpp"
+#include "Omega_h_file.hpp"
+#include <fstream>
 
 #include <iostream>
 
 namespace Omega_h {
+
+template <typename T>
+void writeArray(T array, std::string name, int iter) {
+  std::string outname = name + "_" + std::to_string(iter);
+  std::ofstream out(outname, std::ios::binary);
+  binary::write_array(out, array, false, false);
+}
 
 MetricSource::MetricSource(Omega_h_Source type_, Real knob_,
     std::string const& tag_name_, Omega_h_Isotropy isotropy_,
@@ -188,7 +197,9 @@ Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
         metrics = get_curvature_metrics(mesh, source.knob);
         break;
     }
+    writeArray(metrics,"0.1",0);
     metrics = apply_isotropy(n, metrics, source.isotropy);
+    writeArray(metrics,"0.2",0);
     auto source_dim = get_metrics_dim(n, metrics);
     if (mesh->dim() > 1 && source_dim == mesh->dim()) {
       metric_dim = mesh->dim();
@@ -214,9 +225,11 @@ Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
       if (input.should_limit_lengths) {
         in_metrics =
             clamp_metrics(n, in_metrics, input.min_length, input.max_length);
+        writeArray(in_metrics,"0.3",niters);
       }
       if (i) {
         metrics = intersect_metrics(n, metrics, in_metrics);
+        writeArray(metrics,"0.4",niters);
       } else {
         metrics = in_metrics;
       }
@@ -271,6 +284,7 @@ void generate_metric_tag(Mesh* mesh, MetricInput const& input) {
 void generate_target_metric_tag(Mesh* mesh, MetricInput const& input) {
   auto metrics = generate_metrics(mesh, input);
   add_metric_tag(mesh, metrics, "target_metric");
+  writeArray(metrics, "target_metric", 0);
 }
 
 void add_implied_metric_tag(Mesh* mesh) {
