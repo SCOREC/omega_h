@@ -13,6 +13,9 @@
 #include <iomanip> //precision
 #include <Omega_h_dbg.hpp>
 
+//detect floating point exceptions
+#include <fenv.h>
+
 using namespace Omega_h;
 
 const Real ICE_DENSITY = 910; //kg/m^3
@@ -112,6 +115,7 @@ void setupFieldTransfer(AdaptOpts& opts) {
 }
 
 int main(int argc, char** argv) {
+  feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
   if( argc != 6 ) {
     fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix enforceMetricSize=[0:off|1:on] minLength maxLength\n", argv[0]);
