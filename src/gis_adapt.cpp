@@ -114,6 +114,19 @@ void setupFieldTransfer(AdaptOpts& opts) {
   }
 }
 
+int find_2d_periodic_model_edges(Mesh* m) {
+  //modelEdgesToMeshEdges = use reverse classification
+  //modelEdgesToModelVerts = create a map of model edge ids to adjacent model vertices
+  //for each model edge mdlEdge:
+  //   for each clasified mesh edge meshEdge:
+  //     if class_dim[meshEdge.vtx0] == 0:
+  //        modelEdgesToModelVerts[mdlEdge].append(class_id[meshEdge.vtx0]);
+  //     if class_dim[edge.vtx1] == 0:
+  //        modelVertsBoundingEdge[mdlEdge].append(class_id[meshEdge.vtx1]);
+  //   if modelEdgesToModelVerts[mdlEdge].size() < 2:
+  //      fprintf(stderr, "model edge %d is periodic\n");
+}
+
 int main(int argc, char** argv) {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
@@ -128,6 +141,8 @@ int main(int argc, char** argv) {
   const auto minLength = std::stof(argv[4]);
   const auto maxLength = std::stof(argv[5]);
   fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
+
+  find_2d_periodic_model_edges(mesh);
 
   //create analytic velocity field
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
