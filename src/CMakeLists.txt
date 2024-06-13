@@ -256,7 +256,7 @@ if(OMEGA_H_USE_CTAGS)
   #from: https://stackoverflow.com/a/9842046
   set_source_files_properties(tags PROPERTIES GENERATED true)
   add_custom_target(tags
-    COMMAND ctags --c++-kinds=+p --fields=+iaS --extra=+q .
+    COMMAND ctags -R --c++-kinds=+p --fields=+iaS --extra=+q .
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src)
   add_dependencies(omega_h tags)
 endif()
