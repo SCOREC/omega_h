@@ -3,6 +3,7 @@
 #include "Omega_h_array_ops.hpp"
 #include "Omega_h_metric.hpp"
 #include "Omega_h_shape.hpp"
+#include "Omega_h_for.hpp"
 
 #include <iostream>
 
@@ -80,6 +81,38 @@ bool warp_to_limit(
   return true;
 }
 
+template <Int dim>
+bool is_metric_spd_dim(Reals metrics) {
+  auto n = divide_no_remainder(metrics.size(), symm_ncomps(dim));
+  auto isDegen = Write<LO>(n);
+  auto f = OMEGA_H_LAMBDA(LO i) {
+    auto m = get_symm<dim>(metrics, i);
+    auto m_dc = decompose_eigen(m);
+    Few<Int, dim> m_ew_is_degen;
+    for (Int j = 0; j < dim; ++j) {
+      // if EPSILON is 1e-10, this corresponds roughly to edges
+      // of absolute length 1e5 or more being considered "infinite"
+      m_ew_is_degen[j] = m_dc.l[j] < OMEGA_H_EPSILON;
+    }
+    auto nm_degen_ews = reduce(m_ew_is_degen, plus<Int>());
+    isDegen[i] = (nm_degen_ews > 0);
+  };
+  parallel_for(n, f, "mark_degen_metrics");
+  const int numDegen = get_sum(read(isDegen));
+  return (numDegen == 0);
+}
+
+bool is_metric_spd(Mesh* mesh, Reals metrics) {
+  if( mesh->dim() == 1)
+    return is_metric_spd_dim<1>(metrics); // is this supported?
+  else if( mesh->dim() == 2)
+    return is_metric_spd_dim<2>(metrics);
+  else if( mesh->dim() == 3)
+    return is_metric_spd_dim<3>(metrics);
+  else
+    return false;
+}
+
 bool approach_metric(Mesh* mesh, AdaptOpts const& opts, Real min_step) {
   auto name = "metric";
   auto target_name = "target_metric";
@@ -115,6 +148,8 @@ bool approach_metric(Mesh* mesh, AdaptOpts const& opts, Real min_step) {
       Omega_h_fail("Metric approach has stalled at step size = %f < %f.\n",
           factor, min_step);
     }
+    OMEGA_H_CHECK(is_metric_spd(mesh,orig));
+    OMEGA_H_CHECK(is_metric_spd(mesh,target));
     auto current =
         interpolate_between_metrics(mesh->nverts(), orig, target, factor);
     mesh->set_tag(VERT, name, current);
