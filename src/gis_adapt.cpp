@@ -148,10 +148,7 @@ int main(int argc, char** argv) {
    * r4: set min_length=0, max_length = 10, should_limit_lengths=true -->  executes, 41k tri, nearly uniform
    */
   mesh.set_parting(OMEGA_H_GHOSTED);
-//  auto target_error = Omega_h::Real(0.01); //this is a measure of 'error' when computing a metric from a hessian - see Omega_h_metric.cpp metric_from_messian(...)
   auto target_error = Omega_h::Real(1.0);
-//  auto gradation_rate = Omega_h::Real(1.0);
-//  auto max_metric_length = Omega_h::Real(2.8); // restrict edge length in metric space - how does this differ from MetricInput.max_length?
 
   auto genopts = Omega_h::MetricInput();
   genopts.sources.push_back(
@@ -160,12 +157,9 @@ int main(int argc, char** argv) {
   genopts.should_limit_lengths = enforceSize; //enforce [min|max]_length
   genopts.min_length = Omega_h::Real(minLength);
   genopts.max_length = Omega_h::Real(maxLength); //in metric space? restricts eigenvalues of metric, see Omega_h_metric.hpp
-//  genopts.should_limit_gradation = true;
-//  genopts.max_gradation_rate = gradation_rate; //how should this be set?
   Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
   Omega_h::AdaptOpts opts(&mesh);
-//  opts.max_length_allowed = max_metric_length;
   setupFieldTransfer(opts);
 
   printTriCount(&mesh);  
