@@ -252,6 +252,15 @@ endif()
 
 bob_export_target(omega_h)
 
+if(OMEGA_H_USE_CTAGS)
+  #from: https://stackoverflow.com/a/9842046
+  set_source_files_properties(tags PROPERTIES GENERATED true)
+  add_custom_target(tags
+    COMMAND ctags --c++-kinds=+p --fields=+iaS --extra=+q .
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src)
+  add_dependencies(omega_h tags)
+endif()
+
 function(osh_add_exe EXE_NAME)
   if (Omega_h_USE_CUDA AND NOT Omega_h_USE_Kokkos)
     set_source_files_properties(${EXE_NAME}.cpp PROPERTIES LANGUAGE CUDA)
