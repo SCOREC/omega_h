@@ -12,6 +12,7 @@
 #include <sstream> //ostringstream
 #include <iomanip> //precision
 #include <Omega_h_dbg.hpp>
+#include <Omega_h_for.hpp>
 
 //detect floating point exceptions
 #include <fenv.h>
@@ -114,17 +115,40 @@ void setupFieldTransfer(AdaptOpts& opts) {
   }
 }
 
-int find_2d_periodic_model_edges(Mesh* m) {
-  //modelEdgesToMeshEdges = use reverse classification
-  //modelEdgesToModelVerts = create a map of model edge ids to adjacent model vertices
-  //for each model edge mdlEdge:
-  //   for each clasified mesh edge meshEdge:
-  //     if class_dim[meshEdge.vtx0] == 0:
-  //        modelEdgesToModelVerts[mdlEdge].append(class_id[meshEdge.vtx0]);
-  //     if class_dim[edge.vtx1] == 0:
-  //        modelVertsBoundingEdge[mdlEdge].append(class_id[meshEdge.vtx1]);
-  //   if modelEdgesToModelVerts[mdlEdge].size() < 2:
-  //      fprintf(stderr, "model edge %d is periodic\n");
+//Mesh adaptation coarsening fails when there are periodic model edges around 'holes' in the
+//mesh.  The following is a hack of the mesh classification to (1) fix the ids
+//of some model vertices and (2) split periodic edges.  Both hacks are needed
+//for adaptation to succeed. If the input mesh changes the hardcoded values need
+//to change.
+void fixModelVtxIds(Mesh* m) {
+  auto v_class_id = m->get_array<LO>(VERT,"class_id");
+  auto v_class_dim = m->get_array<I8>(VERT,"class_dim");
+  const auto max_mdlVtx_id = get_max(v_class_id);
+  auto v_class_id_w = Write<LO>(v_class_id.size());
+  auto v_class_dim_w = Write<I8>(v_class_dim.size());
+  auto f = OMEGA_H_LAMBDA(LO a) {
+    // Split periodic edges around interior holes in the model by adding model
+    // vertices.  The ids used here are from paraview.
+    if( a == 445 ) {
+      printf("vtx %d cid %d cdim %d\n", a, v_class_id[a], v_class_dim[a]);
+      v_class_id_w[a] = max_mdlVtx_id + 2;
+      v_class_dim_w[a] = VERT;
+    }
+    if( a == 289 ) {
+      printf("vtx %d cid %d cdim %d\n", a, v_class_id[a], v_class_dim[a]);
+      v_class_id_w[a] = max_mdlVtx_id + 2;
+      v_class_dim_w[a] = VERT;
+    }
+    // Change the id of model vertices set to -1 ...
+    if( v_class_id[a] == -1 ) {
+      v_class_id_w[a] = max_mdlVtx_id + 1;
+    } else {
+      v_class_id_w[a] = v_class_id[a];
+    }
+  };
+  parallel_for(v_class_id.size(), f, "fixModelVtxIds");
+  m->set_tag(VERT, "class_id", read(v_class_id_w));
+  m->set_tag(VERT, "class_dim", read(v_class_dim_w));
 }
 
 int main(int argc, char** argv) {
@@ -142,7 +166,7 @@ int main(int argc, char** argv) {
   const auto maxLength = std::stof(argv[5]);
   fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
 
-  find_2d_periodic_model_edges(mesh);
+  fixModelVtxIds(&mesh);
 
   //create analytic velocity field
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
