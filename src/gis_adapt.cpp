@@ -30,11 +30,11 @@ void printTagInfo(Omega_h::Mesh& mesh, std::ostringstream& oss, int dim, int tag
     Omega_h::Real max = get_max(array);
 
     oss << std::setw(18) << std::left << tagbase->name().c_str()
-        << std::setw(5) << std::left << dim 
-        << std::setw(7) << std::left << type 
-        << std::setw(5) << std::left << tagbase->ncomps() 
-        << std::setw(10) << std::left << min 
-        << std::setw(10) << std::left << max 
+        << std::setw(5) << std::left << dim
+        << std::setw(7) << std::left << type
+        << std::setw(5) << std::left << tagbase->ncomps()
+        << std::setw(10) << std::left << min
+        << std::setw(10) << std::left << max
         << "\n";
 }
 
@@ -43,7 +43,7 @@ Reals getVolumeFromIceThickness(Omega_h::Mesh& mesh) {
   auto triArea = mesh.ask_sizes();
   auto iceThickness = mesh.get_array<Real>(OMEGA_H_VERT, "ice_thickness");
   auto faces2verts = mesh.ask_elem_verts();
-  Write<Real> vol(mesh.nfaces()); 
+  Write<Real> vol(mesh.nfaces());
   auto getVol = OMEGA_H_LAMBDA(LO faceIdx) {
     auto triVerts = Omega_h::gather_verts<3>(faces2verts, faceIdx);
     auto triThickness = Omega_h::gather_scalars<3>(iceThickness, triVerts);
@@ -201,7 +201,7 @@ int main(int argc, char** argv) {
   Omega_h::AdaptOpts opts(&mesh);
   setupFieldTransfer(opts);
 
-  printTriCount(&mesh);  
+  printTriCount(&mesh);
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   check_total_mass(mesh);
@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
     adapt(&mesh, opts);
   }
 
-  printTriCount(&mesh);  
+  printTriCount(&mesh);
   printTags(mesh);
   check_total_mass(mesh);
   const std::string vtkFileName = std::string(argv[2]) + ".vtk";
