@@ -180,12 +180,6 @@ int main(int argc, char** argv) {
   parallel_for(mesh.nverts(), f);
   mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
 
-  /*
-   * r1: all defaults --> find_matches !found assertion
-   * r2: set min_length=0, max_length = 0.9, should_limit_lengths=true --> executes, 4.8M tri, nearly uniform
-   * r3: set should_limit_lengths=true --> executes, does not adapt, nan's in 'length' tag
-   * r4: set min_length=0, max_length = 10, should_limit_lengths=true -->  executes, 41k tri, nearly uniform
-   */
   mesh.set_parting(OMEGA_H_GHOSTED);
   auto target_error = Omega_h::Real(1.0);
 
@@ -193,9 +187,9 @@ int main(int argc, char** argv) {
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
   genopts.verbose = true;
-  genopts.should_limit_lengths = enforceSize; //enforce [min|max]_length
+  genopts.should_limit_lengths = enforceSize;
   genopts.min_length = Omega_h::Real(minLength);
-  genopts.max_length = Omega_h::Real(maxLength); //in metric space? restricts eigenvalues of metric, see Omega_h_metric.hpp
+  genopts.max_length = Omega_h::Real(maxLength);
   Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
   Omega_h::AdaptOpts opts(&mesh);
@@ -206,10 +200,6 @@ int main(int argc, char** argv) {
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   check_total_mass(mesh);
 
-  //Create a tag named 'metric' based on the current element size and the ideal
-  //size.  As I understand, 'approach_metric(...)' uses the 'metric' tag as the
-  //starting point and 'approaches' the 'target_metric' defined above
-  //incrementally.
   while (Omega_h::approach_metric(&mesh, opts)) {
     adapt(&mesh, opts);
   }
