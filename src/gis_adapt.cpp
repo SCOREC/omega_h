@@ -21,6 +21,34 @@ using namespace Omega_h;
 
 const Real ICE_DENSITY = 910; //kg/m^3
 
+template <Int dim>
+Reals get_eigen_values_dim(Reals metrics) {
+  auto n = divide_no_remainder(metrics.size(), symm_ncomps(dim));
+  auto isDegen = Write<LO>(n);
+  Write<Real> eigenVals(dim*n);
+  auto f = OMEGA_H_LAMBDA(LO i) {
+    auto m = get_symm<dim>(metrics, i);
+    auto m_dc = decompose_eigen(m);
+    Few<Int, dim> m_ew_is_degen;
+    for (Int j = 0; j < dim; ++j) {
+      eigenVals[i*2+j] = m_dc.l[j];
+    }
+  };
+  parallel_for(n, f, "get_eigen_vals");
+  return read(eigenVals);
+}
+
+Reals get_eigen_values(Mesh* mesh, Reals metrics) {
+  if( mesh->dim() == 1)
+    return get_eigen_values_dim<1>(metrics); // is this supported?
+  else if( mesh->dim() == 2)
+    return get_eigen_values_dim<2>(metrics);
+  else if( mesh->dim() == 3)
+    return get_eigen_values_dim<3>(metrics);
+  else
+    return Reals(0);
+}
+
 template <typename T>
 void printTagInfo(Omega_h::Mesh& mesh, std::ostringstream& oss, int dim, int tag, std::string type) {
     auto tagbase = mesh.get_tag(dim, tag);
@@ -166,6 +194,7 @@ int main(int argc, char** argv) {
   const auto maxLength = std::stof(argv[5]);
   fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
 
+  Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
   fixModelVtxIds(&mesh);
 
   //create analytic velocity field
@@ -181,7 +210,8 @@ int main(int argc, char** argv) {
   mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
 
   mesh.set_parting(OMEGA_H_GHOSTED);
-  auto target_error = Omega_h::Real(1.0);
+
+  auto target_error = Omega_h::Real(0.1);
 
   auto genopts = Omega_h::MetricInput();
   genopts.sources.push_back(
@@ -190,8 +220,17 @@ int main(int argc, char** argv) {
   genopts.should_limit_lengths = enforceSize;
   genopts.min_length = Omega_h::Real(minLength);
   genopts.max_length = Omega_h::Real(maxLength);
+  genopts.should_limit_gradation = true;
+  genopts.max_gradation_rate = Real(0.5);
   Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
+
+  //DEBUG { 
+  auto tgt_metrics = mesh.get_array<Real>(VERT, "target_metric");
+  auto ev = get_eigen_values(&mesh, tgt_metrics);
+  mesh.add_tag(VERT, "eigen_values", mesh.dim(), ev);
+  // }
+
   Omega_h::AdaptOpts opts(&mesh);
   setupFieldTransfer(opts);
 
