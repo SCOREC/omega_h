@@ -194,19 +194,20 @@ int main(int argc, char** argv) {
   const auto maxLength = std::stof(argv[5]);
   fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
 
-  Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
+  Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
   fixModelVtxIds(&mesh);
 
   //create analytic velocity field
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
   auto coords = mesh.coords();
-  auto f = OMEGA_H_LAMBDA(LO vert) {
+  //at x=0 the second derivative needed for the metric is infinite
+  auto singularity = OMEGA_H_LAMBDA(LO vert) {
     auto x = get_vector<2>(coords, vert);
-    auto x2 = x[0] - 0.3;
+    auto x2 = x[0];
     auto w = sign(x2) * std::sqrt(std::abs(x2));
     set_vector(velocity, vert, vector_2(1, 0) * w);
   };
-  parallel_for(mesh.nverts(), f);
+  parallel_for(mesh.nverts(), singularity);
   mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
 
   mesh.set_parting(OMEGA_H_GHOSTED);
@@ -221,7 +222,7 @@ int main(int argc, char** argv) {
   genopts.min_length = Omega_h::Real(minLength);
   genopts.max_length = Omega_h::Real(maxLength);
   genopts.should_limit_gradation = true;
-  genopts.max_gradation_rate = Real(0.5);
+  genopts.max_gradation_rate = Real(0.25); //adapt cannot be satisfy quality requirement without this, closer to 1 is no limit
   Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
 
@@ -229,6 +230,11 @@ int main(int argc, char** argv) {
   auto tgt_metrics = mesh.get_array<Real>(VERT, "target_metric");
   auto ev = get_eigen_values(&mesh, tgt_metrics);
   mesh.add_tag(VERT, "eigen_values", mesh.dim(), ev);
+  auto edge_lengths_source = measure_edges_metric(&mesh, mesh.get_array<Real>(VERT, "metric"));
+  auto edge_lengths_target = measure_edges_metric(&mesh, tgt_metrics);
+  mesh.add_tag(EDGE, "lengths_source", 1, edge_lengths_source);
+  mesh.add_tag(EDGE, "lengths_target", 1, edge_lengths_target);
+  Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
   // }
 
   Omega_h::AdaptOpts opts(&mesh);
