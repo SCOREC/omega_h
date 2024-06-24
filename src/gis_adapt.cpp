@@ -8,6 +8,7 @@
 #include "Omega_h_for.hpp"
 #include "Omega_h_shape.hpp"
 #include "Omega_h_timer.hpp"
+#include "Omega_h_recover.hpp" //recover_hessians
 #include <Omega_h_file.hpp> //Omega_h::binary
 #include <sstream> //ostringstream
 #include <iomanip> //precision
@@ -179,36 +180,75 @@ void fixModelVtxIds(Mesh* m) {
   m->set_tag(VERT, "class_dim", read(v_class_dim_w));
 }
 
+Reals exponentialVelocity(Mesh& mesh) {
+  auto coords = mesh.coords();
+  auto coords_h = HostRead<Real>(coords);
+  auto vel_h = HostWrite<Real>(mesh.nverts());
+  for(int i=0; i<mesh.nverts(); i++) {
+    auto x = get_vector<2>(coords_h, i);
+    if(std::fabs(x[0]) < 100) {
+      vel_h[i] = 20 * std::exp(-0.02 * std::fabs(x[0]));
+    } else {
+      vel_h[i] = 0;
+    }
+  }
+  return Reals(vel_h);
+}
+
+Reals squareVelocity(Mesh& mesh) {
+  auto coords = mesh.coords();
+  auto coords_h = HostRead<Real>(coords);
+  auto vel_h = HostWrite<Real>(mesh.nverts());
+  for(int i=0; i<mesh.nverts(); i++) {
+    auto x = get_vector<2>(coords_h, i);
+    vel_h[i] = 20 * (-1.0e-6 * std::pow(x[0],2));
+  }
+  return Reals(vel_h);
+}
+
+Reals normSquaredVelocity(Mesh& mesh) {
+  auto coords = mesh.coords();
+  auto coords_h = HostRead<Real>(coords);
+  auto vel_h = HostWrite<Real>(mesh.nverts());
+  for(int i=0; i<mesh.nverts(); i++) {
+    auto x = get_vector<2>(coords_h, i);
+    vel_h[i] = norm_squared(x);
+  }
+
+  // from unit_mesh.cpp: test_recover_hessians_dim(...)
+  auto hess = recover_hessians(&mesh, Reals(vel_h));
+  // its second derivative is exactly 2dx + 2dy,
+  // and both recovery steps are linear so the current
+  // algorithm should get an exact answer
+  const int dim = 2;
+  Vector<dim> dv;
+  for (Int i = 0; i < dim; ++i) dv[i] = 2;
+  auto expected_hess = repeat_symm(mesh.nverts(), diagonal(dv));
+  OMEGA_H_CHECK(are_close(hess, expected_hess));
+
+  return Reals(vel_h);
+}
+
 int main(int argc, char** argv) {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
-  if( argc != 6 ) {
-    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix enforceMetricSize=[0:off|1:on] minLength maxLength\n", argv[0]);
+  if( argc != 5 ) {
+    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix minLength maxLength\n", argv[0]);
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], world, &mesh);
-  const auto enforceSize = std::atoi(argv[3]) > 0 ? true : false;
-  const auto minLength = std::stof(argv[4]);
-  const auto maxLength = std::stof(argv[5]);
-  fprintf(stderr, "enforceMetricSize %d minLength %f maxLength %f\n", enforceSize, minLength, maxLength);
+  const auto minLength = std::stof(argv[3]);
+  const auto maxLength = std::stof(argv[4]);
+  fprintf(stderr, "minLength %f maxLength %f\n", minLength, maxLength);
 
   Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
   fixModelVtxIds(&mesh);
 
   //create analytic velocity field
-  auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
-  auto coords = mesh.coords();
-  //at x=0 the second derivative needed for the metric is infinite
-  auto singularity = OMEGA_H_LAMBDA(LO vert) {
-    auto x = get_vector<2>(coords, vert);
-    auto x2 = x[0];
-    auto w = sign(x2) * std::sqrt(std::abs(x2));
-    set_vector(velocity, vert, vector_2(1, 0) * w);
-  };
-  parallel_for(mesh.nverts(), singularity);
-  mesh.add_tag(VERT, "velocity", mesh.dim(), Reals(velocity));
+  auto velocity = normSquaredVelocity(mesh);
+  mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
 
   mesh.set_parting(OMEGA_H_GHOSTED);
 
@@ -218,9 +258,6 @@ int main(int argc, char** argv) {
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
   genopts.verbose = true;
-  genopts.should_limit_lengths = enforceSize;
-  genopts.min_length = Omega_h::Real(minLength);
-  genopts.max_length = Omega_h::Real(maxLength);
   genopts.should_limit_gradation = true;
   genopts.max_gradation_rate = Real(0.25); //adapt cannot be satisfy quality requirement without this, closer to 1 is no limit
   Omega_h::generate_target_metric_tag(&mesh, genopts);
@@ -239,11 +276,14 @@ int main(int argc, char** argv) {
 
   Omega_h::AdaptOpts opts(&mesh);
   setupFieldTransfer(opts);
+  opts.min_length_desired = minLength;
+  opts.max_length_desired = maxLength;
 
   printTriCount(&mesh);
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   check_total_mass(mesh);
+  return 0;
 
   while (Omega_h::approach_metric(&mesh, opts)) {
     adapt(&mesh, opts);
