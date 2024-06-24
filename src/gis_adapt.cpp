@@ -214,18 +214,6 @@ Reals normSquaredVelocity(Mesh& mesh) {
     auto x = get_vector<2>(coords_h, i);
     vel_h[i] = norm_squared(x);
   }
-
-  // from unit_mesh.cpp: test_recover_hessians_dim(...)
-  auto hess = recover_hessians(&mesh, Reals(vel_h));
-  // its second derivative is exactly 2dx + 2dy,
-  // and both recovery steps are linear so the current
-  // algorithm should get an exact answer
-  const int dim = 2;
-  Vector<dim> dv;
-  for (Int i = 0; i < dim; ++i) dv[i] = 2;
-  auto expected_hess = repeat_symm(mesh.nverts(), diagonal(dv));
-  OMEGA_H_CHECK(are_close(hess, expected_hess));
-
   return Reals(vel_h);
 }
 
@@ -248,20 +236,19 @@ int main(int argc, char** argv) {
 
   //create analytic velocity field
   auto velocity = normSquaredVelocity(mesh);
+  auto max_velocity = get_max(velocity);
+  auto norm_velocity = divide_each_by(velocity, max_velocity);
+
   mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
+  mesh.add_tag(VERT, "norm_velocity", 1, norm_velocity);
 
   mesh.set_parting(OMEGA_H_GHOSTED);
 
-  auto target_error = Omega_h::Real(0.1);
-
-  auto genopts = Omega_h::MetricInput();
-  genopts.sources.push_back(
-      Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
-  genopts.verbose = true;
-  genopts.should_limit_gradation = true;
-  genopts.max_gradation_rate = Real(0.25); //adapt cannot be satisfy quality requirement without this, closer to 1 is no limit
-  Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
+  
+  auto metric = mesh.get_array<Real>(VERT, "metric");
+  auto tgt_metric = multiply_each(metric, norm_velocity);
+  add_metric_tag(&mesh, tgt_metric, "target_metric");
 
   //DEBUG { 
   auto tgt_metrics = mesh.get_array<Real>(VERT, "target_metric");
@@ -283,7 +270,6 @@ int main(int argc, char** argv) {
   printTags(mesh);
   Omega_h::vtk::write_parallel("beforeAdapt.vtk", &mesh, 2);
   check_total_mass(mesh);
-  return 0;
 
   while (Omega_h::approach_metric(&mesh, opts)) {
     adapt(&mesh, opts);
