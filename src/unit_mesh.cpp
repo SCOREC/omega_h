@@ -17,6 +17,7 @@
 #include "Omega_h_swap2d.hpp"
 #include "Omega_h_swap3d_choice.hpp"
 #include "Omega_h_swap3d_loop.hpp"
+#include <Omega_h_file.hpp> //Omega_h::vtk
 
 #include <sstream>
 
@@ -469,12 +470,27 @@ static void test_element_implied_metric() {
 }
 
 template <Int dim>
-void test_recover_hessians_dim(Library* lib) {
+void test_recover_hessians_dim(Library* lib, Real angle=0.) {
   auto one_if_3d = ((dim == 3) ? 1 : 0);
   auto mesh = build_box(
       lib->world(), OMEGA_H_SIMPLEX, 1., 1., one_if_3d, 4, 4, 4 * one_if_3d);
   auto u_w = Write<Real>(mesh.nverts());
   auto coords = mesh.coords();
+  auto rotated = Write<Real>(mesh.nverts()*dim);
+  if constexpr( dim == 2) {
+    if( !are_close(angle,0.0) ) {
+      auto f = OMEGA_H_LAMBDA(LO v) {
+        auto x = get_vector<dim>(coords, v);
+        auto rot = rotate(angle);
+        auto x_rot = rot*x;
+        rotated[v*dim] = x_rot[0];
+        rotated[v*dim+1] = x_rot[1];
+      };
+      parallel_for(mesh.nverts(), f);
+      mesh.set_coords(rotated);
+      Omega_h::vtk::write_parallel("rotated.vtk", &mesh, dim);
+    }
+  }
   // attach a field = x^2 + y^2 (+ z^2)
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto x = get_vector<dim>(coords, v);
@@ -495,6 +511,7 @@ void test_recover_hessians_dim(Library* lib) {
 
 static void test_recover_hessians(Library* lib) {
   test_recover_hessians_dim<2>(lib);
+  test_recover_hessians_dim<2>(lib,10);
   test_recover_hessians_dim<3>(lib);
 }
 
