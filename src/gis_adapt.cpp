@@ -10,6 +10,7 @@
 #include "Omega_h_timer.hpp"
 #include "Omega_h_recover.hpp" //recover_hessians
 #include <Omega_h_file.hpp> //Omega_h::binary
+#include <Omega_h_atomics.hpp> //Omega_h::atomic_fetch_add
 #include <sstream> //ostringstream
 #include <iomanip> //precision
 #include <Omega_h_dbg.hpp>
@@ -236,9 +237,8 @@ int main(int argc, char** argv) {
   mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
   auto max_velocity = get_max(velocity);
   auto norm_velocity = divide_each_by(velocity, max_velocity);
-  mesh.add_tag(VERT, "norm_velocity", 1, norm_velocity);
-  const auto minScaleFactor = 0.0625; //the largest element in 1.5 times larger
-  const auto maxScaleFactor = 4.0; //the smallest element is 3.9 times smaller
+  const auto minScaleFactor = 0.0625; //the largest element in 1.5 times larger, reducing to 0.03125 does not increase the largest element
+  const auto maxScaleFactor = 2.0; //the smallest element is 3.9 times smaller
   std::cout << "minScaleFacor " << minScaleFactor << " " <<
                "maxScaleFacor " << maxScaleFactor << "\n";
   auto scale = Write<Real>(mesh.nverts());
@@ -267,6 +267,8 @@ int main(int argc, char** argv) {
   mesh.add_tag(EDGE, "lengths_source", 1, edge_lengths_source);
   auto edge_lengths_target = measure_edges_metric(&mesh, mesh.get_array<Real>(VERT, "target_metric"));
   mesh.add_tag(EDGE, "lengths_target", 1, edge_lengths_target);
+  auto elen = measure_edges_real(&mesh);
+  mesh.add_tag(EDGE, "lengths_real", 1, elen);
   Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
   // }
 
@@ -282,10 +284,15 @@ int main(int argc, char** argv) {
     adapt(&mesh, opts);
   }
 
+  auto post_elen = measure_edges_real(&mesh);
+  mesh.add_tag(EDGE, "post_lengths_real", 1, post_elen);
+
   printTriCount(&mesh);
   printTags(mesh);
   check_total_mass(mesh);
   const std::string vtkFileName = std::string(argv[2]) + ".vtk";
   Omega_h::vtk::write_parallel(vtkFileName, &mesh, 2);
+  const std::string vtkFileName_edges = std::string(argv[2]) + "_edges.vtk";
+  Omega_h::vtk::write_parallel(vtkFileName_edges, &mesh, 1);
   return 0;
 }
