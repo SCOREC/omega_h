@@ -145,51 +145,6 @@ void setupFieldTransfer(AdaptOpts& opts) {
   }
 }
 
-//Mesh adaptation coarsening fails when there are periodic model edges around 'holes' in the
-//mesh.  The following is a hack of the mesh classification to (1) fix the ids
-//of some model vertices and (2) split periodic edges.  Both hacks are needed
-//for adaptation to succeed. If the input mesh changes the hardcoded values need
-//to change.
-void fixModelVtxIds(Mesh* m) {
-  auto sides = mark_exposed_sides(m);
-  auto bdryVerts = mark_down(m,1,0,sides);
-
-  auto v_class_id = m->get_array<LO>(VERT,"class_id");
-  auto v_class_dim = m->get_array<I8>(VERT,"class_dim");
-  const auto max_mdlVtx_id = get_max(v_class_id);
-  auto v_class_id_w = Write<LO>(v_class_id.size());
-  auto v_class_dim_w = Write<I8>(v_class_dim.size());
-  auto max_class_id = Write<LO>(1);
-  max_class_id.set(0,max_mdlVtx_id);
-  auto f = OMEGA_H_LAMBDA(LO a) {
-    v_class_id_w[a] = v_class_id[a];
-    v_class_dim_w[a] = v_class_dim[a];
-    // Split periodic edges around interior holes in the model by adding model
-    // vertices.  The ids used here are from paraview.
-    if( a == 444 || a == 445 || a == 442 || a == 448 || 
-        a == 279 || a == 289 || a == 284 || a == 285   ) {
-      printf("vtx %d cid %d cdim %d\n", a, v_class_id_w[a], v_class_dim_w[a]);
-      v_class_id_w[a] = atomic_fetch_add(&max_class_id[0],1);
-      v_class_dim_w[a] = VERT;
-      printf("vtx %d fixed cid %d cdim %d\n", a, v_class_id_w[a], v_class_dim_w[a]);
-    }
-    // Change the id of model vertices set to -1 ...
-    if( v_class_id_w[a] == -1 ) {
-      printf("vtx %d missed cid %d cdim %d\n", a, v_class_id_w[a], v_class_dim_w[a]);
-    }
-    // check for bad vertex boundary classification dimension
-    if( bdryVerts[a] ) {
-      if( v_class_dim_w[a] < 0 || v_class_dim_w[1] > 1 )
-        printf("vtx %d bad_dim cid %d cdim %d\n", a, v_class_id_w[a], v_class_dim_w[a]);
-    }
-  };
-  parallel_for(v_class_id.size(), f, "fixModelVtxIds");
-
-  m->set_tag(VERT, "class_id", read(v_class_id_w));
-  m->set_tag(VERT, "class_dim", read(v_class_dim_w));
-
-}
-
 Reals exponentialVelocity(Mesh& mesh) {
   auto coords = mesh.coords();
   auto coords_h = HostRead<Real>(coords);
@@ -239,7 +194,7 @@ int main(int argc, char** argv) {
   Omega_h::binary::read(argv[1], world, &mesh);
 
   Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
-  fixModelVtxIds(&mesh);
+  classify_by_angles(&mesh,45*(Omega_h::PI/180));
 
   //create analytic velocity field
   auto velocity = normSquaredVelocity(mesh);
