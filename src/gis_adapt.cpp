@@ -220,16 +220,13 @@ Reals normSquaredVelocity(Mesh& mesh) {
 int main(int argc, char** argv) {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
-  if( argc != 5 ) {
-    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix minLength maxLength\n", argv[0]);
+  if( argc != 3 ) {
+    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix\n", argv[0]);
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], world, &mesh);
-  const auto minLength = std::stof(argv[3]);
-  const auto maxLength = std::stof(argv[4]);
-  fprintf(stderr, "minLength %f maxLength %f\n", minLength, maxLength);
 
   Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
   fixModelVtxIds(&mesh);
@@ -240,11 +237,13 @@ int main(int argc, char** argv) {
   auto max_velocity = get_max(velocity);
   auto norm_velocity = divide_each_by(velocity, max_velocity);
   mesh.add_tag(VERT, "norm_velocity", 1, norm_velocity);
-  const auto minScaleFactor = 0.25;
-  const auto maxScaleFactor = 8.0;
+  const auto minScaleFactor = 0.0625; //the largest element in 1.5 times larger
+  const auto maxScaleFactor = 4.0; //the smallest element is 3.9 times smaller
+  std::cout << "minScaleFacor " << minScaleFactor << " " <<
+               "maxScaleFacor " << maxScaleFactor << "\n";
   auto scale = Write<Real>(mesh.nverts());
   auto f = OMEGA_H_LAMBDA(LO i) {
-    scale[i] = minScaleFactor + (maxScaleFactor - minScaleFactor) * (1.0-norm_velocity[i]);
+    scale[i] = minScaleFactor + (maxScaleFactor - minScaleFactor) * (norm_velocity[i]);
   };
   parallel_for(mesh.nverts(), f, "f");
   auto scale_r = Read(scale);
@@ -259,27 +258,20 @@ int main(int argc, char** argv) {
   auto target_error = 1.0;
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_GIVEN, target_error, "tgt_metric"});
-//  genopts.nsmoothing_steps = 20; //makes the resulting mesh smoother
   Omega_h::generate_target_metric_tag(&mesh, genopts);
 
   mesh.set_parting(OMEGA_H_GHOSTED);
 
-
   //DEBUG { 
-  auto tgt_metrics = mesh.get_array<Real>(VERT, "target_metric");
-  auto ev = get_eigen_values(&mesh, tgt_metrics);
-  mesh.add_tag(VERT, "eigen_values", mesh.dim(), ev);
   auto edge_lengths_source = measure_edges_metric(&mesh, mesh.get_array<Real>(VERT, "metric"));
-  auto edge_lengths_target = measure_edges_metric(&mesh, tgt_metrics);
   mesh.add_tag(EDGE, "lengths_source", 1, edge_lengths_source);
+  auto edge_lengths_target = measure_edges_metric(&mesh, mesh.get_array<Real>(VERT, "target_metric"));
   mesh.add_tag(EDGE, "lengths_target", 1, edge_lengths_target);
   Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
   // }
 
   Omega_h::AdaptOpts opts(&mesh);
   setupFieldTransfer(opts);
-  opts.min_length_desired = minLength;
-  opts.max_length_desired = maxLength;
 
   printTriCount(&mesh);
   printTags(mesh);
