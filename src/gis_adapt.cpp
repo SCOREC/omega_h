@@ -236,19 +236,34 @@ int main(int argc, char** argv) {
 
   //create analytic velocity field
   auto velocity = normSquaredVelocity(mesh);
+  mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
   auto max_velocity = get_max(velocity);
   auto norm_velocity = divide_each_by(velocity, max_velocity);
-
-  mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
   mesh.add_tag(VERT, "norm_velocity", 1, norm_velocity);
+  const auto minScaleFactor = 0.25;
+  const auto maxScaleFactor = 8.0;
+  auto scale = Write<Real>(mesh.nverts());
+  auto f = OMEGA_H_LAMBDA(LO i) {
+    scale[i] = minScaleFactor + (maxScaleFactor - minScaleFactor) * (1.0-norm_velocity[i]);
+  };
+  parallel_for(mesh.nverts(), f, "f");
+  auto scale_r = Read(scale);
+  mesh.add_tag(VERT, "scale", 1, scale_r);
+
+  Omega_h::add_implied_metric_tag(&mesh);
+  auto metric = mesh.get_array<Real>(VERT, "metric");
+  auto tgt_metric = multiply_each(metric, scale_r);
+  mesh.add_tag(VERT, "tgt_metric", 3, Reals(tgt_metric));
+
+  auto genopts = Omega_h::MetricInput();
+  auto target_error = 1.0;
+  genopts.sources.push_back(
+      Omega_h::MetricSource{OMEGA_H_GIVEN, target_error, "tgt_metric"});
+//  genopts.nsmoothing_steps = 20; //makes the resulting mesh smoother
+  Omega_h::generate_target_metric_tag(&mesh, genopts);
 
   mesh.set_parting(OMEGA_H_GHOSTED);
 
-  Omega_h::add_implied_metric_tag(&mesh);
-  
-  auto metric = mesh.get_array<Real>(VERT, "metric");
-  auto tgt_metric = multiply_each(metric, norm_velocity);
-  add_metric_tag(&mesh, tgt_metric, "target_metric");
 
   //DEBUG { 
   auto tgt_metrics = mesh.get_array<Real>(VERT, "target_metric");
