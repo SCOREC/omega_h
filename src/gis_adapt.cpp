@@ -194,22 +194,27 @@ int main(int argc, char** argv) {
   Omega_h::binary::read(argv[1], world, &mesh);
 
   Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
-  classify_by_angles(&mesh,45*(Omega_h::PI/180));
+  classify_by_angles(&mesh,60*(Omega_h::PI/180));
 
   //create analytic velocity field
   auto velocity = normSquaredVelocity(mesh);
   mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
   auto max_velocity = get_max(velocity);
   auto norm_velocity = divide_each_by(velocity, max_velocity);
-  const auto minScaleFactor = 0.0625; //the largest element in 1.5 times larger, reducing to 0.03125 does not increase the largest element
-  const auto maxScaleFactor = 2.0; //the smallest element is 3.9 times smaller
+  const auto minScaleFactor = 0.25;
+  const auto maxScaleFactor = 4.0;
   std::cout << "minScaleFacor " << minScaleFactor << " " <<
                "maxScaleFacor " << maxScaleFactor << "\n";
   auto scale = Write<Real>(mesh.nverts());
-  auto f = OMEGA_H_LAMBDA(LO i) {
-    scale[i] = minScaleFactor + (maxScaleFactor - minScaleFactor) * (norm_velocity[i]);
+  auto set_metric_scaling = OMEGA_H_LAMBDA(LO i) {
+    const auto k = 0.8;
+    const auto a = k * (maxScaleFactor - minScaleFactor);
+    const auto b = (1 - k) * (maxScaleFactor - minScaleFactor);
+    const auto c = minScaleFactor;
+    const auto x = norm_velocity[i];
+    scale[i] = a * x * x + b * x + c;
   };
-  parallel_for(mesh.nverts(), f, "f");
+  parallel_for(mesh.nverts(), set_metric_scaling, "set_metric_scaling");
   auto scale_r = Read(scale);
   mesh.add_tag(VERT, "scale", 1, scale_r);
 
