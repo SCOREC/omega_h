@@ -182,6 +182,18 @@ Reals normSquaredVelocity(Mesh& mesh) {
   return Reals(vel_h);
 }
 
+Reals magnitudeOfVelocity(Mesh& mesh) {
+  auto vel_x = mesh.get_array<Real>(VERT, "solution_1");
+  auto vel_y = mesh.get_array<Real>(VERT, "solution_2");
+  auto vel_mag = Write<Real>(mesh.nverts());
+  auto f = OMEGA_H_LAMBDA(LO i) {
+    Vector<2> v{vel_x[i], vel_y[i]};
+    vel_mag[i] = norm(v);
+  };
+  parallel_for(mesh.nverts(), f, "magnitude_of_velocity");
+  return Read(vel_mag);
+}
+
 int main(int argc, char** argv) {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
@@ -197,10 +209,11 @@ int main(int argc, char** argv) {
   classify_by_angles(&mesh,60*(Omega_h::PI/180));
 
   //create analytic velocity field
-  auto velocity = normSquaredVelocity(mesh);
+  auto velocity = magnitudeOfVelocity(mesh);
   mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
   auto max_velocity = get_max(velocity);
   auto norm_velocity = divide_each_by(velocity, max_velocity);
+  mesh.add_tag(VERT, "norm_velocity", 1, Reals(norm_velocity));
   const auto minScaleFactor = 0.25;
   const auto maxScaleFactor = 4.0;
   std::cout << "minScaleFacor " << minScaleFactor << " " <<
