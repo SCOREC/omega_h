@@ -49,55 +49,26 @@ OMEGA_H_INLINE void rot_to_first(LO v[], Int nv, Int first) {
   rot_ntimes(v, nv, ((nv - first) % nv));
 }
 
-/* quad to tri template */
-OMEGA_H_CONSTANT_DATA Int const qtv2qqv[2][3] = {{0, 1, 2}, {2, 3, 0}};
 
 /* below are the hex-to-tet templates for the
    four unique cases identified by Dompierre et al.
    They list multiple templates for each case,
    here we'll be a bit lazy and just pick one each */
 
-/* tets from a hex with no diagonals
-   into the back-upper-right corner */
-OMEGA_H_CONSTANT_DATA Int const htv2hhv_0[5][4] = {
-    {0, 1, 2, 5}, {0, 2, 7, 5}, {0, 2, 3, 7}, {0, 5, 7, 4}, {2, 7, 5, 6}};
-/* tets from a hex with 1 diagonal
-   into the back-upper-right corner,
-   on the right face */
-OMEGA_H_CONSTANT_DATA Int const htv2hhv_1[6][4] = {{0, 5, 7, 4}, {0, 1, 7, 5},
-    {1, 6, 7, 5}, {0, 7, 2, 3}, {0, 7, 1, 2}, {1, 7, 6, 2}};
-/* tets from a hex with 2 diagonals
-   into the back-upper-right corner,
-   none on the right face */
-OMEGA_H_CONSTANT_DATA Int const htv2hhv_2[6][4] = {{0, 4, 5, 6}, {0, 3, 7, 6},
-    {0, 7, 4, 6}, {0, 1, 2, 5}, {0, 3, 6, 2}, {0, 6, 5, 2}};
-/* tets from a hex with 3 diagonals
-   into the back-upper-right corner */
-OMEGA_H_CONSTANT_DATA Int const htv2hhv_3[6][4] = {{0, 2, 3, 6}, {0, 3, 7, 6},
-    {0, 7, 4, 6}, {0, 5, 6, 4}, {1, 5, 6, 0}, {1, 6, 2, 0}};
-
-OMEGA_H_CONSTANT_DATA Int const hex_flip_pairs[4][2] = {
-    {0, 4}, {3, 5}, {1, 7}, {2, 6}};
-
 OMEGA_H_DEVICE void flip_hex(LO hhv2v[]) {
+  Int const hex_flip_pairs[4][2] = {
+      {0, 4}, {3, 5}, {1, 7}, {2, 6}};
   for (Int i = 0; i < 4; ++i)
     swap2(hhv2v[hex_flip_pairs[i][0]], hhv2v[hex_flip_pairs[i][1]]);
 }
 
-/* faces adjacent to the back-upper-right
-   corner, starting with the right face
-   and curling around the centroidal XYZ axis.
-   also, numbered with the corner vertex first */
-OMEGA_H_CONSTANT_DATA Int const hex_bur_faces[3][4] = {
-    {6, 5, 1, 2}, {6, 2, 3, 7}, {6, 7, 4, 5}};
-
-/* the vertices that rotate amonst one another
-   when a hex is rotated around its centroidal
-   XYZ axis (the line between the front-lower-left
-   corner and the back-upper-right corner). */
-OMEGA_H_CONSTANT_DATA Int const hex_bur_ring[6] = {1, 2, 3, 7, 5, 4};
-
 OMEGA_H_DEVICE void hex_bur_rot_ntimes(LO hhv2v[], Int ntimes) {
+  /* the vertices that rotate amonst one another
+     when a hex is rotated around its centroidal
+     XYZ axis (the line between the front-lower-left
+     corner and the back-upper-right corner). */
+  Int const hex_bur_ring[6] = {1, 2, 3, 7, 5, 4};
+
   LO tmp[6];
   for (Int i = 0; i < 6; ++i) {
     tmp[i] = hhv2v[hex_bur_ring[i]];
@@ -120,6 +91,8 @@ LOs tris_from_quads(LOs qv2v) {
   LO nq = divide_no_remainder(qv2v.size(), 4);
   LO nt = nq * 2;
   Write<LO> tv2v(nt * 3);
+  /* quad to tri template */
+  Int const qtv2qqv[2][3] = {{0, 1, 2}, {2, 3, 0}};
   auto f = OMEGA_H_LAMBDA(LO q) {
     LO qv_begin = q * 4;
     LO qqv2v[4];
@@ -143,6 +116,13 @@ LOs tris_from_quads(LOs qv2v) {
 
 static OMEGA_H_DEVICE void tets_from_hex_1(
     LO h, LOs hv2v, LO hhv2v[], Int diags_into[], Int& ndiags_into) {
+  /* faces adjacent to the back-upper-right
+     corner, starting with the right face
+     and curling around the centroidal XYZ axis.
+     also, numbered with the corner vertex first */
+  Int const hex_bur_faces[3][4] = {
+      {6, 5, 1, 2}, {6, 2, 3, 7}, {6, 7, 4, 5}};
+
   LO hv_begin = h * 8;
   for (Int i = 0; i < 8; ++i) {
     hhv2v[i] = hv2v[hv_begin + i];
@@ -178,6 +158,25 @@ static OMEGA_H_DEVICE void fill_tets_from_hex(Write<LO> tv2v, LOs h2ht, LO h,
 }
 
 LOs tets_from_hexes(LOs hv2v) {
+  /* tets from a hex with no diagonals
+     into the back-upper-right corner */
+  Int const htv2hhv_0[5][4] = {
+    {0, 1, 2, 5}, {0, 2, 7, 5}, {0, 2, 3, 7}, {0, 5, 7, 4}, {2, 7, 5, 6}};
+  /* tets from a hex with 1 diagonal
+     into the back-upper-right corner,
+     on the right face */
+  Int const htv2hhv_1[6][4] = {{0, 5, 7, 4}, {0, 1, 7, 5},
+      {1, 6, 7, 5}, {0, 7, 2, 3}, {0, 7, 1, 2}, {1, 7, 6, 2}};
+  /* tets from a hex with 2 diagonals
+     into the back-upper-right corner,
+     none on the right face */
+  Int const htv2hhv_2[6][4] = {{0, 4, 5, 6}, {0, 3, 7, 6},
+      {0, 7, 4, 6}, {0, 1, 2, 5}, {0, 3, 6, 2}, {0, 6, 5, 2}};
+  /* tets from a hex with 3 diagonals
+     into the back-upper-right corner */
+  Int const htv2hhv_3[6][4] = {{0, 2, 3, 6}, {0, 3, 7, 6},
+      {0, 7, 4, 6}, {0, 5, 6, 4}, {1, 5, 6, 0}, {1, 6, 2, 0}};
+
   LO nh = divide_no_remainder(hv2v.size(), 8);
   Write<LO> degrees(nh);
   auto count = OMEGA_H_LAMBDA(LO h) {
