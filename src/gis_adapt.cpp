@@ -220,12 +220,12 @@ int main(int argc, char** argv) {
                "maxScaleFacor " << maxScaleFactor << "\n";
   auto scale = Write<Real>(mesh.nverts());
   auto set_metric_scaling = OMEGA_H_LAMBDA(LO i) {
-    const auto k = 0.8;
-    const auto a = k * (maxScaleFactor - minScaleFactor);
-    const auto b = (1 - k) * (maxScaleFactor - minScaleFactor);
-    const auto c = minScaleFactor;
+    //from chatgpt 4o: "using a logaritmic function map range 0 to 1 to 0.25 to 4"
+    const auto a = 2.735;
+    const auto b = 19.0855;
+    const auto d = 0.25;
     const auto x = norm_velocity[i];
-    scale[i] = a * x * x + b * x + c;
+    scale[i] = a * std::log(b * x + 1) + d;
   };
   parallel_for(mesh.nverts(), set_metric_scaling, "set_metric_scaling");
   auto scale_r = Read(scale);
@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
   mesh.add_tag(VERT, "tgt_metric", 3, Reals(tgt_metric));
 
   auto genopts = Omega_h::MetricInput();
-  auto target_error = 1.0;
+  auto metric_scaling = 1.0; //1.0: no scaling
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_GIVEN, target_error, "tgt_metric"});
   Omega_h::generate_target_metric_tag(&mesh, genopts);
