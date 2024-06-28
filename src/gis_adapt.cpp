@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
   auto genopts = Omega_h::MetricInput();
   auto metric_scaling = 1.0; //1.0: no scaling
   genopts.sources.push_back(
-      Omega_h::MetricSource{OMEGA_H_GIVEN, target_error, "tgt_metric"});
+      Omega_h::MetricSource{OMEGA_H_GIVEN, metric_scaling, "tgt_metric"});
   Omega_h::generate_target_metric_tag(&mesh, genopts);
 
   mesh.set_parting(OMEGA_H_GHOSTED);
