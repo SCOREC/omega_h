@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
   //create analytic velocity field
   auto velocity = magnitudeOfVelocity(mesh);
   mesh.add_tag(VERT, "velocity", 1, Reals(velocity));
-  auto max_velocity = get_max(velocity);
+  auto max_velocity = get_max(velocity)*0.8;
   auto norm_velocity = divide_each_by(velocity, max_velocity);
   mesh.add_tag(VERT, "norm_velocity", 1, Reals(norm_velocity));
   const auto minScaleFactor = 0.25;
@@ -225,6 +225,7 @@ int main(int argc, char** argv) {
     const auto d = 0.25;
     const auto x = norm_velocity[i];
     scale[i] = a * std::log(b*x+1) + d;
+    if( x > 0.8 ) scale[i] = 12;
   };
   parallel_for(mesh.nverts(), set_metric_scaling, "set_metric_scaling");
   auto scale_r = Read(scale);
@@ -239,7 +240,6 @@ int main(int argc, char** argv) {
   auto metric_scaling = 1.0; //1.0: no scaling
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_GIVEN, metric_scaling, "tgt_metric"});
-  genopts.nsmoothing_steps = 10;
   Omega_h::generate_target_metric_tag(&mesh, genopts);
 
   mesh.set_parting(OMEGA_H_GHOSTED);
