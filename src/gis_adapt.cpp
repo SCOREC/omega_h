@@ -144,42 +144,6 @@ void setupFieldTransfer(AdaptOpts& opts) {
   }
 }
 
-//Mesh adaptation coarsening fails when there are periodic model edges around 'holes' in the
-//mesh.  The following is a hack of the mesh classification to (1) fix the ids
-//of some model vertices and (2) split periodic edges.  Both hacks are needed
-//for adaptation to succeed. If the input mesh changes the hardcoded values need
-//to change.
-void fixModelVtxIds(Mesh* m) {
-  auto v_class_id = m->get_array<LO>(VERT,"class_id");
-  auto v_class_dim = m->get_array<I8>(VERT,"class_dim");
-  const auto max_mdlVtx_id = get_max(v_class_id);
-  auto v_class_id_w = Write<LO>(v_class_id.size());
-  auto v_class_dim_w = Write<I8>(v_class_dim.size());
-  auto f = OMEGA_H_LAMBDA(LO a) {
-    // Split periodic edges around interior holes in the model by adding model
-    // vertices.  The ids used here are from paraview.
-    if( a == 445 ) {
-      printf("vtx %d cid %d cdim %d\n", a, v_class_id[a], v_class_dim[a]);
-      v_class_id_w[a] = max_mdlVtx_id + 2;
-      v_class_dim_w[a] = VERT;
-    }
-    if( a == 289 ) {
-      printf("vtx %d cid %d cdim %d\n", a, v_class_id[a], v_class_dim[a]);
-      v_class_id_w[a] = max_mdlVtx_id + 2;
-      v_class_dim_w[a] = VERT;
-    }
-    // Change the id of model vertices set to -1 ...
-    if( v_class_id[a] == -1 ) {
-      v_class_id_w[a] = max_mdlVtx_id + 1;
-    } else {
-      v_class_id_w[a] = v_class_id[a];
-    }
-  };
-  parallel_for(v_class_id.size(), f, "fixModelVtxIds");
-  m->set_tag(VERT, "class_id", read(v_class_id_w));
-  m->set_tag(VERT, "class_dim", read(v_class_dim_w));
-}
-
 Reals exponentialVelocity(Mesh& mesh) {
   auto coords = mesh.coords();
   auto coords_h = HostRead<Real>(coords);
@@ -234,19 +198,16 @@ Reals normSquaredVelocity(Mesh& mesh) {
 int main(int argc, char** argv) {
   feenableexcept(FE_ALL_EXCEPT & ~FE_INEXACT);  // Enable all floating point exceptions but FE_INEXACT
   auto lib = Library(&argc, &argv);
-  if( argc != 5 ) {
-    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix minLength maxLength\n", argv[0]);
+  if( argc != 3 ) {
+    fprintf(stderr, "Usage: %s inputMesh.osh outputMeshPrefix\n", argv[0]);
     exit(EXIT_FAILURE);
   }
   auto world = lib.world();
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], world, &mesh);
-  const auto minLength = std::stof(argv[3]);
-  const auto maxLength = std::stof(argv[4]);
-  fprintf(stderr, "minLength %f maxLength %f\n", minLength, maxLength);
 
   Omega_h::vtk::write_parallel("beforeClassFix_edges.vtk", &mesh, 1);
-  fixModelVtxIds(&mesh);
+  classify_by_angles(&mesh,60*(Omega_h::PI/180));
 
   //create analytic velocity field
   auto velocity = normSquaredVelocity(mesh);
@@ -260,8 +221,6 @@ int main(int argc, char** argv) {
   genopts.sources.push_back(
       Omega_h::MetricSource{OMEGA_H_VARIATION, target_error, "velocity"});
   genopts.verbose = true;
-  genopts.should_limit_gradation = true;
-  genopts.max_gradation_rate = Real(0.25); //adapt cannot be satisfy quality requirement without this, closer to 1 is no limit
   Omega_h::generate_target_metric_tag(&mesh, genopts);
   Omega_h::add_implied_metric_tag(&mesh);
 
@@ -273,13 +232,13 @@ int main(int argc, char** argv) {
   auto edge_lengths_target = measure_edges_metric(&mesh, tgt_metrics);
   mesh.add_tag(EDGE, "lengths_source", 1, edge_lengths_source);
   mesh.add_tag(EDGE, "lengths_target", 1, edge_lengths_target);
+  auto elen = measure_edges_real(&mesh);
+  mesh.add_tag(EDGE, "lengths_real", 1, elen);
   Omega_h::vtk::write_parallel("beforeAdapt_edges.vtk", &mesh, 1);
   // }
 
   Omega_h::AdaptOpts opts(&mesh);
   setupFieldTransfer(opts);
-  opts.min_length_desired = minLength;
-  opts.max_length_desired = maxLength;
 
   printTriCount(&mesh);
   printTags(mesh);
