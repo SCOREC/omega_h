@@ -108,11 +108,12 @@ set(Omega_h_SOURCES
   Omega_h_xml_lite.cpp
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
-  )
+  Omega_h_model2d.cpp
+)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 else()
-  set(Omega_h_SOURCES ${Omega_h_SOURCES}
+  list(APPEND Omega_h_SOURCES
     Omega_h_random.cpp
     Omega_h_coarsen_flip.cpp
 	)
@@ -120,14 +121,14 @@ endif()
 
 if (Omega_h_USE_CUDA)
   if (NOT Omega_h_USE_Kokkos)
-    set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_for.cpp)
+    list(APPEND Omega_h_SOURCES Omega_h_for.cpp)
   endif()
 else()
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_overlay.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_overlay.cpp)
 endif()
 
 if(Omega_h_USE_libMeshb)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshb.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_meshb.cpp)
 endif()
 
 if(Omega_h_USE_EGADS)
@@ -152,7 +153,7 @@ if(Omega_h_USE_EGADS)
   endif()
   message(STATUS "EGADS_INCLUDE_DIR: ${EGADS_INCLUDE_DIR}")
   message(STATUS "EGADS_LIBRARY: ${EGADS_LIBRARY}")
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_egads.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_egads.cpp)
 endif()
 
 if(Omega_h_USE_SimModSuite)
@@ -163,23 +164,23 @@ if(Omega_h_USE_SimModSuite)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
   find_package(SimModSuite MODULE REQUIRED)
   set(CMAKE_MODULE_PATH ${OLD_CMAKE_MODULE_PATH})
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshsim.cpp)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_matchMeshsim.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_meshsim.cpp Omega_h_matchMeshsim.cpp
+                              Omega_h_simModel2d.cpp)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/Omega_h_simConfig.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_simConfig.h")
 endif()
 
 if(Omega_h_USE_SEACASExodus)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_exodus.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_exodus.cpp)
 endif()
 
 if(Omega_h_USE_STK)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_stk.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_stk.cpp)
 endif()
 
 if(Omega_h_USE_DOLFIN)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_dolfin.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_dolfin.cpp)
 endif()
 
 if(Omega_h_USE_Kokkos)
@@ -436,6 +437,16 @@ if(BUILD_TESTING)
       ${CMAKE_SOURCE_DIR}/meshes)
 
     osh_add_exe(periodic_test)
+
+    osh_add_exe(simModel2dLoad)
+    set(TEST_EXES ${TEST_EXES} simModel2dLoad)
+    will_fail_test_func(simModel2dLoad_3d 1 ./simModel2dLoad
+      ${CMAKE_SOURCE_DIR}/meshes/Example_hex.smd)
+
+    osh_add_exe(simModel2dLoad_square)
+    set(TEST_EXES ${TEST_EXES} simModel2dLoad_square)
+    test_func(simModel2dLoad_square 1 ./simModel2dLoad_square
+      ${CMAKE_SOURCE_DIR}/meshes/square.smd)
   endif()
 
   osh_add_exe(load_2d)
@@ -705,15 +716,15 @@ set(Omega_h_HEADERS
   )
 
 if (NOT Omega_h_USE_CUDA)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_overlay.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_overlay.hpp)
 endif()
 
 if(Omega_h_USE_DOLFIN)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_dolfin.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_dolfin.hpp)
 endif()
 
 if(Omega_h_USE_STK)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_stk.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_stk.hpp)
 endif()
 
 if(Omega_h_USE_Kokkos)

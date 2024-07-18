@@ -636,9 +636,6 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info) {
 MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
     filesystem::path const& mdl_fname,
     CommPtr comm) {
-  SimModel_start();
-  Sim_readLicenseFile(NULL);
-  SimDiscrete_start(0);
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -649,16 +646,11 @@ MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
   meshsim::readMixed_internal(m, &mesh, simMeshInfo);
   M_release(m);
   GM_release(g);
-  SimDiscrete_stop(0);
-  SimModel_stop();
   return mesh;
 }
 
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
-  SimModel_start();
-  Sim_readLicenseFile(NULL);
-  SimDiscrete_start(0);
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -673,15 +665,10 @@ Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fn
   if(hasNumbering) MeshNex_delete(numbering);
   M_release(m);
   GM_release(g);
-  SimDiscrete_stop(0);
-  SimModel_stop();
   return mesh;
 }
 
 bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname) {
-  SimModel_start();
-  Sim_readLicenseFile(NULL);
-  SimDiscrete_start(0);
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -689,8 +676,6 @@ bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fna
   auto simMeshInfo = getSimMeshInfo(m);
   M_release(m);
   GM_release(g);
-  SimDiscrete_stop(0);
-  SimModel_stop();
   bool isMixed = (!simMeshInfo.is_simplex && !simMeshInfo.is_hypercube);
   return isMixed;
 }
