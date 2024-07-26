@@ -108,7 +108,8 @@ set(Omega_h_SOURCES
   Omega_h_xml_lite.cpp
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
-  )
+  Omega_h_model2d.cpp
+)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 else()
@@ -165,6 +166,7 @@ if(Omega_h_USE_SimModSuite)
   set(CMAKE_MODULE_PATH ${OLD_CMAKE_MODULE_PATH})
   set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshsim.cpp)
   set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_matchMeshsim.cpp)
+  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_simModel2d.cpp)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/Omega_h_simConfig.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_simConfig.h")
@@ -436,6 +438,16 @@ if(BUILD_TESTING)
       ${CMAKE_SOURCE_DIR}/meshes)
 
     osh_add_exe(periodic_test)
+
+    osh_add_exe(simModel2dLoad)
+    set(TEST_EXES ${TEST_EXES} simModel2dLoad)
+    will_fail_test_func(simModel2dLoad_3d 1 ./simModel2dLoad
+      ${CMAKE_SOURCE_DIR}/meshes/Example_hex.smd)
+
+    osh_add_exe(simModel2dLoad_square)
+    set(TEST_EXES ${TEST_EXES} simModel2dLoad_square)
+    test_func(simModel2dLoad_square 1 ./simModel2dLoad_square
+      ${CMAKE_SOURCE_DIR}/meshes/square.smd)
   endif()
 
   osh_add_exe(load_2d)
