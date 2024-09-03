@@ -167,6 +167,23 @@ class Mesh {
       std::string const& name, Read<T> array);
   friend class ScopedChangeRCFieldsToMesh;
 
+  #if defined(OMEGA_H_USE_KOKKOS)
+  /**
+   * \brief form a patch of at least minPatchSize elements surrounding each mesh
+   *        vertex
+   * \remark the patch is expanded via 2nd order adjacencies using meshDim-1 as
+   *         the bridge entity (e.g., faces for 3d, edges for 2d)
+   * \param m (in) mesh of simplices
+   * \param minPatchSize (in) the minimum number of elements in each patch
+   * \return a graph whose source nodes are mesh vertices, and
+   *         edges are connecting to elements in the patch 
+   *         OR
+   *         an empty graph upon failure
+   */
+  [[nodiscard]] Graph get_vtx_patches(Int minPatchSize);
+  #endif
+
+
  private:
   bool change_all_rcFieldsToMesh();
   bool change_all_rcFieldsTorc();
