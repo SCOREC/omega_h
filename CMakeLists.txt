@@ -29,6 +29,7 @@ bob_option(Omega_h_USE_Kokkos "Use Kokkos as a backend" OFF)
 bob_input(Kokkos_PREFIX "" PATH "Path to Kokkos install")
 bob_option(Omega_h_USE_CUDA_AWARE_MPI "Assume MPI is CUDA-aware, make use of that" OFF)
 bob_option(Omega_h_USE_SimModSuite "Enable reading Simmetrix MeshSim meshes" OFF)
+bob_option(Omega_h_USE_ADIOS2 "Enable ADIOS2" OFF)
 bob_input(Omega_h_VALGRIND "" STRING "Valgrind plus arguments for testing")
 bob_option(Omega_h_EXAMPLES "Compile examples" OFF)
 
@@ -161,6 +162,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_USE_EGADS
     Omega_h_USE_SEACASExodus
     Omega_h_USE_SimModSuite
+    Omega_h_USE_ADIOS2
     Omega_h_USE_DOLFIN
     Omega_h_USE_dwarf
     Omega_h_CHECK_BOUNDS
