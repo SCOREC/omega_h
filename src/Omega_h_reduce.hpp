@@ -30,7 +30,7 @@ typename T::value_type parallel_reduce(LO n, T f, char const* name = "") {
 #ifdef OMEGA_H_USE_KOKKOS
   VT result;
   f.init(result);
-  //if (n > 0) Kokkos::parallel_reduce(name, policy(n), f, result);
+  if (n > 0) Kokkos::parallel_reduce(name, policy(n), f, result);
 #else
   (void)name;
   VT result;

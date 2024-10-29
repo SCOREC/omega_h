@@ -398,6 +398,9 @@ if(BUILD_TESTING)
   set(TEST_EXES ${TEST_EXES} unit_math)
   test_basefunc(run_unit_math 1 ./unit_math)
 
+  osh_add_exe(reduce_test)
+  test_func(run_reduce_test 1 ./reduce_test)
+
   if(Omega_h_USE_SimModSuite)
     set(d3dMesh ${CMAKE_SOURCE_DIR}/meshes/d3d)
     test_func(run_tri_convert_gold 1 ./meshsim2osh
