@@ -492,6 +492,12 @@ if(BUILD_TESTING)
   osh_add_exe(coarsen_test)
   test_func(run_coarsen_test 1 ./coarsen_test)
 
+  if(Omega_h_USE_Gmsh AND Omega_h_USE_Kokkos)
+    osh_add_exe(test_tri_vert_orientation)
+    will_fail_test_func(run_tri_orientation 1 ./test_tri_vert_orientation ${CMAKE_SOURCE_DIR}/meshes/square4el.msh)
+    set(TEST_EXES ${TEST_EXES} test_tri_vert_orientation)
+  endif()
+
   osh_add_exe(2d_conserve_test)
   test_func(serial_2d_conserve 1 ./2d_conserve_test)
   if(Omega_h_USE_MPI)
@@ -605,6 +611,7 @@ if(BUILD_TESTING)
       ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p_reduce.vtk
       ${CMAKE_SOURCE_DIR}/meshes/box3d_2p_adapt.vtk)
   endif()
+
   osh_add_exe(shape_test)
   test_basefunc(run_shape_test 1 ./shape_test)
 
