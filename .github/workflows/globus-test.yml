@@ -1,6 +1,5 @@
 name: Globus-Systems
 on:
-  push:
   schedule:
     # Monday 6:35 UTC or 02:35 EDT
     - cron: '35 6 * * 1'
