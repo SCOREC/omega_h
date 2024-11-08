@@ -41,7 +41,6 @@ cmake -S omega_h -B build-omega_h \
   -DOmega_h_USE_OpenMP=OFF \
   -DCMAKE_CXX_COMPILER=CC \
   -DOMEGA_H_USE_HIP=ON \
-  -DOmega_h_USE_CUDA_AWARE_MPI=ON \
   -DOmega_h_USE_Kokkos=ON \
   -DKokkos_PREFIX=$PWD/build-kokkos/install \
   -DBUILD_TESTING=ON

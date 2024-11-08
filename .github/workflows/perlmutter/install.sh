@@ -52,6 +52,3 @@ cmake -S omega_h -B ${oh%%install} \
   -DCMAKE_CXX_COMPILER=CC \
   -DKokkos_PREFIX=$kk/lib64/cmake
 cmake --build ${oh%%install} -j 24 --target install
-
-
-# -DOmega_h_USE_CUDA_AWARE_MPI=ON \
