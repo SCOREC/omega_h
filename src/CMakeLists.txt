@@ -71,6 +71,7 @@ set(Omega_h_SOURCES
   Omega_h_owners.cpp
   Omega_h_parser.cpp
   Omega_h_parser_graph.cpp
+  Omega_h_patches.cpp
   Omega_h_pool.cpp
   Omega_h_print.cpp
   Omega_h_profile.cpp
@@ -397,6 +398,12 @@ if(BUILD_TESTING)
   if (Omega_h_USE_Kokkos)
     osh_add_exe(bbox_reduce_test)
     osh_add_exe(initKokkosAndLib)
+    osh_add_exe(test_patches)
+    if(Omega_h_USE_MPI)
+      test_func(run_test_patches_par 4 ./test_patches)
+    else()
+      test_func(run_test_patches 1 ./test_patches)
+    endif()
   endif()
   set(TEST_EXES ${TEST_EXES} unit_math)
   test_basefunc(run_unit_math 1 ./unit_math)
