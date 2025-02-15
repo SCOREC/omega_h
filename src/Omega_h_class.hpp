@@ -7,7 +7,7 @@ namespace Omega_h {
 
 class Mesh;
 
-void classify_by_angles(Mesh* mesh, Real sharp_angle);
+void classify_by_angles(Mesh* mesh, Real sharp_angle /*in radians*/);
 
 void classify_sides_by_exposure(Mesh* mesh, Read<I8> side_is_exposed);
 void classify_hinges_by_sharpness(

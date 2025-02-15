@@ -10,11 +10,10 @@ template< int N >
 struct bboxWrap {
   BBox<N> box;
 
-  KOKKOS_INLINE_FUNCTION   // Default constructor - Initialize to 0's
+  KOKKOS_INLINE_FUNCTION   // Default constructor
   bboxWrap() {
-    const auto zero = zero_vector<N>();
-    box.min = zero;
-    box.max = zero;
+    box.min = fill_vector<N>(Kokkos::Experimental::finite_max_v<Real>);
+    box.max = fill_vector<N>(Kokkos::Experimental::finite_min_v<Real>);
   }
   KOKKOS_INLINE_FUNCTION   // Copy Constructor
   bboxWrap(const bboxWrap & rhs) {

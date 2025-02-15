@@ -23,7 +23,7 @@ void check_point(const Omega_h::Matrix<2,3> & coords) {
 
 
 int main(int argc, char** argv) {
-  Omega_h::Matrix<2,3> coords{{0.0},{1,0},{0.5,1}} ;
+  Omega_h::Matrix<2,3> coords{{0,0},{1,0},{0.5,1}} ;
   check_verts(coords);
   check_point(coords);
 

@@ -18,7 +18,8 @@ jobs:
     if: |
       github.event.issue.pull_request &&
       contains(github.event.comment.body, '/runtests') &&
-      (github.event.comment.user.login == 'cwsmith')
+      ((github.event.comment.user.login == 'cwsmith') ||
+       (github.event.comment.user.login == 'jacobmerson'))
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
@@ -32,6 +33,7 @@ jobs:
         shell: bash
         run: |
           set +e #avoid exiting when lua modules return non-zero on 'warning' messages
+          source /etc/profile #provides module command
           module use /opt/scorec/spack/rhel9/v0201_4/lmod/linux-rhel9-x86_64/Core/
           module load gcc/12.3.0-iil3lno 
           module load mpich/4.1.1-xpoyz4t
@@ -72,6 +74,7 @@ jobs:
             -DBUILD_TESTING=on  \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \
+            -DOmega_h_USE_SimDiscrete=on \
             -DSIM_MPI=mpich4.1.1 \
             -DOmega_h_USE_Kokkos=on \
             -DOmega_h_CUDA_ARCH="80" \

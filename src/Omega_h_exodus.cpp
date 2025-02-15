@@ -341,6 +341,9 @@ void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
         std::cout << "P" << mesh->comm()->rank() << ": node set " << node_set_ids[i] << " has " << nentries
                   << " nodes" << std::endl;
       }
+      if( !nentries ) { //don't process empty node sets
+        continue;
+      }
       HostWrite<LO> h_set_nodes2nodes(nentries);
       CALL(ex_get_set(file, EX_NODE_SET, node_set_ids[i],
           h_set_nodes2nodes.data(), nullptr));

@@ -44,6 +44,15 @@ jobs:
       run: |
            echo "CXX=mpicxx" >> $GITHUB_ENV
 
+    - name: print info      
+      run: |
+           version=
+           echo "Compiler: ${{matrix.compiler}}"
+           ${{matrix.compiler}} --version
+           echo "MPI: ${{matrix.mpi}}"
+           echo "Kokkos: ${{matrix.kokkos}}"
+           echo "Memory Pool: ${{matrix.mempool}}"
+
     - name: Configure Kokkos
       if: ${{ matrix.kokkos == 'on' }}
       shell: bash

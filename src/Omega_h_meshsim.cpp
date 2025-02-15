@@ -7,9 +7,11 @@
 #include "Omega_h_mixedMesh.hpp"
 #include "Omega_h_adj.hpp"
 
-#include "SimModel.h"
+#include "MeshSim.h" // required to load GeomSim models in '.smd' files
 #include "SimUtil.h"
-#include "SimDiscrete.h"
+#ifdef OMEGA_H_USE_SIMDISCRETE
+#include "SimDiscrete.h"  // required to load discrete models in '.smd' files
+#endif
 
 namespace {
   int classId(pEntity e) {
@@ -636,9 +638,11 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info) {
 MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
     filesystem::path const& mdl_fname,
     CommPtr comm) {
-  SimModel_start();
+  MS_init();
   Sim_readLicenseFile(NULL);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_start(0);
+#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -649,16 +653,20 @@ MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
   meshsim::readMixed_internal(m, &mesh, simMeshInfo);
   M_release(m);
   GM_release(g);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_stop(0);
-  SimModel_stop();
+#endif
+  MS_exit();
   return mesh;
 }
 
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
-  SimModel_start();
+  MS_init();
   Sim_readLicenseFile(NULL);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_start(0);
+#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -673,15 +681,19 @@ Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fn
   if(hasNumbering) MeshNex_delete(numbering);
   M_release(m);
   GM_release(g);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_stop(0);
-  SimModel_stop();
+#endif
+  MS_exit();
   return mesh;
 }
 
 bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname) {
-  SimModel_start();
+  MS_init();
   Sim_readLicenseFile(NULL);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_start(0);
+#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -689,8 +701,10 @@ bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fna
   auto simMeshInfo = getSimMeshInfo(m);
   M_release(m);
   GM_release(g);
+#ifdef OMEGA_H_USE_SIMDISCRETE
   SimDiscrete_stop(0);
-  SimModel_stop();
+#endif
+  MS_exit();
   bool isMixed = (!simMeshInfo.is_simplex && !simMeshInfo.is_hypercube);
   return isMixed;
 }

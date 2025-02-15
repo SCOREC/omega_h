@@ -10,6 +10,7 @@
 #include <Omega_h_memory.hpp>
 #else
 #include <Omega_h_shared_alloc.hpp>
+#include <memory> //shared_ptr
 #include <string>
 #endif
 
@@ -136,7 +137,7 @@ class HostRead {
 #if defined(OMEGA_H_USE_KOKKOS)
   typename Kokkos::View<const T*, Kokkos::HostSpace> mirror_;
 #elif defined(OMEGA_H_USE_CUDA)
-  std::shared_ptr<T> mirror_;
+  std::shared_ptr<T[]> mirror_;
 #endif
  public:
   using value_type = T;
@@ -155,13 +156,27 @@ class HostWrite {
 #ifdef OMEGA_H_USE_KOKKOS
   typename View<T*>::HostMirror mirror_;
 #elif defined(OMEGA_H_USE_CUDA)
-  std::shared_ptr<T> mirror_;
+  std::shared_ptr<T[]> mirror_;
 #endif
  public:
   using value_type = T;
   HostWrite() = default;
   HostWrite(LO size_in, std::string const& name = "");
+  
+  /**
+ * \brief Constructs a HostWrite object with specified size, offset, and stride.
+ *
+ * \param size_in The number of entries in the array.
+ * \param offset The initial value to set for the first entry of the array.
+ * \param stride The difference between the values of consecutive entries in the array.
+ * \param name The name of the array for identification purposes (default is an empty string).
+ *
+ * This constructor initializes a HostWrite array with the given size, setting the first entry to the specified offset,
+ * and each subsequent entry to the previous entry's value plus the stride. The array is given a name for identification.
+ * For example, `HostWrite<Real> h_write(10, 7.0, 0.0);` will create a write array of size 10 and all filled with 7.0.
+ */
   HostWrite(LO size_in, T offset, T stride, std::string const& name = "");
+
   HostWrite(Write<T> write_in);
   HostWrite(std::initializer_list<T> l, std::string const& name = "");
   Write<T> write() const;

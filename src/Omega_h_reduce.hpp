@@ -47,6 +47,7 @@ Result transform_reduce(
     Iterator first, Iterator last, Result init, Op op, Tranform transform) {
   fprintf(stderr, "transform_reduce wrapper.  We shouldn't be here... exiting\n");
   OMEGA_H_CHECK(false);
+  return Result();
 }
 
 #elif defined(OMEGA_H_USE_CUDA)

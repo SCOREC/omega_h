@@ -701,6 +701,7 @@ $Elements
 $EndElements
 )GMSH";
 
+#ifdef OMEGA_H_USE_GMSH
 static const char* GMSH_3TETS_2SURFACES_2VOLUMES_MSH41[2] = {
     R"GMSH($MeshFormat
 4.1 0 8
@@ -938,6 +939,7 @@ $Elements
 5 1 2 4 6
 $EndElements
 )GMSH"};
+#endif //OMEGA_H_USE_GMSH
 
 static const char* GMSH_PHYSICAL_MSH41 = R"GMSH(
 $MeshFormat
@@ -1296,6 +1298,7 @@ Omega_h_Comparison light_compare_meshes(Mesh& a, Mesh& b) {
 }
 
 static void check_entities_global_ordering(Mesh& mesh) {
+#if defined(OMEGA_H_USE_MPI)
   // ensure global ids of all entities are in [0 ... N[
   for (int dim = 0; dim < mesh.dim(); ++dim) {
     /// global id of entities owned by this rank
@@ -1335,6 +1338,7 @@ static void check_entities_global_ordering(Mesh& mesh) {
       }
     }
   }
+#endif
 }
 
 static void test_gmsh_parallel(Library* lib) {
@@ -1481,8 +1485,8 @@ int main(int argc, char** argv) {
     test_read_vtu(&lib);
   }
   test_gmsh(&lib);
-#ifdef OMEGA_H_USE_GMSH
+#if defined(OMEGA_H_USE_GMSH) && defined(OMEGA_H_USE_MPI)
   test_gmsh_parallel(&lib);
-#endif  // OMEGA_H_USE_GMSH
+#endif
   return 0;
 }
