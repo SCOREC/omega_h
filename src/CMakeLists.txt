@@ -516,7 +516,7 @@ if(BUILD_TESTING)
   osh_add_exe(coarsen_test)
   test_func(run_coarsen_test 1 ./coarsen_test)
 
-  osh_add_exe(gis_adapt)
+  osh_add_exe(thwaites_adapt)
   if(Omega_h_USE_Gmsh AND Omega_h_USE_Kokkos)
     osh_add_exe(test_tri_vert_orientation)
     will_fail_test_func(run_tri_orientation 1 ./test_tri_vert_orientation ${CMAKE_SOURCE_DIR}/meshes/square4el.msh)
