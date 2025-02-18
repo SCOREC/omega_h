@@ -152,6 +152,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_ENABLE_DEMANGLED_STACKTRACE
     Omega_h_DBG
     Omega_h_USE_Kokkos
+    Omega_h_FORCE_KOKKOS_SORT
     Omega_h_USE_OpenMP
     Omega_h_USE_CUDA
     Omega_h_USE_SYCL
