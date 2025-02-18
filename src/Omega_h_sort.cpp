@@ -3,7 +3,9 @@
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 #endif
-
+#if defined(OMEGA_H_FORCE_KOKKOS_SORT)
+#include <Kokkos_Sort.hpp>
+#endif
 #include <Omega_h_int_iterator.hpp>
 #include <Omega_h_scan.hpp>
 #include <Omega_h_sort.hpp>
@@ -87,8 +89,15 @@ static LOs sort_by_keys_tmpl(Read<T> keys) {
   LO* begin = perm.data();
   LO* end = perm.data() + n;
   T const* keyptr = keys.data();
+#if defined(OMEGA_H_FORCE_KOKKOS_SORT)
+  using ExecSpace = Kokkos::DefaultExecutionSpace;
+  ExecSpace space{}; 
+  Write<LO> base(n, 0, 1);
+  Kokkos::Experimental::sort_by_key(space, base.view(), perm.view(), CompareKeySets<T, N>(keyptr));
+#else
   parallel_sort<LO, CompareKeySets<T, N>>(
       begin, end, CompareKeySets<T, N>(keyptr));
+#endif
   end_code();
   return perm;
 }
