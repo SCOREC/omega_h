@@ -77,7 +77,7 @@ struct CompareKeySets {
       T y = keys_[b * N + i];
       if (x != y) return x < y;
     }
-    return false;
+    return a < b;
   }
 };
 
