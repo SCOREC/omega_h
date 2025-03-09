@@ -31,13 +31,6 @@ int main(int argc, char *argv[])
   auto lib = Omega_h::Library(&argc, &argv);
   auto world = lib.world();
 
-  if (lib.world()->size()>1)
-  {
-    if (!lib.world()->rank())
-      fprintf(stderr, "ADIOS2 file I/O with partitioned mesh is not supported yet\n");
-    exit(EXIT_FAILURE);
-  }
-
   Omega_h::CmdLine cmdline;
 
   cmdline.add_arg<std::string>("input1.osh");
@@ -69,12 +62,12 @@ int main(int argc, char *argv[])
     bool allow_superset = false;
     auto opts = Omega_h::MeshCompareOpts::init(
                 &mesh1, Omega_h::VarCompareOpts{Omega_h::VarCompareOpts::RELATIVE, tol, floor});
-    auto res = compare_meshes(&mesh1, &mesh3, opts, true);
+    auto res = compare_meshes(&mesh1, &mesh3, opts, false);
     if (res == OMEGA_H_SAME || (allow_superset && res == OMEGA_H_MORE))
     {
       opts = Omega_h::MeshCompareOpts::init(
                 &mesh2, Omega_h::VarCompareOpts{Omega_h::VarCompareOpts::RELATIVE, tol, floor});
-      res = compare_meshes(&mesh2, &mesh4, opts, true);
+      res = compare_meshes(&mesh2, &mesh4, opts, false);
       if (res == OMEGA_H_SAME || (allow_superset && res == OMEGA_H_MORE))
       {  
 	std::cout << "\nSUCCESS! Meshes loaded from .osh and .bp are the same\n";
