@@ -121,6 +121,8 @@ SimMeshEntInfo::SimMeshEntInfo(const SimMesh& simMesh, bool hasNumbering_in) {
   int numR = mR.size(); 
   std::array<int,4> numEnts = {numV, numE, numF, numR};
   maxDim = getMaxDim(numEnts);
+  std::cout << "Max Dimension = " << maxDim << "\n";
+  std::cout << "Mesh is " <<(maxDim==2?"2D":"3D") << "\n";
 }
 
 SimMeshEntInfo::VertexInfo SimMeshEntInfo::readVerts(pMeshNex numbering) {
@@ -138,6 +140,13 @@ SimMeshEntInfo::VertexInfo SimMeshEntInfo::readVerts(pMeshNex numbering) {
     vtx = mV[i];
     double xyz[3];
     V_coord(vtx,xyz);
+     
+     // Convert coordinates from 3d cylindrical to 2d cartesian
+     double r = sqrt(xyz[0]*xyz[0] + xyz[1]*xyz[1]);
+     xyz[0] = r;  // x = r =sqrt(x^2 + y^2)
+     xyz[1] = xyz[2];  // y = z  
+     xyz[2] = 0.0;  // z = 0.0
+    
     if( maxDim < 3 && xyz[2] != 0 )
       Omega_h_fail("The z coordinate must be zero for a 2d mesh!\n");
     for(int j=0; j<maxDim; j++) {

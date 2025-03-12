@@ -41,7 +41,7 @@ struct SimMesh{
           std::vector <pFace> faces, std::vector <pRegion> regions);
 };
 
-SimMeshInfo getSimMeshInfo(pMesh m);
+SimMeshInfo getSimMeshInfo(const SimMesh& mesh);
 
 struct SimMeshEntInfo {
   int maxDim;
