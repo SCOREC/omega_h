@@ -39,6 +39,7 @@ struct SimMesh{
   std::vector <pRegion> mR; 
   SimMesh(std::vector <pVertex> vertices, std::vector <pEdge> edges, 
           std::vector <pFace> faces, std::vector <pRegion> regions);
+  SimMesh(pMesh m);
 };
 
 SimMeshInfo getSimMeshInfo(const SimMesh& mesh);
