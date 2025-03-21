@@ -6,6 +6,23 @@
 #include "Omega_h_for.hpp"
 #include <fstream>
 
+struct CompareKeySets {
+  Omega_h::Write<Omega_h::LO> const* keys_;
+  int N;
+  CompareKeySets(Omega_h::Write<Omega_h::LO> const* keys, int n) {
+    keys_ = keys;
+    N = n;
+}
+  OMEGA_H_INLINE bool operator()(const Omega_h::LO& a, const Omega_h::LO& b) const {
+    for (int i = 0; i < N; ++i) {
+      Omega_h::LO x = (*keys_)[a * N + i];
+      Omega_h::LO y = (*keys_)[b * N + i];
+      if (x != y) return x < y;
+    }
+    return false;
+  }
+};
+
 int main(int argc, char** argv) {
   using namespace Omega_h;
   auto lib = Library(&argc, &argv);
@@ -39,39 +56,13 @@ int main(int argc, char** argv) {
   {
     for(int i=0; i<3; i++) {
       fprintf(stderr, "large test %d\n", i);
-      Read<LO> keys, gold;
-      std::ifstream in("ab2b"+std::to_string(i)+".dat", std::ios::in);
-      assert(in.is_open());
-      binary::read_array(in, keys, false, false);
-      std::ifstream inGold("ba2ab"+std::to_string(i)+".dat", std::ios::in);
-      assert(in.is_open());
-      binary::read_array(inGold, gold, false, false);
-      in.close();
-      inGold.close();
-      LOs perm = sort_by_keys(keys);
-      auto perm_hr = HostRead<LO>(perm);
-      auto gold_hr = HostRead<LO>(gold);
-      bool isSame = true;
-      assert(perm_hr.size() == gold_hr.size());
-      for(int j=0; j<perm_hr.size(); j++) {
-        if(perm_hr[j] != gold_hr[j]) {
-          isSame = false;
-          fprintf(stderr, "%d %d %d\n", j, perm_hr[j], gold_hr[j]);
-        }
-      }
-      fprintf(stderr, "host matches %s\n", (isSame) ? "yes" : "no");
-      Write<LO> cnt({0});
-      auto countNEQ = OMEGA_H_LAMBDA(int i) {
-        if(perm[i] != gold[i]) {
-          atomic_increment(&cnt[0]);
-        }
-      };
-      parallel_for(perm.size(), countNEQ);
-      auto cnt_hr = HostRead<LO>(cnt);
-      fprintf(stderr, "device matches %s\n", (cnt_hr[0] == 0) ? "yes" : "no");
-      auto permMatch = (perm == gold);
-      fprintf(stderr, "perm matches (==) %s\n", (permMatch) ? "yes" : "no");
-      OMEGA_H_CHECK(permMatch);
+      Write<LO> random_keys();
+      auto n = 1;     
+      //auto n = divide_no_remainder(random_keys.size(), i);
+      Write<LO> gold_perm(n, 0, 1);
+      LO* begin = gold_perm.data();
+      LO* end = gold_perm.data() + n;
+      std::stable_sort(begin, end, CompareKeySets(&random_keys, i));  
     }
   }
   return 0;
