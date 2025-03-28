@@ -156,8 +156,6 @@ SimMeshEntInfo::SimMeshEntInfo(const SimMesh& simMesh, bool hasNumbering_in) {
   int numR = mR.size(); 
   std::array<int,4> numEnts = {numV, numE, numF, numR};
   maxDim = getMaxDim(numEnts);
-  std::cout << "Max Dimension = " << maxDim << "\n";
-  std::cout << "Mesh is " <<(maxDim==2?"2D":"3D") << "\n";
 }
 
 SimMeshEntInfo::VertexInfo SimMeshEntInfo::readVerts(pMeshNex numbering) {
@@ -706,12 +704,8 @@ MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
   pMesh m = M_load(mesh_fname.c_str(), g, p);
+  SimMesh simMesh(m);
 
-  std::vector <pVertex> mV = getMeshVertices(m); 
-  std::vector <pEdge> mE = getMeshEdges(m);
-  std::vector <pFace> mF = getMeshFaces(m); 
-  std::vector <pRegion> mR = getMeshRegions(m);
-  SimMesh simMesh(mV,mE,mF,mR);
   auto simMeshInfo = getSimMeshInfo(simMesh);
   auto mesh = MixedMesh(comm->library());
   mesh.set_comm(comm);
@@ -736,12 +730,7 @@ Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fn
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
   pMesh m = M_load(mesh_fname.c_str(), g, p);
-
-  std::vector <pVertex> mV = getMeshVertices(m); 
-  std::vector <pEdge> mE = getMeshEdges(m);
-  std::vector <pFace> mF = getMeshFaces(m); 
-  std::vector <pRegion> mR = getMeshRegions(m);
-  SimMesh simMesh(mV,mE,mF,mR);
+  SimMesh simMesh(m);
 
   auto simMeshInfo = getSimMeshInfo(simMesh);
   const bool hasNumbering = (numbering_fname.native() != std::string(""));
@@ -770,12 +759,7 @@ bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fna
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
   pMesh m = M_load(mesh_fname.c_str(), g, p);
-  
-  std::vector <pVertex> mV = getMeshVertices(m); 
-  std::vector <pEdge> mE = getMeshEdges(m);
-  std::vector <pFace> mF = getMeshFaces(m); 
-  std::vector <pRegion> mR = getMeshRegions(m);
-  SimMesh simMesh(mV,mE,mF,mR);
+  SimMesh simMesh(m);
 
   auto simMeshInfo = getSimMeshInfo(simMesh);
   M_release(m);
@@ -795,13 +779,11 @@ Mesh read(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
 
 Mesh read(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     CommPtr comm) {
-  std::cout << "Here in Read \n";
   return readImpl(mesh_fname, mdl_fname, std::string(""), comm);
 }
 
 MixedMesh readMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     CommPtr comm) {
-  std::cout << "Here in read mixed\n";
   return readMixedImpl(mesh_fname, mdl_fname, comm);
 }
 
