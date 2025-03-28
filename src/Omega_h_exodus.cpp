@@ -195,6 +195,31 @@ static void setup_names(
   }
 }
 
+void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix, std::string const& postfix, bool verbose) {
+  int num_elem_vars;
+  CALL(ex_get_variable_param(exodus_file, EX_ELEM_BLOCK, &num_elem_vars));
+  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_elem_vars << " element variables\n";
+  if (num_elem_vars == 0) return;
+  std::vector<char> names_memory;
+  std::vector<char*> name_ptrs;
+  setup_names(num_elem_vars, names_memory, name_ptrs);
+  CALL(ex_get_variable_names(
+      exodus_file, EX_ELEM_BLOCK, num_elem_vars, name_ptrs.data()));
+  for (int i = 0; i < num_elem_vars; ++i) {
+    auto name = name_ptrs[std::size_t(i)];
+    if (verbose)
+      std::cout << "P" << mesh->comm()->rank() << ": Loading element variable \"" << name << "\" at time step "
+	<< time_step << '\n';
+    auto name_osh = prefix + std::string(name) + postfix;
+    HostWrite<double> host_write(mesh->nelems(), name_osh);
+    CALL(ex_get_var(exodus_file, time_step + 1, EX_ELEM_BLOCK, i + 1, 1, mesh->nelems(), host_write.data()));
+    auto device_write = host_write.write();
+    auto device_read = Reals(device_write);
+    mesh->add_tag(FACE, name_osh, 1, device_read);
+  }
+}
+
 void read_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix, std::string const& postfix, bool verbose) {
   int num_nodal_vars;
@@ -340,6 +365,9 @@ void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
       if (verbose) {
         std::cout << "P" << mesh->comm()->rank() << ": node set " << node_set_ids[i] << " has " << nentries
                   << " nodes" << std::endl;
+      }
+      if( !nentries ) { //don't process empty node sets
+        continue;
       }
       HostWrite<LO> h_set_nodes2nodes(nentries);
       CALL(ex_get_set(file, EX_NODE_SET, node_set_ids[i],

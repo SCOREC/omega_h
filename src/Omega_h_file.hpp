@@ -87,6 +87,9 @@ void read_mesh(int exodus_file, Mesh* mesh, bool verbose = false,
 void read_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix = "", std::string const& postfix = "",
     bool verbose = false);
+void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix = "", std::string const& postfix = "",
+    bool verbose = false);
 void write(filesystem::path const& path, Mesh* mesh, bool verbose = false,
     int classify_with = NODE_SETS | SIDE_SETS);
 Mesh read_sliced(filesystem::path const& path, CommPtr comm,
