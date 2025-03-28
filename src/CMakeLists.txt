@@ -712,6 +712,7 @@ set(Omega_h_HEADERS
   Omega_h_math_lang.hpp
   Omega_h_matrix.hpp
   Omega_h_mesh.hpp
+  Omega_h_meshsim.hpp
   Omega_h_mixedMesh.hpp
   Omega_h_metric.hpp
   Omega_h_mpi.h

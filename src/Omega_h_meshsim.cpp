@@ -171,18 +171,29 @@ SimMeshEntInfo::VertexInfo SimMeshEntInfo::readVerts(pMeshNex numbering) {
 
   pVertex vtx;
   LO v = 0;
+
+  // Check if transformation data is attached on mesh vertices.
+  bool coordTransformationOn = false;
+  pMeshDataId tData = MD_lookupMeshDataId("tCoord");
+  if (EN_getDataPtr(mV[0], tData, NULL))
+  {
+    coordTransformationOn = true;
+    std::cout << "Coordinate Transformation = ON\n";
+  }
+
   for (int i = 0; i <numVtx; i++) {
     vtx = mV[i];
     double xyz[3];
     V_coord(vtx,xyz);
      
-     // Convert coordinates from 3d cylindrical to 2d cartesian
-     if( maxDim == 2)
+     // Convert coordinates from 3d cartesian to 2d cylindrical
+     if(coordTransformationOn)
      {
-       double r = sqrt(xyz[0]*xyz[0] + xyz[1]*xyz[1]);
-       xyz[0] = r;  // x = r =sqrt(x^2 + y^2)
-       xyz[1] = xyz[2];  // y = z  
-       xyz[2] = 0.0;  // z = 0.0
+       double* rzphi;  // R,Z,Phi
+       EN_getDataPtr((pEntity)vtx, tData, (void**)&rzphi);
+       xyz[0] = rzphi[0];
+       xyz[1] = rzphi[1];   
+       xyz[2] = 0.0;  
     }
 
     if( maxDim < 3 && xyz[2] != 0 )
