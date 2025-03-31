@@ -493,10 +493,21 @@ void write(filesystem::path const& path,
   filesystem::create_directory(path);
 
   adios2::ADIOS adios(mesh->comm()->get_impl());
-  adios2::IO io = adios.DeclareIO("mesh-writer");
+  adios2::IO io;
+  try {
+    io = adios.DeclareIO("omegahIO");
+  }
+  catch (std::exception &e /* std::invalid_argument */) {
+    io = adios.AtIO("omegahIO");
+  }
+
   std::string filename=path.c_str();
 
   adios2::Engine writer = io.Open(filename, adios2::Mode::Write);
+
+  // See the comments in read regarding version control
+  io.DefineAttribute<std::string>("version", "0");
+
   writer.BeginStep();
   for (; it!=mesh_map.end(); ++it)
     write_mesh(io, writer, it->first, it->second);
@@ -518,7 +529,13 @@ Mesh read(filesystem::path const& path, Library* lib, std::string pref)
   long unsigned int rank = lib->world()->rank();
 
   adios2::ADIOS adios(lib->world()->get_impl());
-  adios2::IO io = adios.DeclareIO("mesh-reader");
+  adios2::IO io;
+  try {
+    io = adios.DeclareIO("omegahIO");
+  }
+  catch (std::exception &e /* std::invalid_argument */) {
+    io = adios.AtIO("omegahIO");
+  }
 
   Mesh mesh(lib->world()->library());
   mesh.set_comm(lib->world());
@@ -526,6 +543,14 @@ Mesh read(filesystem::path const& path, Library* lib, std::string pref)
   string filename = path.c_str();
 
   adios2::Engine reader = io.Open(filename, adios2::Mode::Read);
+
+  // The system-wide version is not supported and is assumed to be 0
+  // A design change to a single IO/engine structure is required in the future
+  std::string version = "0";
+  auto version_att = io.InquireAttribute<std::string>("version");
+  if (version_att)
+    version = version_att.Data()[0];
+
   reader.BeginStep();
   read_meta(io, reader, &mesh, pref);
   int32_t nverts;
