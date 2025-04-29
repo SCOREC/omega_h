@@ -48,8 +48,10 @@ bool isMixed(filesystem::path const& mesh, filesystem::path const& model);
  * @param[in] pointer to Simmetrix mesh instance (pMesh)
  * @param[in] numbering path to Simmetrix MeshNex .nex numbering file
  * @param[in] comm path to Omega_h communicator instance
+ * @param[in][optional] a pointer to pMeshDataId for coordinate transformation 
+ *                      data attached to mesh vertices.
  */
-Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm);
+Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm, pMeshDataId* transformedCoordId = NULL);
 /**
  * Convert a serial Simmetrix sms mesh classified on the specified model to an
  * Omega_h mesh instance.
