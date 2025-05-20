@@ -613,8 +613,58 @@ Mesh read_sliced(filesystem::path const&, CommPtr, bool, int, int) {
 }
 #endif
 
+bool isExcludedField(FieldNames excludedNodalFields, std::string fieldName) {
+  for( auto& name : excludedNodalFields )
+    if(fieldName == name)
+      return true;
+  return false;
+}
+
+void write_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix, std::string const& postfix,
+    FieldNames excludedNodalFields, bool verbose) {
+  int num_nodal_vars = 0;
+  for (int i = 0; i<mesh->ntags(VERT); i++) {
+    if(mesh->get_tag(VERT,i)->type() == OMEGA_H_F64) {
+      if( ! isExcludedField(excludedNodalFields, mesh->get_tag(VERT,i)->name()) )
+        num_nodal_vars+= mesh->get_tag(VERT,i)->ncomps();
+    }
+  }
+  // Define nodal variable names in Exodus
+  if (num_nodal_vars > 0) {
+    if(verbose)
+      std::cout << "P" << mesh->comm()->rank() << ": " << num_nodal_vars << " nodal variables\n";
+    CALL(ex_put_variable_param(exodus_file, EX_NODAL, num_nodal_vars));
+
+    int exoVarIdx = 1;
+    for (int i = 0; i<mesh->ntags(VERT); i++) {
+      if(isExcludedField(excludedNodalFields, mesh->get_tag(VERT,i)->name()) ) continue;
+      if(mesh->get_tag(VERT,i)->type() != OMEGA_H_F64) continue;
+      const auto name = mesh->get_tag(VERT,i)->name();
+      auto field = mesh->get_array<Real>(VERT, name);
+      auto field_h = HostRead<Real>(field);
+      const auto ncomps = mesh->get_tag(VERT,i)->ncomps();
+      for(int comp = 0; comp < mesh->get_tag(VERT,i)->ncomps(); comp++) {
+        std::string compSuffix = (ncomps>1) ? "_" + std::to_string(comp) : "";
+        const auto name_mod = prefix + name + compSuffix + postfix;
+        if(verbose) {
+          std::cout << "P" << mesh->comm()->rank()
+                    << ": Writing component " << comp << " of nodal variable \"" << name << "\" with size " << field_h.size() / ncomps
+                    << " as \"" << name_mod << "\" at time step " << time_step << '\n';
+        }
+        CALL(ex_put_variable_name(exodus_file, EX_NODAL, exoVarIdx, name_mod.c_str()));
+        auto ignored = 1;
+        CALL(ex_put_var(exodus_file, time_step, EX_NODAL, exoVarIdx, ignored,
+                        mesh->nverts(), field_h.data()+comp*mesh->nverts()));
+        exoVarIdx++;
+      }
+    }
+  }
+}
+
 void write(
-    filesystem::path const& path, Mesh* mesh, bool verbose, int classify_with) {
+    filesystem::path const& path, Mesh* mesh, bool verbose, int classify_with,
+    FieldNames excludedNodalFields) {
   begin_code("exodus::write");
   auto comp_ws = int(sizeof(Real));
   auto io_ws = comp_ws;
@@ -767,7 +817,8 @@ void write(
             file, EX_NODE_SET, set_id, h_set_nodes2node.data(), nullptr));
       }
     }
-    std::vector<std::string> set_names(surface_set.size());
+    std::vector<std::string> side_set_names(surface_set.size());
+    std::vector<std::string> node_set_names(surface_set.size());
     for (auto& pair : mesh->class_sets) {
       auto& name = pair.first;
       for (auto& cp : pair.second) {
@@ -775,11 +826,13 @@ void write(
         std::size_t index = 0;
         for (auto surface_id : surface_set) {
           if (surface_id == cp.id) {
-            set_names[index] = name;
+            const auto node_set_name = std::string("boundary_node_set_") + std::to_string(index);
+            node_set_names[index] = node_set_name;
             if (verbose && (classify_with & exodus::NODE_SETS)) {
               std::cout << "P" << mesh->comm()->rank() << ": node set " << surface_id << " will be called \""
-                        << name << "\"\n";
+                        << node_set_name << "\"\n";
             }
+            side_set_names[index] = name;
             if (verbose && (classify_with & exodus::SIDE_SETS)) {
               std::cout << "P" << mesh->comm()->rank() << ": side set " << surface_id << " will be called \""
                         << name << "\"\n";
@@ -789,22 +842,35 @@ void write(
         }
       }
     }
-    std::vector<char*> set_name_ptrs(surface_set.size(), nullptr);
-    for (std::size_t i = 0; i < set_names.size(); ++i) {
-      if (set_names[i].empty()) {
+    //side sets are named in mesh->class_sets
+    std::vector<char*> side_set_name_ptrs(surface_set.size(), nullptr);
+    for (std::size_t i = 0; i < side_set_names.size(); ++i) {
+      if (side_set_names[i].empty()) {
         std::stringstream ss;
-        ss << "surface_" << i;
-        set_names[i] = ss.str();
+        ss << "surface_side_set_" << i;
+        side_set_names[i] = ss.str();
       }
-      set_name_ptrs[i] = const_cast<char*>(set_names[i].c_str());
+      side_set_name_ptrs[i] = const_cast<char*>(side_set_names[i].c_str());
+    }
+    //node sets are explicitly named
+    std::vector<char*> node_set_name_ptrs(surface_set.size(), nullptr);
+    for (std::size_t i = 0; i < node_set_names.size(); ++i) {
+      node_set_name_ptrs[i] = const_cast<char*>(node_set_names[i].c_str());
     }
     if (classify_with & exodus::NODE_SETS) {
-      CALL(ex_put_names(file, EX_NODE_SET, set_name_ptrs.data()));
+      CALL(ex_put_names(file, EX_NODE_SET, node_set_name_ptrs.data()));
     }
     if (classify_with & exodus::SIDE_SETS) {
-      CALL(ex_put_names(file, EX_SIDE_SET, set_name_ptrs.data()));
+      CALL(ex_put_names(file, EX_SIDE_SET, side_set_name_ptrs.data()));
     }
-  }
+  } //end if(classify_with)
+
+  // Write field data
+  int time_step = 1;
+  double time_value = 0.0;
+  ex_put_time(file, time_step, &time_value);
+  write_nodal_fields(file, mesh, time_step, "", "", excludedNodalFields, true);
+
   CALL(ex_close(file));
   end_code();
 }

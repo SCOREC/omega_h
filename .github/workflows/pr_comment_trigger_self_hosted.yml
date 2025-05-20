@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
     # The type of runner that the job will run on
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux, x64, gpu]
 
     if: |
       github.event.issue.pull_request &&
@@ -51,7 +51,7 @@ jobs:
           echo "workDir $workDir"
 
           # kokkos
-          git clone git@github.com:kokkos/kokkos.git ${workDir}/kokkos
+          git clone https://github.com/kokkos/kokkos.git ${workDir}/kokkos
           kkbdir=${workDir}/build-kokkos
           cmake -S ${workDir}/kokkos -B $kkbdir \
             -DCMAKE_BUILD_TYPE=Release \

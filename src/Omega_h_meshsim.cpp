@@ -129,9 +129,11 @@ SimMeshInfo getSimMeshInfo(pMesh m) {
 struct SimMeshEntInfo {
   int maxDim;
   bool hasNumbering;
+  pMeshDataId* transformedCoordId;
 
-  SimMeshEntInfo(std::array<int,4> numEnts, bool hasNumbering_in) {
+  SimMeshEntInfo(std::array<int,4> numEnts, bool hasNumbering_in, pMeshDataId* transformedCoordId_in = NULL) {
     hasNumbering = hasNumbering_in;
+    transformedCoordId = transformedCoordId_in;
     maxDim = getMaxDim(numEnts);
   }
 
@@ -160,9 +162,30 @@ struct SimMeshEntInfo {
     VIter vertices = M_vertexIter(m);
     pVertex vtx;
     LO v = 0;
+    
     while ((vtx = (pVertex) VIter_next(vertices))) {
       double xyz[3];
       V_coord(vtx,xyz);
+
+      // Convert coordinates from 3d cartesian to desired coordinates
+      if (transformedCoordId)
+      {
+        if (EN_getDataPtr((pEntity)vtx, *transformedCoordId, NULL))
+        {
+          double* tData;  // transformation data
+          EN_getDataPtr((pEntity)vtx, *transformedCoordId, (void**)&tData);
+          xyz[0] = tData[0];
+          xyz[1] = tData[1];
+          xyz[2] = tData[2];
+        }
+        else
+        {
+          Omega_h_fail("Coordinate transformation pointer is not NULL and transformation data is not \n"
+		       "accessible on the vertex with location %f, %f, %f. Make sure \n"
+                       "to attach transformation data or set transformedCoordId pointer to NULL. \n"
+                       , xyz[0], xyz[1], xyz[2]);
+        }
+      }
       if( maxDim < 3 && xyz[2] != 0 )
         Omega_h_fail("The z coordinate must be zero for a 2d mesh!\n");
       for(int j=0; j<maxDim; j++) {
@@ -529,7 +552,7 @@ void readMixed_internal(pMesh m, MixedMesh* mesh, SimMeshInfo info) {
       Read<I8>(mixedRgnClass.pyramid.dim.write()));
 }
 
-void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info) {
+void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info, pMeshDataId* transformedCoordId = NULL) {
   assert(info.is_simplex || info.is_hypercube);
   if(!info.is_simplex && !info.is_hypercube) {
       Omega_h_fail("Attempting to use the mono topology reader for a mixed"
@@ -543,7 +566,7 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info) {
 
   const bool hasNumbering = (numbering != NULL);
 
-  SimMeshEntInfo simEnts({{numVtx,numEdges,numFaces,numRegions}}, hasNumbering);
+  SimMeshEntInfo simEnts({{numVtx,numEdges,numFaces,numRegions}}, hasNumbering, transformedCoordId);
   mesh->set_dim(simEnts.maxDim);
   if (info.is_simplex) {
     mesh->set_family(OMEGA_H_SIMPLEX);
@@ -660,6 +683,18 @@ MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
   return mesh;
 }
 
+Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm, pMeshDataId* transformedCoordId) {
+  auto simMeshInfo = getSimMeshInfo(*m);
+  const bool hasNumbering = (numbering_fname.native() != std::string(""));
+  pMeshNex numbering = hasNumbering ? MeshNex_load(numbering_fname.c_str(), *m) : nullptr;
+  auto mesh = Mesh(comm->library());
+  mesh.set_comm(comm);
+  mesh.set_parting(OMEGA_H_ELEM_BASED);
+  meshsim::read_internal(*m, &mesh, numbering, simMeshInfo, transformedCoordId);
+  if(hasNumbering) MeshNex_delete(numbering);
+  return mesh;
+}
+
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
   MS_init();
@@ -671,14 +706,7 @@ Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fn
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
   pMesh m = M_load(mesh_fname.c_str(), g, p);
-  auto simMeshInfo = getSimMeshInfo(m);
-  const bool hasNumbering = (numbering_fname.native() != std::string(""));
-  pMeshNex numbering = hasNumbering ? MeshNex_load(numbering_fname.c_str(), m) : nullptr;
-  auto mesh = Mesh(comm->library());
-  mesh.set_comm(comm);
-  mesh.set_parting(OMEGA_H_ELEM_BASED);
-  meshsim::read_internal(m, &mesh, numbering, simMeshInfo);
-  if(hasNumbering) MeshNex_delete(numbering);
+  auto mesh = read(&m, numbering_fname, comm);
   M_release(m);
   GM_release(g);
 #ifdef OMEGA_H_USE_SIMDISCRETE

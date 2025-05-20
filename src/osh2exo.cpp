@@ -12,6 +12,9 @@ int main(int argc, char** argv) {
   auto& cwflag = cmdline.add_flag(
       "--classify-with", "comma separated \"node_sets,side_sets\"");
   cwflag.add_arg<std::string>("set-types");
+  auto& fieldsflag = cmdline.add_flag(
+      "--excluded-nodal-fields", "comma separated list of field names \"fieldName1,fieldName2,...,fieldNameN\"");
+  fieldsflag.add_arg<std::string>("field-names");
   if (!cmdline.parse(comm, &argc, argv) ||
       !Omega_h::CmdLine::check_empty(comm, argc, argv)) {
     cmdline.show_help(comm, argv);
@@ -33,8 +36,17 @@ int main(int argc, char** argv) {
   } else {
     classify_with = Omega_h::exodus::NODE_SETS | Omega_h::exodus::SIDE_SETS;
   }
+  Omega_h::exodus::FieldNames excludedNodalFields;
+  if (cmdline.parsed("--excluded-nodal-fields")) {
+    auto fieldNames = cmdline.get<std::string>("--excluded-nodal-fields", "field-names");
+    std::cout << fieldNames << "\n";
+    std::stringstream ss(fieldNames);
+    std::string s;
+    while (getline(ss, s, ','))
+      excludedNodalFields.push_back(s);
+  }
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(inpath, lib.world(), &mesh);
-  Omega_h::exodus::write(outpath, &mesh, verbose, classify_with);
+  Omega_h::exodus::write(outpath, &mesh, verbose, classify_with, excludedNodalFields);
   return 0;
 }

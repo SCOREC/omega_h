@@ -13,6 +13,10 @@
 #include <Omega_h_mixedMesh.hpp>
 #include <Omega_h_tag.hpp>
 
+#ifdef OMEGA_H_USE_SIMMODSUITE
+#include "MeshSim.h"
+#endif
+
 namespace Omega_h {
 
 OMEGA_H_DLL Mesh read_mesh_file(filesystem::path const& path, CommPtr comm);
@@ -38,7 +42,16 @@ namespace meshsim {
  * @param[in] model path to Simmetrix GeomSim .smd model file
  */
 bool isMixed(filesystem::path const& mesh, filesystem::path const& model);
-
+/**
+ * Convert a serial Simmetrix sms mesh classified on the specified model to an
+ * Omega_h mesh instance.
+ * @param[in] pointer to Simmetrix mesh instance (pMesh)
+ * @param[in] numbering path to Simmetrix MeshNex .nex numbering file
+ * @param[in] comm path to Omega_h communicator instance
+ * @param[in][optional] a pointer to pMeshDataId for coordinate transformation 
+ *                      data attached to mesh vertices.
+ */
+Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm, pMeshDataId* transformedCoordId = NULL);
 /**
  * Convert a serial Simmetrix sms mesh classified on the specified model to an
  * Omega_h mesh instance.
@@ -90,8 +103,10 @@ void read_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
 void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix = "", std::string const& postfix = "",
     bool verbose = false);
+typedef std::vector<std::string> FieldNames;
 void write(filesystem::path const& path, Mesh* mesh, bool verbose = false,
-    int classify_with = NODE_SETS | SIDE_SETS);
+    int classify_with = NODE_SETS | SIDE_SETS,
+    FieldNames excludedNodalFields = FieldNames());
 Mesh read_sliced(filesystem::path const& path, CommPtr comm,
     bool verbose = false, int classify_with = NODE_SETS | SIDE_SETS,
     int time_step = -1);
