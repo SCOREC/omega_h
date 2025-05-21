@@ -1,11 +1,3 @@
 <Project name="scorec">
-	<SubProject name="pumi-master"> </SubProject>
-	<SubProject name="pumi-develop"> </SubProject>
-	<SubProject name="pumi-develop-into-master"> </SubProject>
 	<SubProject name="omega_h"> </SubProject>
-	<SubProject name="pcms"> </SubProject>
-	<SubProject name="pumi-pic"> </SubProject>
-	<SubProject name="meshfields"> </SubProject>
-	<SubProject name="EnGPar"> </SubProject>
-	<SubProject name="redev"> </SubProject>
 </Project>
