@@ -14,9 +14,14 @@ jobs:
         mpi: [on, off]
         kokkos: [on, off]
         mempool: [on, off]
+        cxx_standard: [14, 17, 20]
         exclude:
         - kokkos: off
           mempool: on
+        - compiler: g++
+          cxx_standard: 14
+        - compiler: clang++
+          cxx_standard: 17
 
     env:
       CXX: ${{matrix.compiler}}
@@ -73,6 +78,7 @@ jobs:
       run: cmake .
            -Bbuild
            -DCMAKE_CXX_COMPILER=$CXX
+           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}
            -DCMAKE_VERBOSE_MAKEFILE=on
            -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
