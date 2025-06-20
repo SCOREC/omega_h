@@ -43,6 +43,9 @@ public:
   //geometry
   Real vtxTol, edgeTol;
   Reals vtxCoords;
+
+  LOs getEdgesinLoop(LO loopUse) const;
+
 private:
   Model2D() = default;
 };
