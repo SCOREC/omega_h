@@ -17,4 +17,18 @@ void Model2D::printInfo() {
   std::cout << "loop use, " << loopUseIds.size() << "\n";
 }
 
+//returns the edges in a loop use
+LOs Model2D::getEdgesinLoop(LO loopUse) const {
+  OMEGA_H_CHECK(loopUse < loopUseToEdgeUse.size());
+  LOs edgesUses = loopUseToEdgeUse[loopUse];
+  LOs edges(edgesUses.size());
+
+  Kokkos::parallel_for(
+      "getEdgesinLoop", edgesUses.size(),
+      KOKKOS_CLASS_LAMBDA(const LO index) {
+        edges[i] = edgeUseToVtx[edgesUses[i]];
+      });
+  return edges;
+}
+
 }  // namespace Omega_h
