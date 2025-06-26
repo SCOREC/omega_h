@@ -17,6 +17,27 @@ public:
 #endif
   static Model2D MeshModel2D_load(Mesh2D& mesh);
   void printInfo();
+  
+  //accessors
+  LOs const& getVtxIds() const { return vtxIds; }
+  LOs const& getEdgeIds() const { return edgeIds; }
+  LOs const& getFaceIds() const { return faceIds; }
+  LOs const& getEdgeUseIds() const { return edgeUseIds; }
+  LOs const& getLoopUseIds() const { return loopUseIds; }
+  Graph const& getEdgeToEdgeUse() const { return edgeToEdgeUse; }
+  Graph const& getFaceToLoopUse() const { return faceToLoopUse; }
+  Graph const& getLoopUseToEdgeUse() const { return loopUseToEdgeUse; }
+  LOs const& getEdgeUseToVtx() const { return edgeUseToVtx; }
+  Graph const& getVtxToEdgeUse() const { return vtxToEdgeUse; }
+  LOs const& getEdgeUseToLoopUse() const { return edgeUseToLoopUse; }
+  LOs const& getLoopUseToFace() const { return loopUseToFace; }
+  LOs const& getEdgeUseOrientation() const { return edgeUseOrientation; }
+  LOs const& getLoopUseOrientation() const { return loopUseOrientation; }
+  Real getVtxTol() const { return vtxTol; }
+  Real getEdgeTol() const { return edgeTol; }
+  Reals const& getVtxCoords() const { return vtxCoords; }
+
+  private:
   //ids
   LOs vtxIds, edgeIds , faceIds;
   LOs edgeUseIds, loopUseIds;
@@ -44,9 +65,6 @@ public:
   Real vtxTol, edgeTol;
   Reals vtxCoords;
 
-  LOs getEdgesinLoop(LO loopUse) const;
-
-private:
   Model2D() = default;
 };
 
