@@ -19,23 +19,83 @@ public:
   void printInfo();
   
   //accessors
-  LOs const& getVtxIds() const { return vtxIds; }
-  LOs const& getEdgeIds() const { return edgeIds; }
-  LOs const& getFaceIds() const { return faceIds; }
-  LOs const& getEdgeUseIds() const { return edgeUseIds; }
-  LOs const& getLoopUseIds() const { return loopUseIds; }
-  Graph const& getEdgeToEdgeUse() const { return edgeToEdgeUse; }
-  Graph const& getFaceToLoopUse() const { return faceToLoopUse; }
-  Graph const& getLoopUseToEdgeUse() const { return loopUseToEdgeUse; }
-  LOs const& getEdgeUseToVtx() const { return edgeUseToVtx; }
-  Graph const& getVtxToEdgeUse() const { return vtxToEdgeUse; }
-  LOs const& getEdgeUseToLoopUse() const { return edgeUseToLoopUse; }
-  LOs const& getLoopUseToFace() const { return loopUseToFace; }
-  LOs const& getEdgeUseOrientation() const { return edgeUseOrientation; }
-  LOs const& getLoopUseOrientation() const { return loopUseOrientation; }
-  Real getVtxTol() const { return vtxTol; }
-  Real getEdgeTol() const { return edgeTol; }
-  Reals const& getVtxCoords() const { return vtxCoords; }
+  /** @brief Get the vertex ids of the model.
+   *  
+   *  @return Read<LO> of vertex ids.
+   */
+  OMEGA_H_INLINE const& getVtxIds() const { return vtxIds; }
+  /** @brief Get the edge ids of the model.
+   *  
+   *  @return Read<LO> of edge ids.
+   */
+  OMEGA_H_INLINE LOs const& getEdgeIds() const { return edgeIds; }
+  /** @brief Get the face ids of the model.
+   *  
+   *  @return Read<LO> of face ids.
+   */
+  OMEGA_H_INLINE LOs const& getFaceIds() const { return faceIds; }
+    /** @brief Get the edge use ids of the model.
+   *  
+   *  @return Read<LO> of edge use ids.
+   */
+  OMEGA_H_INLINE LOs const& getEdgeUseIds() const { return edgeUseIds; }
+  /** @brief Get the loop use ids of the model.
+   *  
+   *  @return Read<LO> of loop use ids.
+   */
+  OMEGA_H_INLINE LOs const& getLoopUseIds() const { return loopUseIds; }
+  /** @brief Get the edge to edge use adjacency graph.
+   *  
+   *  @return Graph of edge to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph const& getEdgeToEdgeUse() const { return edgeToEdgeUse; }
+  /** @brief Get the face to loop use adjacency graph.
+   *  
+   *  @return Graph of face to loop use adjacencies.
+   */
+  OMEGA_H_INLINE Graph const& getFaceToLoopUse() const { return faceToLoopUse; }
+  /** @brief Get the loop use to edge use adjacency graph.
+   *  
+   *  @return Graph of loop use to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph const& getLoopUseToEdgeUse() const { return loopUseToEdgeUse; }
+  /** @brief Get the edge use to vertex adjacency array.
+   *  
+   *  @return Read<LO> of edge use to vertex adjacencies.
+   */
+  OMEGA_H_INLINE LOs const& getEdgeUseToVtx() const { return edgeUseToVtx; }
+  /** @brief Get the vertex to edge use adjacency graph.
+   *  
+   *  @return Graph of vertex to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph const& getVtxToEdgeUse() const { return vtxToEdgeUse; }
+  /** @brief Get the edge use to loop use adjacency array.
+   *  
+   *  @return Read<LO> of edge use to loop use adjacencies.
+   */
+  OMEGA_H_INLINE LOs const& getEdgeUseToLoopUse() const { return edgeUseToLoopUse; }
+  /** @brief Get the loop use to face adjacency array.
+   *  
+   *  @return Read<LO> of loop use to face adjacencies.
+   */
+  OMEGA_H_INLINE LOs const& getLoopUseToFace() const { return loopUseToFace; }
+  OMEGA_H_INLINE LOs const& getEdgeUseOrientation() const { return edgeUseOrientation; }
+  OMEGA_H_INLINE LOs const& getLoopUseOrientation() const { return loopUseOrientation; }
+  /** @brief Get the vertex tolerance.
+   *  
+   *  @return Real value of vertex tolerance.
+   */
+  OMEGA_H_INLINE Real getVtxTol() const { return vtxTol; }
+  /** @brief Get the edge tolerance.
+   *  
+   *  @return Real value of edge tolerance.
+   */
+  OMEGA_H_INLINE Real getEdgeTol() const { return edgeTol; }
+  /** @brief Get the vertex coordinates.
+   *  
+   *  @return Read<Real> of vertex coordinates.
+   */
+  OMEGA_H_INLINE Reals const& getVtxCoords() const { return vtxCoords; }
 
   private:
   //ids
