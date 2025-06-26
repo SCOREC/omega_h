@@ -23,7 +23,7 @@ public:
    *  
    *  @return Read<LO> of vertex ids.
    */
-  OMEGA_H_INLINE const& getVtxIds() const { return vtxIds; }
+  OMEGA_H_INLINE LOs const& getVtxIds() const { return vtxIds; }
   /** @brief Get the edge ids of the model.
    *  
    *  @return Read<LO> of edge ids.
