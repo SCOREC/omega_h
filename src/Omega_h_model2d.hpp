@@ -17,6 +17,87 @@ public:
 #endif
   static Model2D MeshModel2D_load(Mesh2D& mesh);
   void printInfo();
+  
+  //accessors
+  /** @brief Get the vertex ids of the model.
+   *  
+   *  @return Read<LO> of vertex ids.
+   */
+  OMEGA_H_INLINE LOs getVtxIds() const { return vtxIds; }
+  /** @brief Get the edge ids of the model.
+   *  
+   *  @return Read<LO> of edge ids.
+   */
+  OMEGA_H_INLINE LOs getEdgeIds() const { return edgeIds; }
+  /** @brief Get the face ids of the model.
+   *  
+   *  @return Read<LO> of face ids.
+   */
+  OMEGA_H_INLINE LOs getFaceIds() const { return faceIds; }
+    /** @brief Get the edge use ids of the model.
+   *  
+   *  @return Read<LO> of edge use ids.
+   */
+  OMEGA_H_INLINE LOs getEdgeUseIds() const { return edgeUseIds; }
+  /** @brief Get the loop use ids of the model.
+   *  
+   *  @return Read<LO> of loop use ids.
+   */
+  OMEGA_H_INLINE LOs getLoopUseIds() const { return loopUseIds; }
+  /** @brief Get the edge to edge use adjacency graph.
+   *  
+   *  @return Graph of edge to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph getEdgeToEdgeUse() const { return edgeToEdgeUse; }
+  /** @brief Get the face to loop use adjacency graph.
+   *  
+   *  @return Graph of face to loop use adjacencies.
+   */
+  OMEGA_H_INLINE Graph getFaceToLoopUse() const { return faceToLoopUse; }
+  /** @brief Get the loop use to edge use adjacency graph.
+   *  
+   *  @return Graph of loop use to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph getLoopUseToEdgeUse() const { return loopUseToEdgeUse; }
+  /** @brief Get the edge use to vertex adjacency array.
+   *  
+   *  @return Read<LO> of edge use to vertex adjacencies.
+   */
+  OMEGA_H_INLINE LOs getEdgeUseToVtx() const { return edgeUseToVtx; }
+  /** @brief Get the vertex to edge use adjacency graph.
+   *  
+   *  @return Graph of vertex to edge use adjacencies.
+   */
+  OMEGA_H_INLINE Graph getVtxToEdgeUse() const { return vtxToEdgeUse; }
+  /** @brief Get the edge use to loop use adjacency array.
+   *  
+   *  @return Read<LO> of edge use to loop use adjacencies.
+   */
+  OMEGA_H_INLINE LOs getEdgeUseToLoopUse() const { return edgeUseToLoopUse; }
+  /** @brief Get the loop use to face adjacency array.
+   *  
+   *  @return Read<LO> of loop use to face adjacencies.
+   */
+  OMEGA_H_INLINE LOs getLoopUseToFace() const { return loopUseToFace; }
+  OMEGA_H_INLINE LOs getEdgeUseOrientation() const { return edgeUseOrientation; }
+  OMEGA_H_INLINE LOs getLoopUseOrientation() const { return loopUseOrientation; }
+  /** @brief Get the vertex tolerance.
+   *  
+   *  @return Real value of vertex tolerance.
+   */
+  OMEGA_H_INLINE Real getVtxTol() const { return vtxTol; }
+  /** @brief Get the edge tolerance.
+   *  
+   *  @return Real value of edge tolerance.
+   */
+  OMEGA_H_INLINE Real getEdgeTol() const { return edgeTol; }
+  /** @brief Get the vertex coordinates.
+   *  
+   *  @return Read<Real> of vertex coordinates.
+   */
+  OMEGA_H_INLINE Reals const& getVtxCoords() const { return vtxCoords; }
+
+  private:
   //ids
   LOs vtxIds, edgeIds , faceIds;
   LOs edgeUseIds, loopUseIds;
@@ -44,9 +125,6 @@ public:
   Real vtxTol, edgeTol;
   Reals vtxCoords;
 
-  LOs getEdgesinLoop(LO loopUse) const;
-
-private:
   Model2D() = default;
 };
 

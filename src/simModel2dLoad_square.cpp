@@ -29,40 +29,40 @@ void printLOs(const Omega_h::LOs& arr, const int degree, std::string_view name) 
 void checkSquareModel(Omega_h::Model2D& model) {
   //the following were checked in SimModeler
   Omega_h::LOs expectedVtxIds = {19,15,11,10};
-  OMEGA_H_CHECK(model.vtxIds == expectedVtxIds);
+  OMEGA_H_CHECK(model.getVtxIds() == expectedVtxIds);
   Omega_h::LOs expectedEdgeIds = {6,12,16,20};
-  OMEGA_H_CHECK(model.edgeIds == expectedEdgeIds);
+  OMEGA_H_CHECK(model.getEdgeIds() == expectedEdgeIds);
   Omega_h::LOs expectedFaceIds = {2};
-  OMEGA_H_CHECK(model.faceIds == expectedFaceIds);
+  OMEGA_H_CHECK(model.getFaceIds() == expectedFaceIds);
 
   //In SimModeler, use ids and their adjacencies are **not** accessible/visible
   Omega_h::LOs expectedEdgeUseIds = {8,6,4,2,1,3,5,7};
-  OMEGA_H_CHECK(model.edgeUseIds == expectedEdgeUseIds);
+  OMEGA_H_CHECK(model.getEdgeUseIds() == expectedEdgeUseIds);
   Omega_h::LOs expectedLoopUseIds = {2,1};
-  OMEGA_H_CHECK(model.loopUseIds == expectedLoopUseIds);
+  OMEGA_H_CHECK(model.getLoopUseIds() == expectedLoopUseIds);
 
   //check adjacencies
   Omega_h::Graph expected_e2eu = Omega_h::Graph({0,2,4,6,8},{3,4,2,5,1,6,0,7});
-  OMEGA_H_CHECK(model.edgeToEdgeUse == expected_e2eu);
+  OMEGA_H_CHECK(model.getEdgeToEdgeUse() == expected_e2eu);
 
   Omega_h::LOs expected_eu2lu = {0,0,0,0,1,1,1,1};
-  OMEGA_H_CHECK(model.edgeUseToLoopUse == expected_eu2lu);
+  OMEGA_H_CHECK(model.getEdgeUseToLoopUse() == expected_eu2lu);
   Omega_h::Graph expected_lu2eu = Omega_h::Graph({0,4,8},{0,1,2,3,4,5,6,7});
-  OMEGA_H_CHECK(model.loopUseToEdgeUse == expected_lu2eu);
+  OMEGA_H_CHECK(model.getLoopUseToEdgeUse() == expected_lu2eu);
 
   Omega_h::LOs expected_eu2v = {0,3,1,0,2,1,3,2,3,2,2,1,1,0,0,3};
-  OMEGA_H_CHECK(model.edgeUseToVtx == expected_eu2v);
+  OMEGA_H_CHECK(model.getEdgeUseToVtx() == expected_eu2v);
   Omega_h::Graph expected_v2eu = Omega_h::Graph({0,4,8,12,16},
                                                 {0,1,6,7,
                                                  1,2,5,6,
                                                  2,3,4,5,
                                                  0,3,4,7});
-  OMEGA_H_CHECK(model.vtxToEdgeUse == expected_v2eu);
+  OMEGA_H_CHECK(model.getVtxToEdgeUse() == expected_v2eu);
 
   Omega_h::LOs expected_lu2f = {0,0};
-  OMEGA_H_CHECK(model.loopUseToFace == expected_lu2f);
+  OMEGA_H_CHECK(model.getLoopUseToFace() == expected_lu2f);
   Omega_h::Graph expected_f2lu = Omega_h::Graph({0,2},{0,1});
-  OMEGA_H_CHECK(model.faceToLoopUse == expected_f2lu);
+  OMEGA_H_CHECK(model.getFaceToLoopUse() == expected_f2lu);
 }
 
 int main(int argc, char** argv) {
