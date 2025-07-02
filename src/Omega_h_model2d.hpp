@@ -133,7 +133,25 @@ public:
    *  @return Read<LO> of loop use to face adjacencies.
    */
   OMEGA_H_INLINE LOs getLoopUseToFace() const { return loopUseToFace; }
+  /** @brief Get the edge use orientations.
+   *  
+   *  Returns a Read<LO> where each entry indicates the direction of the
+   *  edge use relative to its owning edge.
+   *  - 1: same direction.
+   *  - 0: opposite direction.
+   * 
+   *  @return Read<LO> of edge use orientations.
+   */
   OMEGA_H_INLINE LOs getEdgeUseOrientation() const { return edgeUseOrientation; }
+    /** @brief Get the loop use orientations.
+   *  
+   *  Returns a Read<LO> where each entry indicates the direction of the
+   *  loop use relative to its owning edge.
+   *  - 1: same direction.
+   *  - 0: opposite direction.
+   * 
+   *  @return Read<LO> of loop use orientations.
+   */
   OMEGA_H_INLINE LOs getLoopUseOrientation() const { return loopUseOrientation; }
   /** @brief Get the vertex tolerance.
    *  
@@ -147,7 +165,7 @@ public:
   OMEGA_H_INLINE Real getEdgeTol() const { return edgeTol; }
   /** @brief Get the vertex coordinates.
    *  
-   *  @return Read<Real> of vertex coordinates.
+   *  @return Read<Real> of vertex coordinates in the form {x_0,y_0,z_0, x_1,y_1,z_1...,x_n,y_n,z_n}.
    */
   OMEGA_H_INLINE Reals const& getVtxCoords() const { return vtxCoords; }
 };
