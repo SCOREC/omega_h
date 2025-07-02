@@ -29,8 +29,18 @@ struct Graph {
   LO nedges() const;
 };
 
+/** \brief combine the edges of two graphs that have the same set of nodes */
 Graph add_edges(Graph g1, Graph g2);
+/** \brief traverse two graphs a2b and b2c to form and return a graph from a2c */
 Graph unmap_graph(LOs a2b, Graph b2c);
+/**
+ * \brief apply reduction operation op to the edge data associated with each source node
+ * \param a2b (in) graph from source nodes to edges
+ * \param b_data (in) edge data, size = number of edges * width
+ * \param width (in) number of data points per edge 
+ * \param op (in) the reduction operation, i.e., min, max, sum
+ * \return an array with width data points per source node
+ */
 template <typename T>
 Read<T> graph_reduce(Graph a2b, Read<T> b_data, Int width, Omega_h_Op op);
 Reals graph_weighted_average_arc_data(

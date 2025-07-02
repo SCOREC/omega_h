@@ -235,6 +235,10 @@ static void test_hilbert() {
 }
 
 static void test_bbox() {
+  OMEGA_H_CHECK(are_close(BBox<2>(vector_2(-10, -15), vector_2(-1, -1)),
+      find_bounding_box<2>(Reals({-3, -12, -10, -1, -1, -15, -3, -2}))));
+  OMEGA_H_CHECK(are_close(BBox<2>(vector_2(1, 1), vector_2(10, 15)),
+      find_bounding_box<2>(Reals({3, 12, 10, 1, 1, 15, 3, 2}))));
   OMEGA_H_CHECK(are_close(BBox<2>(vector_2(-3, -3), vector_2(3, 3)),
       find_bounding_box<2>(Reals({0, -3, 3, 0, 0, 3, -3, 0}))));
   OMEGA_H_CHECK(are_close(BBox<3>(vector_3(-3, -3, -3), vector_3(3, 3, 3)),

@@ -38,7 +38,7 @@ OMEGA_H_DEVICE int atomic_fetch_add(int* const dest, const int val) {
 
 OMEGA_H_DEVICE void atomic_increment(int* const dest) {
 #if defined(OMEGA_H_USE_KOKKOS)
-  Kokkos::atomic_increment(dest);
+  Kokkos::atomic_inc(dest);
 #elif defined(OMEGA_H_USE_OPENMP) || defined(OMEGA_H_USE_CUDA)
   atomic_fetch_add(dest, 1);
 #else

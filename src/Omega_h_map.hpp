@@ -22,6 +22,16 @@ void map_into_range(
 template <typename T>
 Read<T> map_onto(Read<T> a_data, LOs a2b, LO nb, T init_val, Int width);
 
+/** 
+ * \brief return the array of b_data in the order specified by a2b
+ * \remark a2b does not need to use all entries of b_data; it
+ *         can replicate values from b_data by using an index
+ *         multiple times.
+ * \param a2b (in) specifies output order of data from b_data
+ * \param b_data (in) data to reorder, size = size(a2b)*width
+ * \param width (in) number of entries in b_data per item
+ * \return reordered array of b_data
+ */
 template <typename T>
 Write<T> unmap(LOs a2b, Read<T> b_data, Int width);
 
@@ -110,6 +120,17 @@ template <typename T>
 Read<T> fan_max(LOs a2b, Read<T> b_data);
 template <typename T>
 Read<T> fan_min(LOs a2b, Read<T> b_data);
+
+/**
+ * \brief apply reduction operation op to each sub-array of data from b_data
+ *        defined by the offset array a2b
+ * \param a2b (in) map from source nodes to edges (the 'offset' array, 'a2ab')
+ *                 with size = na + 1
+ * \param b_data (in) edge data, size = number of edges * width
+ * \param width (in) number of data points per edge 
+ * \param op (in) the reduction operation, i.e., min, max, sum
+ * \return an array with width data points per source node
+ */
 template <typename T>
 Read<T> fan_reduce(LOs a2b, Read<T> b_data, Int width, Omega_h_Op op);
 

@@ -154,8 +154,7 @@ if (SIM_ACIS)
       SpaACIS)
 endif()
 
-option(SIM_DISCRETE "Use Simmetrix discrete modeling" ON)
-if (SIM_DISCRETE)
+if (Omega_h_USE_SimDiscrete)
   set(SIM_CAD_LIB_NAMES SimDiscrete ${SIM_CAD_LIB_NAMES})
 endif()
 

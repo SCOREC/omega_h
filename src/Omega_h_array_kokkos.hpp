@@ -33,7 +33,7 @@ OMEGA_H_INLINE T* Write<T>::data() const noexcept {
 }
 
 template <typename T>
-OMEGA_H_INLINE long Write<T>::use_count() const {
+long Write<T>::use_count() const {
   return manager_ ? manager_.use_count() : view_.use_count();
 }
 

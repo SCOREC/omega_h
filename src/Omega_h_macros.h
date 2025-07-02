@@ -47,19 +47,23 @@
 #define OMEGA_H_INLINE_BIG OMEGA_H_INLINE
 #define OMEGA_H_DEVICE __host__ __device__ inline
 #define OMEGA_H_LAMBDA [=] __host__ __device__
+#if defined(__CUDA_ARCH__)
 #define OMEGA_H_CONSTANT_DATA __constant__
+#else
+#define OMEGA_H_CONSTANT_DATA
+#endif
 #elif defined(OMEGA_H_USE_KOKKOS)
 #define OMEGA_H_INLINE KOKKOS_INLINE_FUNCTION
 #define OMEGA_H_INLINE_BIG OMEGA_H_INLINE
 #define OMEGA_H_DEVICE KOKKOS_INLINE_FUNCTION
 #define OMEGA_H_LAMBDA KOKKOS_LAMBDA
-#define OMEGA_H_CONSTANT_DATA 
+#define OMEGA_H_CONSTANT_DATA constexpr
 #elif defined(OMEGA_H_USE_CUDA)
 #define OMEGA_H_INLINE __host__ __device__ inline
 #define OMEGA_H_INLINE_BIG OMEGA_H_INLINE
 #define OMEGA_H_DEVICE __host__ __device__ inline
 #define OMEGA_H_LAMBDA [=] __host__ __device__
-#define OMEGA_H_CONSTANT_DATA __constant__
+#define OMEGA_H_CONSTANT_DATA constexpr
 #elif defined(_MSC_VER)
 #define OMEGA_H_INLINE __forceinline
 #define OMEGA_H_INLINE_BIG inline

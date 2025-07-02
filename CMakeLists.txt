@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18.0...${CMAKE_VERSION})
 
-project(Omega_h VERSION 10.8.4 LANGUAGES CXX)
+project(Omega_h VERSION 10.9.0 LANGUAGES CXX)
 set(Omega_h_USE_STK_DEFAULT OFF)
 option(Omega_h_USE_STK "Whether to build the STK interface" ${Omega_h_USE_STK_DEFAULT})
 
@@ -29,6 +29,8 @@ bob_option(Omega_h_USE_Kokkos "Use Kokkos as a backend" OFF)
 bob_input(Kokkos_PREFIX "" PATH "Path to Kokkos install")
 bob_option(Omega_h_USE_CUDA_AWARE_MPI "Assume MPI is CUDA-aware, make use of that" OFF)
 bob_option(Omega_h_USE_SimModSuite "Enable reading Simmetrix MeshSim meshes" OFF)
+bob_option(Omega_h_USE_SimDiscrete "Enable reading and creating Simmetrix Discrete models" OFF)
+bob_option(Omega_h_USE_ADIOS2 "Enable ADIOS2" OFF)
 bob_input(Omega_h_VALGRIND "" STRING "Valgrind plus arguments for testing")
 bob_option(Omega_h_EXAMPLES "Compile examples" OFF)
 
@@ -36,6 +38,7 @@ bob_option(Omega_h_USE_MPI "Use MPI for parallelism" OFF)
 bob_option(Omega_h_ENABLE_DEMANGLED_STACKTRACE "Add linker options to enable human-readable stacktraces on gnu-c platforms." OFF)
 bob_option(Omega_h_DBG "Enable debug prints, stacktraces, etc." OFF)
 bob_option(Omega_h_GPU_CHECK "Run GPU check after each test" OFF) #the check command is hardcoded!
+bob_option(Omega_h_USE_CTAGS "Generate Ctags" OFF)
 
 if (Omega_h_ENABLE_DEMANGLED_STACKTRACE)
   message(STATUS "CMAKE_BUILD_TYPE= ${CMAKE_BUILD_TYPE}")
@@ -89,6 +92,10 @@ set(Omega_h_USE_pybind11_DEFAULT OFF)
 bob_public_dep(pybind11)
 
 if(Omega_h_USE_Kokkos)
+  bob_option(Omega_h_USE_Kokkos_Sort "Use Kokkos sort_by_key instead of vendor (Thrust, SYCL, etc.) provided sorting APIs." OFF)
+  if(Omega_h_USE_Kokkos_Sort AND Kokkos_VERSION VERSION_LESS 4.3)
+    message(SEND_ERROR "Kokkos sort_by_key requires Kokkos >= 4.3, found version ${Kokkos_VERSION}")
+  endif()
   if ("CUDA" IN_LIST Kokkos_DEVICES)
       bob_option(Omega_h_USE_CUDA "Whether to use CUDA" "ON")
   endif()
@@ -148,6 +155,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_ENABLE_DEMANGLED_STACKTRACE
     Omega_h_DBG
     Omega_h_USE_Kokkos
+    Omega_h_USE_Kokkos_Sort
     Omega_h_USE_OpenMP
     Omega_h_USE_CUDA
     Omega_h_USE_SYCL
@@ -160,6 +168,8 @@ set(Omega_h_KEY_BOOLS
     Omega_h_USE_EGADS
     Omega_h_USE_SEACASExodus
     Omega_h_USE_SimModSuite
+    Omega_h_USE_SimDiscrete
+    Omega_h_USE_ADIOS2
     Omega_h_USE_DOLFIN
     Omega_h_USE_dwarf
     Omega_h_CHECK_BOUNDS

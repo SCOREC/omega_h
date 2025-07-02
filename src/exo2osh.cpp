@@ -42,6 +42,8 @@ int main(int argc, char** argv) {
     if (ntime_steps > 0) {
       Omega_h::exodus::read_nodal_fields(
           exodus_file, &mesh, ntime_steps - 1, "", "", verbose);
+      Omega_h::exodus::read_element_fields(
+          exodus_file, &mesh, ntime_steps - 1, "", "", verbose);
     }
     Omega_h::exodus::close(exodus_file);
   } else {
