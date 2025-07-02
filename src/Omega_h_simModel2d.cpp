@@ -370,47 +370,25 @@ struct Adjacencies {
   }
 };
 
-void setVertexInfo(Model2D& mdl, const VtxInfo& vtxInfo) {
-  mdl.vtxIds = vtxInfo.ids;
-  mdl.vtxCoords = vtxInfo.coords;
-}
+void Model2D::setAdjInfo(Graph edgeToEdgeUse, LOs edgeUseToVtx, LOs loopUseToFace, LOs edgeUseToLoopUse) {
 
-void setEdgeIds(Model2D& mdl, const EdgeInfo& edgeInfo) {
-  mdl.edgeIds = edgeInfo.ids;
-}
-
-void setFaceIds(Model2D& mdl, const FaceInfo& faceInfo) {
-  mdl.faceIds = faceInfo.ids;
-}
-
-void setLoopUseIdsAndDir(Model2D& mdl, const LoopUseInfo& loopUseInfo) {
-  mdl.loopUseIds = loopUseInfo.ids;
-  mdl.loopUseOrientation = loopUseInfo.dir;
-}
-
-void setEdgeUseIdsAndDir(Model2D& mdl, const EdgeUseInfo& edgeUseInfo) {
-  mdl.edgeUseIds = edgeUseInfo.ids;
-  mdl.edgeUseOrientation = edgeUseInfo.dir;
-}
-
-void setAdjInfo(Model2D& mdl, Adjacencies& adj) {
-  mdl.edgeToEdgeUse = Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values));
-  mdl.edgeUseToVtx = LOs(adj.eu2v.values);
-  mdl.loopUseToFace = LOs(adj.lu2f.values);
-  mdl.edgeUseToLoopUse = LOs(adj.eu2lu.values);
+  this->edgeToEdgeUse = edgeToEdgeUse;
+  this->edgeUseToVtx = edgeUseToVtx;
+  this->loopUseToFace = loopUseToFace;
+  this->edgeUseToLoopUse = edgeUseToLoopUse;
 
   //The last two arguments to 'invert_adj(...)' are 'high' and 'low' entity
   //dimensions and are used to define names for the graph arrays. They have no
   //impact on the graph inversion.
-  mdl.vtxToEdgeUse = invert_adj(Adj(mdl.edgeUseToVtx),
+  this->vtxToEdgeUse = invert_adj(Adj(this->edgeUseToVtx),
                                 Adjacencies::eu2vDegree,
-                                mdl.vtxIds.size(), 1, 0);
-  mdl.loopUseToEdgeUse = invert_adj(Adj(mdl.edgeUseToLoopUse),
+                                this->vtxIds.size(), 1, 0);
+  this->loopUseToEdgeUse = invert_adj(Adj(this->edgeUseToLoopUse),
                                     Adjacencies::eu2luDegree,
-                                    mdl.loopUseIds.size(), 1, 1);
-  mdl.faceToLoopUse = invert_adj(Adj(mdl.loopUseToFace), 
+                                    this->loopUseIds.size(), 1, 1);
+  this->faceToLoopUse = invert_adj(Adj(this->loopUseToFace), 
                                  Adjacencies::lu2fDegree, 
-                                 mdl.faceIds.size(), 1, 2);
+                                 this->faceIds.size(), 1, 2);
 }
 
 void checkError(bool cond, std::string_view msg) {
@@ -452,12 +430,11 @@ Model2D Model2D::SimModel2D_load(std::string const& filename) {
 
   //setup model
   auto mdl = Model2D();
-  setVertexInfo(mdl, vtxInfo);
-  setEdgeIds(mdl, edgeInfo);
-  setFaceIds(mdl, faceInfo);
-  setLoopUseIdsAndDir(mdl, loopUseInfo);
-  setEdgeUseIdsAndDir(mdl, edgeUseInfo);
-  setAdjInfo(mdl, adj);
+  mdl.setVertexInfo(vtxInfo.ids, vtxInfo.coords);
+  mdl.setEdgeInfo(edgeInfo.ids, edgeUseInfo.ids, edgeUseInfo.dir);
+  mdl.setFaceIds(faceInfo.ids);
+  mdl.setLoopUseIdsAndDir(loopUseInfo.ids, loopUseInfo.dir);
+  mdl.setAdjInfo(Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values)), LOs(adj.eu2v.values), LOs(adj.lu2f.values), LOs(adj.eu2lu.values));
 
   GM_release(g);
   return mdl;
