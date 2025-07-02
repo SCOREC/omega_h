@@ -232,7 +232,6 @@ void traverseUses(pGModel mdl, Operator& op) {
   OMEGA_H_TIME_FUNCTION;
 
   GFIter modelFaces = GM_faceIter(mdl);
-  int idx = 0;
   pGFace modelFace;
   while(modelFace=GFIter_next(modelFaces)) {
     for(int side=0; side<2; side++) {
