@@ -36,6 +36,7 @@ private:
   LOs loopUseOrientation;
 
   //geometry
+  //TODO: Implement a heuristic to determine these tolerances
   Real vtxTol, edgeTol;
   Reals vtxCoords;
 
