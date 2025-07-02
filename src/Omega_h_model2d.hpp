@@ -10,6 +10,60 @@ namespace Omega_h {
 class Mesh2D;
 
 class Model2D {
+
+private:
+  //ids
+  LOs vtxIds, edgeIds , faceIds;
+  LOs edgeUseIds, loopUseIds;
+  //equal order adjacencies
+  //each edge will have at most two uses, edges bounding a single face will only have one
+  Graph edgeToEdgeUse;
+  //downward adjacencies
+  Graph faceToLoopUse;
+  Graph loopUseToEdgeUse;
+  LOs edgeUseToVtx; //each edgeUse has exactly two adjacent vertices
+  //upward adjacencies
+  Graph vtxToEdgeUse;
+  LOs edgeUseToLoopUse; //each edgeUse has one adjacent loop use
+  LOs loopUseToFace; //each loopUse has one adjacent face use
+
+  //For each edgeUse, indicates the direction of the edge use 
+  //relative to its owning edge. 1: same dir, 0: opposite dir
+  LOs edgeUseOrientation;
+
+  //For each loopUse, indicates forward or backward traversal order
+  //of the edgeUses belonging to the loop.  1: forward, 0: backward
+  LOs loopUseOrientation;
+
+  //geometry
+  Real vtxTol, edgeTol;
+  Reals vtxCoords;
+
+  Model2D() = default;
+
+  //Model load helper functions
+  void setAdjInfo(Graph edgeToEdgeUse, LOs edgeUseToVtx, LOs loopUseToFace, LOs edgeUseToLoopUse);
+
+  void setVertexInfo(LOs ids, Reals coords) {
+    this->vtxIds = ids;
+    this->vtxCoords = coords;
+  }
+
+  void setEdgeInfo(LOs ids, LOs useIds, LOs useOrientation) {
+    this->edgeIds = ids;
+    this->edgeUseIds = useIds;
+    this->edgeUseOrientation = useOrientation;
+  }
+
+  void setFaceIds(LOs ids) {
+    this->faceIds = ids;
+  }
+
+  void setLoopUseIdsAndDir(LOs ids, LOs useOrientation) {
+    this->loopUseIds = ids;
+    this->loopUseOrientation = useOrientation;
+  }
+
 public:
   //constructors
 #ifdef OMEGA_H_USE_SIMMODSUITE
@@ -96,36 +150,6 @@ public:
    *  @return Read<Real> of vertex coordinates.
    */
   OMEGA_H_INLINE Reals const& getVtxCoords() const { return vtxCoords; }
-
-  private:
-  //ids
-  LOs vtxIds, edgeIds , faceIds;
-  LOs edgeUseIds, loopUseIds;
-  //equal order adjacencies
-  //each edge will have at most two uses, edges bounding a single face will only have one
-  Graph edgeToEdgeUse;
-  //downward adjacencies
-  Graph faceToLoopUse;
-  Graph loopUseToEdgeUse;
-  LOs edgeUseToVtx; //each edgeUse has exactly two adjacent vertices
-  //upward adjacencies
-  Graph vtxToEdgeUse;
-  LOs edgeUseToLoopUse; //each edgeUse has one adjacent loop use
-  LOs loopUseToFace; //each loopUse has one adjacent face use
-
-  //For each edgeUse, indicates the direction of the edge use 
-  //relative to its owning edge. 1: same dir, 0: opposite dir
-  LOs edgeUseOrientation;
-
-  //For each loopUse, indicates forward or backward traversal order
-  //of the edgeUses belonging to the loop.  1: forward, 0: backward
-  LOs loopUseOrientation;
-
-  //geometry
-  Real vtxTol, edgeTol;
-  Reals vtxCoords;
-
-  Model2D() = default;
 };
 
 }
