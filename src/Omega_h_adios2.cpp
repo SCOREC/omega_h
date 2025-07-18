@@ -95,7 +95,7 @@ static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh,
   adios2::Variable<T> bpData = 
 	  io.DefineVariable<T>(
           name, {comm_size * Nx, n_comp}, {rank * Nx,0}, {Nx, n_comp}, adios2::ConstantDims);
-  writer.Put(bpData, myData.data());
+  writer.Put(bpData, myData.data(), adios2::Mode::Sync);
 }
 
 template <typename T>
