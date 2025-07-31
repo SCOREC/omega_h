@@ -153,16 +153,16 @@ static constexpr bool dont_compress = false;
 TagSet get_all_vtk_tags(Mesh* mesh, Int cell_dim);
 TagSet get_all_vtk_tags_mix(Mesh* mesh, Int cell_dim);
 void write_vtu(std::ostream& stream, Mesh* mesh, Int cell_dim,
-    TagSet const& tags, bool compress = OMEGA_H_DEFAULT_COMPRESS);
+    TagSet const& tags, bool compress = OMEGA_H_DEFAULT_COMPRESS, bool force_resize = true);
 void write_vtu(filesystem::path const& filename, Mesh* mesh, Int cell_dim,
-    TagSet const& tags, bool compress = OMEGA_H_DEFAULT_COMPRESS);
+    TagSet const& tags, bool compress = OMEGA_H_DEFAULT_COMPRESS, bool force_resize = true);
 void write_vtu(std::string const& filename, Mesh* mesh, Int cell_dim,
-    bool compress = OMEGA_H_DEFAULT_COMPRESS);
+    bool compress = OMEGA_H_DEFAULT_COMPRESS, bool force_resize = true);
 void write_vtu(std::string const& filename, Mesh* mesh,
-    bool compress = OMEGA_H_DEFAULT_COMPRESS);
+    bool compress = OMEGA_H_DEFAULT_COMPRESS, bool force_resize = true);
 
 void write_vtu(filesystem::path const& filename, MixedMesh* mesh, Topo_type max_type,
-    bool compress = OMEGA_H_DEFAULT_COMPRESS);
+    bool compress = OMEGA_H_DEFAULT_COMPRESS, bool force_resize = true);
 
 void write_parallel(filesystem::path const& path, Mesh* mesh, Int cell_dim,
     TagSet const& tags, bool compress = OMEGA_H_DEFAULT_COMPRESS);
