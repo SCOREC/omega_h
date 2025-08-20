@@ -22,10 +22,10 @@ jobs:
         #run one config with the oldest compatible kokkos version
         include:
            - compiler: g++
-           - kokkos: on
-           - mempool: on
-           - mpi: off
-           kokkos_version: 4.0.00
+             kokkos: on
+             mempool: on
+             mpi: off
+             kokkos_version: 4.0.00
 
     strategy:
       matrix:
