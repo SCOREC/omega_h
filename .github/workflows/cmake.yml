@@ -27,15 +27,6 @@ jobs:
              mpi: off
              kokkos_version: 4.0.00
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        node-version: [14]
-        include:
-           - os: windows-latest
-           node-version: 16
-           custom-variable: custom-value
-
     env:
       CXX: ${{matrix.compiler}}
       MPICH_CXX: ${{matrix.compiler}}
