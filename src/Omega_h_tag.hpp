@@ -9,20 +9,36 @@ inline void check_tag_name(std::string const& name) {
   OMEGA_H_CHECK(!name.empty());
 }
 
+enum class ArrayType {
+  NotSpecified,
+  Scalar,
+  Vector2D,
+  Vector3D,
+  SquareMatrix2D, // 2 x 2
+  Matrix2x3, // 2 x 3
+  Tensor2D, // 3 x 2
+  Tensor3D, // 3 x 3
+};
+
 class TagBase {
  public:
   TagBase(std::string const& name_in, Int ncomps_in);
   TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  TagBase(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   virtual ~TagBase();
   std::string const& name() const;
   Int ncomps() const;
   virtual Omega_h_Type type() const = 0;
   LOs class_ids() const;
+  ArrayType array_type() const;
 
  private:
   std::string name_;
   Int ncomps_;
   LOs class_ids_;
+  ArrayType array_type_ = ArrayType::NotSpecified;
 };
 
 template <typename T>
@@ -30,6 +46,9 @@ class Tag : public TagBase {
  public:
   Tag(std::string const& name_in, Int ncomps_in);
   Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  Tag(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   Read<T> array() const;
   void set_array(Read<T> array_in);
   virtual Omega_h_Type type() const override;

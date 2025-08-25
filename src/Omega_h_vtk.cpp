@@ -276,23 +276,14 @@ void write_tag_impl<Real>(
   const auto ncomps = tag->ncomps();
   const auto name = tag->name();
   auto array = as<Real>(tag)->array();
+  auto array_type = tag->array_type();
   // don't use array from "tag" b/c change_tagToMesh creates new tag
-  if (1 < space_dim && space_dim < 3) {
-    if (ncomps == space_dim) {
-      // VTK / ParaView expect vector fields to have 3 components
-      // regardless of whether this is a 2D mesh or not.
-      // this filter adds a 3rd zero component to any
-      // fields with 2 components for 2D meshes
-      write_array(
+  if (array_type == ArrayType::Vector3D && ncomps != 3) {
+    write_array(
           stream, name, 3, resize_vectors(array, space_dim, 3), compress);
-    } else if (ncomps == symm_ncomps(space_dim)) {
-      // Likewise, ParaView has component names specially set up for
-      // 3D symmetric tensors
-      write_array(stream, name, symm_ncomps(3),
+  } else if (array_type == ArrayType::Tensor2D && ncomps != symm_ncomps(3)) {
+    write_array(stream, name, symm_ncomps(3),
           resize_symms(array, space_dim, 3), compress);
-    } else {
-      write_array(stream, name, ncomps, array, compress);
-    }
   } else {
     write_array(stream, name, ncomps, array, compress);
   }
