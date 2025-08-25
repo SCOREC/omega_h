@@ -318,17 +318,7 @@ void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
     Int ent_dim, std::string const& name, LOs class_ids, bool needs_swapping,
     bool is_compressed) {
   auto array = read_array<Real>(stream, size, needs_swapping, is_compressed);
-  // special case for reading real tags only
-  // undo the resizes done in write_tag()
-  if (1 < mesh->dim() && mesh->dim() < 3) {
-    if (ncomps == 3) {
-      array = resize_vectors(array, 3, mesh->dim());
-      ncomps = mesh->dim();
-    } else if (ncomps == symm_ncomps(3)) {
-      array = resize_symms(array, 3, mesh->dim());
-      ncomps = symm_ncomps(mesh->dim());
-    }
-  }
+
   if (is_rc_tag(name)) {
     mesh->set_rc_from_mesh_array(ent_dim, ncomps, class_ids, name, array);
   } else {
