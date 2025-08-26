@@ -84,6 +84,25 @@ jobs:
           cmake --build $bdir -j 4
           ctest --test-dir $bdir --output-on-failure
 
+          # omegah
+          bdir=${workDir}/build-omegah-kkSort
+          cmake -S omegah_${{ github.event.issue.number }} -B $bdir \
+            -DCMAKE_INSTALL_PREFIX=$bdir/install \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=on  \
+            -DOmega_h_USE_MPI=on  \
+            -DOmega_h_USE_SimModSuite=on \
+            -DOmega_h_USE_SimDiscrete=on \
+            -DSIM_MPI=mpich4.1.1 \
+            -DOmega_h_USE_Kokkos=on \
+            -DOmega_h_USE_Kokkos_Sort=on \
+            -DOmega_h_CUDA_ARCH="80" \
+            -DCMAKE_CUDA_ARCHITECTURES="80" \
+            -DKokkos_PREFIX=$kkbdir/install \
+            -DBUILD_SHARED_LIBS=on
+          cmake --build $bdir -j 4
+          ctest --test-dir $bdir --output-on-failure
+
       - name: Save Result Link
         if: ${{ !cancelled() }} #prepare report unless the job was cancelled
         run: |

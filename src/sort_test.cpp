@@ -1,4 +1,5 @@
 #include "Omega_h_library.hpp"
+#include "Omega_h_cmdline.hpp"
 #include "Omega_h_array_ops.hpp"
 #include "Omega_h_sort.hpp"
 #include "Omega_h_file.hpp"
@@ -10,6 +11,10 @@ int main(int argc, char** argv) {
   using namespace Omega_h;
   auto lib = Library(&argc, &argv);
   auto world = lib.world();
+  Omega_h::CmdLine cmdline;
+  cmdline.add_arg<std::string>("array-in");
+  cmdline.add_arg<std::string>("gold-array-in");
+  if (!cmdline.parse_final(world, &argc, argv)) return -1;
   {
     LOs a({0, 2, 0, 1});
     LOs perm = sort_by_keys(a,1);
@@ -37,13 +42,13 @@ int main(int argc, char** argv) {
     OMEGA_H_CHECK(perm == LOs({1, 0, 2}));
   }
   {
-    for(int i=0; i<3; i++) {
-      fprintf(stderr, "large test %d\n", i);
       Read<LO> keys, gold;
-      std::ifstream in("ab2b"+std::to_string(i)+".dat", std::ios::in);
+			auto array_in = cmdline.get<std::string>("array-in");
+      std::ifstream in(array_in, std::ios::in);
       assert(in.is_open());
       binary::read_array(in, keys, false, false);
-      std::ifstream inGold("ba2ab"+std::to_string(i)+".dat", std::ios::in);
+			auto gold_array_in = cmdline.get<std::string>("gold-array-in");
+      std::ifstream inGold(gold_array_in, std::ios::in);
       assert(in.is_open());
       binary::read_array(inGold, gold, false, false);
       in.close();
@@ -72,7 +77,6 @@ int main(int argc, char** argv) {
       auto permMatch = (perm == gold);
       fprintf(stderr, "perm matches (==) %s\n", (permMatch) ? "yes" : "no");
       OMEGA_H_CHECK(permMatch);
-    }
   }
   return 0;
 }

@@ -116,7 +116,8 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
       cmdline.add_flag("--osh-mpi-ranks-per-node", "mpi ranks per node (for CUDA+MPI)");
   mpi_ranks_flag.add_arg<int>("value");
   if (argc && argv) {
-    OMEGA_H_CHECK(cmdline.parse(world_, argc, *argv));
+    bool parse_success = cmdline.parse(world_, argc, *argv);
+    OMEGA_H_CHECK(parse_success);
   }
   bool add_filename = false;
   if (cmdline.parsed("--osh-time-with-filename")) {

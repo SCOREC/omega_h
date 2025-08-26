@@ -74,7 +74,7 @@ class Write {
 #endif
   void set(LO i, T value) const;
   T get(LO i) const;
-  OMEGA_H_INLINE long use_count() const;
+  long use_count() const;
   OMEGA_H_INLINE bool exists() const noexcept;
 #ifdef OMEGA_H_USE_KOKKOS
   std::string name() const;

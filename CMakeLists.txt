@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.18.0...${CMAKE_VERSION})
 
-project(Omega_h VERSION 10.8.7 LANGUAGES CXX)
+project(Omega_h VERSION 10.9.0 LANGUAGES CXX)
 set(Omega_h_USE_STK_DEFAULT OFF)
 option(Omega_h_USE_STK "Whether to build the STK interface" ${Omega_h_USE_STK_DEFAULT})
 
@@ -58,7 +58,7 @@ endif()
 set(Omega_h_USE_ZLIB_DEFAULT ON)
 bob_add_dependency(PUBLIC NAME ZLIB TARGETS ZLIB::ZLIB)
 
-set(Kokkos_REQUIRED_VERSION 3.7)
+set(Kokkos_REQUIRED_VERSION 4.0)
 set(Omega_h_USE_Kokkos_DEFAULT OFF)
 set(KokkosCore_PREFIX_DEFAULT ${Kokkos_PREFIX})
 bob_add_dependency(PUBLIC NAME Kokkos TARGETS Kokkos::kokkos)
@@ -92,6 +92,10 @@ set(Omega_h_USE_pybind11_DEFAULT OFF)
 bob_public_dep(pybind11)
 
 if(Omega_h_USE_Kokkos)
+  bob_option(Omega_h_USE_Kokkos_Sort "Use Kokkos sort_by_key instead of vendor (Thrust, SYCL, etc.) provided sorting APIs." OFF)
+  if(Omega_h_USE_Kokkos_Sort AND Kokkos_VERSION VERSION_LESS 4.3)
+    message(SEND_ERROR "Kokkos sort_by_key requires Kokkos >= 4.3, found version ${Kokkos_VERSION}")
+  endif()
   if ("CUDA" IN_LIST Kokkos_DEVICES)
       bob_option(Omega_h_USE_CUDA "Whether to use CUDA" "ON")
   endif()
@@ -151,6 +155,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_ENABLE_DEMANGLED_STACKTRACE
     Omega_h_DBG
     Omega_h_USE_Kokkos
+    Omega_h_USE_Kokkos_Sort
     Omega_h_USE_OpenMP
     Omega_h_USE_CUDA
     Omega_h_USE_SYCL

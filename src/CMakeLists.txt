@@ -305,6 +305,7 @@ endmacro(osh_add_util)
 osh_add_util(describe)
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
+osh_add_util(osh2xgc)
 osh_add_util(oshdiff)
 osh_add_util(vtkdiff)
 osh_add_util(osh_box)
@@ -660,7 +661,7 @@ if(BUILD_TESTING)
   else()
     test_func(describe_serial 1 ./describe ${CMAKE_SOURCE_DIR}/meshes/box_3d.osh)
   endif()
-
+  test_func(sort_test 1 ./sort_test ${CMAKE_SOURCE_DIR}/meshes/sorting/ab2b.dat ${CMAKE_SOURCE_DIR}/meshes/sorting/goldSorted.dat)
   if (Omega_h_USE_ADIOS2)
     osh_add_util(bp2osh)
     osh_add_util(osh2bp)
@@ -670,6 +671,29 @@ if(BUILD_TESTING)
 	  ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
 	  output.bp)
   endif()
+
+  function(test_diff TEST_NAME FILE_A FILE_B PARENT)
+    add_test(NAME ${TEST_NAME} COMMAND diff ${FILE_A} ${FILE_B})
+    if(TEST ${TEST_NAME})
+      set_property(TEST ${TEST_NAME} PROPERTY LABELS "mesh")
+    endif()
+    set_tests_properties(${PARENT} PROPERTIES FIXTURES_SETUP  ${TEST_NAME}_fixture)
+    set_tests_properties(${TEST_NAME} PROPERTIES FIXTURES_REQUIRED ${TEST_NAME}_fixture)
+  endfunction()
+  test_func(run_osh2xgc 1 ./osh2xgc
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
+    plate_6elem_xgc)
+
+  test_diff(diff_osh2xgc_node
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_xgc-gold.node
+    plate_6elem_xgc.node
+    run_osh2xgc)
+
+  test_diff(diff_osh2xgc_ele
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_xgc-gold.ele
+    plate_6elem_xgc.ele
+    run_osh2xgc)
+
 endif()
 
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h")

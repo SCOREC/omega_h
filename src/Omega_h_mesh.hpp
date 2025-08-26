@@ -180,7 +180,7 @@ class Mesh {
    *         OR
    *         an empty graph upon failure
    */
-  [[nodiscard]] Graph get_vtx_patches(Int minPatchSize);
+  [[nodiscard]] Graph get_vtx_patches(Int minPatchSize, Int tgtDim = -1);
   #endif
 
 
@@ -278,6 +278,7 @@ protected:
   Read<GO> globals(Int dim) const;
   Reals ask_lengths();
   Reals ask_qualities();
+  /** get the size of each mesh element */
   Reals ask_sizes();
   Bytes ask_levels(Int dim);
   Bytes ask_leaves(Int dim);
