@@ -13,7 +13,11 @@ jobs:
     strategy:
       matrix:
         mempool: [on, off]
-        cxx_standard: [17, 20]
+        cxx_standard: [17]
+        #run one config with C++20
+        include:
+          - mempool: on
+            cxx_standard: 20     
 
     steps:
     - uses: actions/checkout@v4
