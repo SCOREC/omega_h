@@ -11,13 +11,12 @@ inline void check_tag_name(std::string const& name) {
 
 enum class ArrayType {
   NotSpecified,
-  Scalar,
   Vector2D,
   Vector3D,
-  SquareMatrix2D, // 2 x 2
+  Matrix2x2, // 2 x 2
   Matrix2x3, // 2 x 3
-  Tensor2D, // 3 x 2
-  Tensor3D, // 3 x 3
+  SymmetricMatrix3x2, // 3 x 2
+  SymmetricMatrix3x3 , // 3 x 3
 };
 
 class TagBase {

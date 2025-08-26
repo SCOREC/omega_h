@@ -281,7 +281,7 @@ void write_tag_impl<Real>(
   if (array_type == ArrayType::Vector3D && ncomps != 3) {
     write_array(
           stream, name, 3, resize_vectors(array, space_dim, 3), compress);
-  } else if (array_type == ArrayType::Tensor2D && ncomps != symm_ncomps(3)) {
+  } else if (array_type == ArrayType::SymmetricMatrix3x2 && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
           resize_symms(array, space_dim, 3), compress);
   } else {
