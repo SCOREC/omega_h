@@ -15,22 +15,23 @@ jobs:
         kokkos: [on, off]
         kokkos_version: [develop]
         mempool: [on, off]
-        cxx_standard: [14, 17, 20]
+        cxx_standard: [17]
         exclude:
         - kokkos: off
           mempool: on
-        - compiler: g++
-          cxx_standard: 14
-        - compiler: clang++
-          cxx_standard: [14, 17]
-        #run one config with the oldest compatible kokkos version
         include:
+           #run one config with the oldest compatible kokkos version        
            - compiler: g++
              kokkos: on
              mempool: on
              mpi: off
              kokkos_version: 4.0.00
-
+           #run one config with g++ and C++20
+           - compiler: g++
+             kokkos: on
+             mempool: on
+             mpi: on
+             cxx_standard: 20            
     env:
       CXX: ${{matrix.compiler}}
       MPICH_CXX: ${{matrix.compiler}}
