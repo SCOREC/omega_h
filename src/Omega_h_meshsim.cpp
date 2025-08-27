@@ -711,11 +711,6 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info, pM
 MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
     filesystem::path const& mdl_fname,
     CommPtr comm) {
-  MS_init();
-  Sim_readLicenseFile(NULL);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_start(0);
-#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -726,10 +721,6 @@ MixedMesh readMixedImpl(filesystem::path const& mesh_fname,
   meshsim::readMixed_internal(m, &mesh, simMeshInfo);
   M_release(m);
   GM_release(g);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_stop(0);
-#endif
-  MS_exit();
   return mesh;
 }
 
@@ -747,11 +738,6 @@ Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm, pMesh
 
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
-  MS_init();
-  Sim_readLicenseFile(NULL);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_start(0);
-#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -759,19 +745,10 @@ Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fn
   auto mesh = read(&m, numbering_fname, comm);
   M_release(m);
   GM_release(g);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_stop(0);
-#endif
-  MS_exit();
   return mesh;
 }
 
 bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname) {
-  MS_init();
-  Sim_readLicenseFile(NULL);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_start(0);
-#endif
   pNativeModel nm = NULL;
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
@@ -779,10 +756,6 @@ bool isMixed(filesystem::path const& mesh_fname, filesystem::path const& mdl_fna
   auto simMeshInfo = getSimMeshInfo(m);
   M_release(m);
   GM_release(g);
-#ifdef OMEGA_H_USE_SIMDISCRETE
-  SimDiscrete_stop(0);
-#endif
-  MS_exit();
   bool isMixed = (!simMeshInfo.is_simplex && !simMeshInfo.is_hypercube);
   return isMixed;
 }

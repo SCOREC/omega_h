@@ -14,7 +14,9 @@
 
 #if defined(OMEGA_H_USE_SIMMODSUITE)
 #include "MeshSim.h"
+#if defined(OMEGA_H_USE_SIMDISCRETE)
 #include "SimDiscrete.h"
+#endif
 #endif
 
 #ifdef OMEGA_H_DBG
@@ -185,7 +187,9 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
   MS_init();
   SimModel_start();
   Sim_readLicenseFile(NULL);
+  #if defined(OMEGA_H_USE_SIMDISCRETE)
   SimDiscrete_start(0);
+  #endif
 #endif
 }
 
@@ -235,7 +239,9 @@ Library::~Library() {
 #endif
 #if defined(OMEGA_H_USE_SIMMODSUITE)
   MS_exit();
+  #if defined(OMEGA_H_USE_SIMDISCRETE)
   SimDiscrete_stop(0);
+  #endif
   SimModel_stop();
 #endif
   delete[] Omega_h::max_memory_stacktrace;
