@@ -19,10 +19,10 @@ public:
     return dim_;
   }
 
-  [[nodiscard]] std::optional<Model2D> getModel() const;
+  [[nodiscard]] std::optional<const Model2D> getModel() const;
 
 private:
-  std::optional<Model2D> model;
+  std::optional<const Model2D> model;
 };
 
 } // Omega_h
