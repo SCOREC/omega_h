@@ -68,7 +68,7 @@ private:
 public:
   //constructors
 #ifdef OMEGA_H_USE_SIMMODSUITE
-  static Model2D SimModel2D_load(std::string const& filename);
+  static const Model2D SimModel2D_load(std::string const& filename);
 #endif
   void printInfo() const;
   
