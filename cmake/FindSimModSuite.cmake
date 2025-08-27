@@ -97,7 +97,7 @@ string(REGEX REPLACE
   "${SIM_VERSION}")
 
 set(MIN_VALID_SIM_VERSION 16.0.210606)
-set(MAX_VALID_SIM_VERSION 2023.1-231028)
+set(MAX_VALID_SIM_VERSION 2025.0.250108)
 if( ${SKIP_SIMMETRIX_VERSION_CHECK} )
   message(STATUS "Skipping Simmetrix SimModSuite version check."
     " This may result in undefined behavior")
