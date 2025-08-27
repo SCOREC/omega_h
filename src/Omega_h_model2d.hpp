@@ -3,6 +3,7 @@
 
 #include <Omega_h_array.hpp>
 #include <Omega_h_graph.hpp>
+#include <splineInterpolation.h>
 
 namespace Omega_h {
 
@@ -39,6 +40,7 @@ private:
   //TODO: Implement a heuristic to determine these tolerances
   Real vtxTol, edgeTol;
   Reals vtxCoords;
+  std::vector<SplineInterp::BSpline2d> splines;
 
   Model2D() = default;
 

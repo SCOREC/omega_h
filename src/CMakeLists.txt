@@ -110,6 +110,7 @@ set(Omega_h_SOURCES
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
   Omega_h_model2d.cpp
+  BSpline.cc Expression.cc PolyNomial.cc
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -810,6 +811,8 @@ set(Omega_h_HEADERS
   Omega_h_xml_lite.hpp
   Omega_h_xml.hpp
   r3d.hpp
+  BSpline.h
+  splineInterpolation.h
   )
 
 if (NOT Kokkos_ENABLE_CUDA)
