@@ -397,7 +397,7 @@ void checkError(bool cond, std::string_view msg) {
   }
 }
 
-Model2D Model2D::SimModel2D_load(std::string const& filename) {
+const Model2D Model2D::SimModel2D_load(std::string const& filename) {
   OMEGA_H_TIME_FUNCTION;
   pNativeModel nm = NULL;
   pProgress p = NULL;
