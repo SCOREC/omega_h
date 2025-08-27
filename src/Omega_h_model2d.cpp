@@ -3,10 +3,6 @@
 
 namespace Omega_h {
 
-Model2D Model2D::MeshModel2D_load(Mesh2D& mesh) {
-  return Model2D();
-}
-
 void Model2D::printInfo() const {
   std::cout << "==Model2d Info==\n";
   std::cout << "model entity type, count\n";
