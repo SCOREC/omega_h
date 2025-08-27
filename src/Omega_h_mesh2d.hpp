@@ -21,12 +21,6 @@ public:
 
   [[nodiscard]] std::optional<Model2D> getModel() const;
 
-  /**
-   * update the model based on the current mesh
-   * and its classification
-   */
-  Model2D updateModel();
-
 private:
   std::optional<Model2D> model;
 };
