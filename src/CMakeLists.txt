@@ -114,7 +114,7 @@ set(Omega_h_SOURCES
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 else()
-  set(Omega_h_SOURCES ${Omega_h_SOURCES}
+  list(APPEND Omega_h_SOURCES
     Omega_h_random.cpp
     Omega_h_coarsen_flip.cpp
 	)
@@ -122,14 +122,14 @@ endif()
 
 if (Omega_h_USE_CUDA)
   if (NOT Omega_h_USE_Kokkos)
-    set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_for.cpp)
+    list(APPEND Omega_h_SOURCES Omega_h_for.cpp)
   endif()
 else()
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_overlay.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_overlay.cpp)
 endif()
 
 if(Omega_h_USE_libMeshb)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshb.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_meshb.cpp)
 endif()
 
 if(Omega_h_USE_EGADS)
@@ -154,7 +154,7 @@ if(Omega_h_USE_EGADS)
   endif()
   message(STATUS "EGADS_INCLUDE_DIR: ${EGADS_INCLUDE_DIR}")
   message(STATUS "EGADS_LIBRARY: ${EGADS_LIBRARY}")
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_egads.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_egads.cpp)
 endif()
 
 if(Omega_h_USE_SimModSuite)
@@ -165,9 +165,7 @@ if(Omega_h_USE_SimModSuite)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
   find_package(SimModSuite MODULE REQUIRED)
   set(CMAKE_MODULE_PATH ${OLD_CMAKE_MODULE_PATH})
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_meshsim.cpp)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_matchMeshsim.cpp)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_simModel2d.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_meshsim.cpp Omega_h_matchMeshsim.cpp Omega_h_simModel2d.cpp)
   configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/Omega_h_simConfig.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_simConfig.h")
@@ -180,15 +178,15 @@ if(Omega_h_USE_ADIOS2)
 endif()
 
 if(Omega_h_USE_SEACASExodus)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_exodus.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_exodus.cpp)
 endif()
 
 if(Omega_h_USE_STK)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_stk.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_stk.cpp)
 endif()
 
 if(Omega_h_USE_DOLFIN)
-  set(Omega_h_SOURCES ${Omega_h_SOURCES} Omega_h_dolfin.cpp)
+  list(APPEND Omega_h_SOURCES Omega_h_dolfin.cpp)
 endif()
 
 if(Omega_h_USE_Kokkos)
@@ -307,6 +305,7 @@ endmacro(osh_add_util)
 osh_add_util(describe)
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
+osh_add_util(osh2xgc)
 osh_add_util(oshdiff)
 osh_add_util(vtkdiff)
 osh_add_util(osh_box)
@@ -422,7 +421,7 @@ if(BUILD_TESTING)
       test_func(run_test_patches 1 ./test_patches)
     endif()
   endif()
-  set(TEST_EXES ${TEST_EXES} unit_math)
+  list(APPEND TEST_EXES unit_math)
   test_basefunc(run_unit_math 1 ./unit_math)
 
   if(Omega_h_USE_SimModSuite)
@@ -455,12 +454,12 @@ if(BUILD_TESTING)
 
     if(Omega_h_USE_SimDiscrete)
       osh_add_exe(mixed_writeMesh)
-      set(TEST_EXES ${TEST_EXES} mixed_writeMesh)
+      list(APPEND TEST_EXES mixed_writeMesh)
       test_func(run_mixed_writeMesh 1 ./mixed_writeMesh
                 ${CMAKE_SOURCE_DIR}/meshes)
 
       osh_add_exe(mixed_test)
-      set(TEST_EXES ${TEST_EXES} mixed_test)
+      list(APPEND TEST_EXES mixed_test)
       test_func(run_mixed_test 1 ./mixed_test
         ${CMAKE_SOURCE_DIR}/meshes)
     endif()
@@ -484,22 +483,22 @@ if(BUILD_TESTING)
       plate_6elem_2compTag.exo)
     set_tests_properties(osh2exo_multiCompField PROPERTIES
       PASS_REGULAR_EXPRESSION "P0: 4 nodal variables")
-    set(TEST_EXES ${TEST_EXES} osh2exo_multiCompField)
+    list(APPEND TEST_EXES osh2exo_multiCompField)
     test_func(osh2exo_multiCompField_excluded 1 ./osh2exo
       ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_2compTag.osh
       plate_6elem_2compTag.exo
       --excluded-nodal-fields "vec2d")
     set_tests_properties(osh2exo_multiCompField_excluded PROPERTIES
       PASS_REGULAR_EXPRESSION "P0: 2 nodal variables")
-    set(TEST_EXES ${TEST_EXES} osh2exo_multiCompField)
+    list(APPEND TEST_EXES osh2exo_multiCompField)
   endif()
 
   osh_add_exe(load_2d)
-  set(TEST_EXES ${TEST_EXES} load_2d)
+  list(APPEND TEST_EXES load_2d)
   will_fail_test_func(load_2d_box_100 1 ./load_2d box_100.osh)
 
   osh_add_exe(osh_scale2d)
-  set(TEST_EXES ${TEST_EXES} osh_scale2d)
+  list(APPEND TEST_EXES osh_scale2d)
   test_func(osh_scale2d 1 ./osh_scale2d ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh 100 plate_100.osh)
   set(scale2dArgs ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh 100 plate_100.osh)
   test_func(osh_scale2d_time 1 ./osh_scale2d --osh-time ${scale2dArgs})
@@ -507,27 +506,27 @@ if(BUILD_TESTING)
   test_func(osh_scale2d_timechop 1 ./osh_scale2d --osh-time --osh-time-chop 10 ${scale2dArgs})
 
   test_basefunc(run_arrayops 1 ./arrayops_test)
-  set(TEST_EXES ${TEST_EXES} reprosum_test)
+  list(APPEND TEST_EXES reprosum_test)
   test_basefunc(run_reprosum 1 ./reprosum_test)
   osh_add_exe(unit_array_algs)
-  set(TEST_EXES ${TEST_EXES} unit_array_algs)
+  list(APPEND TEST_EXES unit_array_algs)
   test_basefunc(run_unit_array_algs 1 ./unit_array_algs)
   osh_add_exe(migrate_test)
-  set(TEST_EXES ${TEST_EXES} migrate_test)
+  list(APPEND TEST_EXES migrate_test)
   test_func(run_migrate_test 2 ./migrate_test)
   osh_add_exe(unit_mesh)
-  set(TEST_EXES ${TEST_EXES} unit_mesh)
+  list(APPEND TEST_EXES unit_mesh)
   test_func(run_unit_mesh 1 ./unit_mesh)
   osh_add_exe(unit_io)
-  set(TEST_EXES ${TEST_EXES} unit_io)
+  list(APPEND TEST_EXES unit_io)
   test_basefunc(run_unit_io 1 ./unit_io)
   osh_add_exe(unit_parser)
-  set(TEST_EXES ${TEST_EXES} unit_parser)
+  list(APPEND TEST_EXES unit_parser)
   test_basefunc(run_unit_parser 1 ./unit_parser)
   osh_add_exe(r3d_test)
   test_basefunc(run_test_r3d 1 ./r3d_test)
   osh_add_exe(mpi_tests)
-  set(TEST_EXES ${TEST_EXES} mpi_tests)
+  list(APPEND TEST_EXES mpi_tests)
   if(Omega_h_USE_MPI)
     test_func(run_mpi_tests 4 ./mpi_tests)
   else()
@@ -547,7 +546,7 @@ if(BUILD_TESTING)
   if(Omega_h_USE_Gmsh AND Omega_h_USE_Kokkos)
     osh_add_exe(test_tri_vert_orientation)
     will_fail_test_func(run_tri_orientation 1 ./test_tri_vert_orientation ${CMAKE_SOURCE_DIR}/meshes/square4el.msh)
-    set(TEST_EXES ${TEST_EXES} test_tri_vert_orientation)
+    list(APPEND TEST_EXES test_tri_vert_orientation)
   endif()
 
   osh_add_exe(2d_conserve_test)
@@ -556,14 +555,14 @@ if(BUILD_TESTING)
     test_func(parallel_2d_conserve 2 ./2d_conserve_test)
   endif()
   osh_add_exe(warp_test)
-  set(TEST_EXES ${TEST_EXES} warp_test)
+  list(APPEND TEST_EXES warp_test)
   test_func(warp_test_serial 1 ./warp_test)
   if(Omega_h_USE_MPI)
     test_func(warp_test_parallel 2 ./warp_test)
   endif()
   osh_add_exe(3d_conserve_test)
   if(Omega_h_DATA)
-    set(TEST_EXES ${TEST_EXES} 3d_conserve_test)
+    list(APPEND TEST_EXES 3d_conserve_test)
     test_func(serial_3d_conserve 1 ./3d_conserve_test
               ${Omega_h_DATA}/ball_in_cube.msh)
     if(Omega_h_USE_MPI)
@@ -573,7 +572,7 @@ if(BUILD_TESTING)
   endif()
   osh_add_exe(ring_test)
   if(Omega_h_DATA)
-    set(TEST_EXES ${TEST_EXES} ring_test)
+    list(APPEND TEST_EXES ring_test)
     test_func(run_ring_test 1 ./ring_test ${Omega_h_DATA}/ring.msh)
   endif()
   osh_add_exe(aniso_test)
@@ -581,7 +580,7 @@ if(BUILD_TESTING)
   osh_add_exe(imr_cases)
   osh_add_exe(curvature_test)
   if(Omega_h_DATA)
-    set(TEST_EXES ${TEST_EXES} curvature_test)
+    list(APPEND TEST_EXES curvature_test)
     test_func(ring_curvature 1 ./curvature_test
               ${Omega_h_DATA} ring)
     test_func(ball_curvature 1 ./curvature_test
@@ -610,7 +609,7 @@ if(BUILD_TESTING)
   endif()
   osh_add_exe(advect2d_test)
   if(Omega_h_DATA)
-    set(TEST_EXES ${TEST_EXES} advect2d_test)
+    list(APPEND TEST_EXES advect2d_test)
     test_func(advect2d_serial 1 ./advect2d_test ${Omega_h_DATA}/advect2d.osh)
     if(Omega_h_USE_MPI)
       test_func(advect2d_parallel 2 ./advect2d_test ${Omega_h_DATA}/advect2d.osh)
@@ -641,7 +640,7 @@ if(BUILD_TESTING)
     ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
     ${CMAKE_SOURCE_DIR}/meshes/unitbox_cutTriCube_1k.osh)
   osh_add_exe(rc_field_test)
-  set(TEST_EXES ${TEST_EXES} rc_field_test)
+  list(APPEND TEST_EXES rc_field_test)
   test_func(rc_field_test 1 ./rc_field_test
     ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
     ${CMAKE_SOURCE_DIR}/meshes/box_3d.osh
@@ -650,12 +649,12 @@ if(BUILD_TESTING)
     ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_bField.osh)
   if(Omega_h_USE_MPI)
     osh_add_exe(reverse_class_testp)
-    set(TEST_EXES ${TEST_EXES} reverse_class_testp)
+    list(APPEND TEST_EXES reverse_class_testp)
     test_func(reverse_class_testp 2 ./reverse_class_testp
       ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p.osh
       ${CMAKE_SOURCE_DIR}/meshes/unitbox_cutTriCube_1k_2p.osh)
     osh_add_exe(rc_field_testp)
-    set(TEST_EXES ${TEST_EXES} rc_field_testp)
+    list(APPEND TEST_EXES rc_field_testp)
     test_func(rc_field_testp 2 ./rc_field_testp
       ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p.osh
       ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p.vtk
@@ -682,6 +681,29 @@ if(BUILD_TESTING)
 	  ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
 	  output.bp)
   endif()
+
+  function(test_diff TEST_NAME FILE_A FILE_B PARENT)
+    add_test(NAME ${TEST_NAME} COMMAND diff ${FILE_A} ${FILE_B})
+    if(TEST ${TEST_NAME})
+      set_property(TEST ${TEST_NAME} PROPERTY LABELS "mesh")
+    endif()
+    set_tests_properties(${PARENT} PROPERTIES FIXTURES_SETUP  ${TEST_NAME}_fixture)
+    set_tests_properties(${TEST_NAME} PROPERTIES FIXTURES_REQUIRED ${TEST_NAME}_fixture)
+  endfunction()
+  test_func(run_osh2xgc 1 ./osh2xgc
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
+    plate_6elem_xgc)
+
+  test_diff(diff_osh2xgc_node
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_xgc-gold.node
+    plate_6elem_xgc.node
+    run_osh2xgc)
+
+  test_diff(diff_osh2xgc_ele
+    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_xgc-gold.ele
+    plate_6elem_xgc.ele
+    run_osh2xgc)
+
 endif()
 
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h")
@@ -778,15 +800,15 @@ set(Omega_h_HEADERS
   )
 
 if (NOT Omega_h_USE_CUDA)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_overlay.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_overlay.hpp)
 endif()
 
 if(Omega_h_USE_DOLFIN)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_dolfin.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_dolfin.hpp)
 endif()
 
 if(Omega_h_USE_STK)
-  set(Omega_h_HEADERS ${Omega_h_HEADERS} Omega_h_stk.hpp)
+  list(APPEND Omega_h_HEADERS Omega_h_stk.hpp)
 endif()
 
 if(Omega_h_USE_Kokkos)
@@ -817,9 +839,7 @@ if (Omega_h_USE_pybind11)
       PyOmega_h_class.cpp
       )
   if (Omega_h_USE_DOLFIN)
-    set(PYBIND11_SOURCES ${PYBIND11_SOURCES}
-        PyOmega_h_dolfin.cpp
-       )
+    list(APPEND PYBIND11_SOURCES PyOmega_h_dolfin.cpp)
   endif()
   pybind11_add_module(PyOmega_h
       ${PYBIND11_SOURCES})

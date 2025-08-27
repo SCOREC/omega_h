@@ -109,18 +109,21 @@ namespace {
 }
 }//end anonymous namespace
 
-[[nodiscard]] Graph Mesh::get_vtx_patches(Int minPatchSize) {
+[[nodiscard]] Graph Mesh::get_vtx_patches(Int minPatchSize, Int tgtDim) {
   OMEGA_H_CHECK(minPatchSize > 0);
-  auto patches = ask_up(VERT,dim());
+  if(tgtDim == -1) {
+    tgtDim = dim();
+  }
+  auto patches = ask_adj(VERT,tgtDim);
   auto patchDone = patch_sufficient(patches, minPatchSize);
   if( get_min(patchDone) == 1 )
     return patches;
-  auto adjElms = ask_dual();
+  auto adj = ask_adj(tgtDim,tgtDim);
   //assuming each iteration adds at least one element then
   //the minPatchSize is a conservative upper bound on the
   //iteration count
   for(Int iter = 0; iter < minPatchSize; iter++) {
-    patches = expand_patches(*this, patches, adjElms, patchDone);
+    patches = expand_patches(*this, patches, adj, patchDone);
     patchDone = patch_sufficient(patches, minPatchSize);
     if( get_min(patchDone) == 1 ) {
       return patches;

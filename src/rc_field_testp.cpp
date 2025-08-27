@@ -111,7 +111,7 @@ void test_3d(Library *lib, const std::string &mesh_file, const char* vtk_file,
     mesh.set_rcField_array(1, "field", vals_r);
   }
   else {
-    Write<LO> vals(nbedge, 50.45632);
+    Write<LO> vals(nbedge, 50);
     Read<LO> vals_r(vals);
     mesh.set_rcField_array(1, "field", vals_r);
   }

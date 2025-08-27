@@ -13,6 +13,11 @@ jobs:
     strategy:
       matrix:
         mempool: [on, off]
+        cxx_standard: [17]
+        #run one config with C++20
+        include:
+          - mempool: on
+            cxx_standard: 20     
 
     steps:
     - uses: actions/checkout@v4
@@ -46,6 +51,7 @@ jobs:
       run: cmake .
            -Bbuild
            -DCMAKE_VERBOSE_MAKEFILE=on
+           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}
            -DOmega_h_USE_MPI=off
            -DOmega_h_USE_CUDA=on
            -DOmega_h_CUDA_ARCH=75
