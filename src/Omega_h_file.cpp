@@ -279,6 +279,9 @@ static void write_tag(std::ostream& stream, TagBase const* tag,
   write_value(stream, ncomps, needs_swapping);
   I8 type = tag->type();
   write_value(stream, type, needs_swapping);
+  ArrayType array_type = tag->array_type();
+  std::string array_type_name = ArrayTypeNames.at(array_type);
+  write(stream, array_type_name, needs_swapping);
 
   auto class_ids = tag->class_ids();
   I32 n_class_ids = 0;
@@ -320,6 +323,12 @@ static void read_tag(std::istream& stream, Mesh* mesh, Int d,
       read_value(stream, outflags_i8, needs_swapping);
     }
   }
+  ArrayType array_type = ArrayType::NotSpecified;
+  if (version > 10) {
+    std::string array_type_name;
+    read(stream, array_type_name, needs_swapping);
+    array_type = NamesToArrayType.at(array_type_name);
+  }
   //TODO: read class id info for rc tag to file
   Read<I32> class_ids = {};
   if (version > 9) {
@@ -341,7 +350,7 @@ static void read_tag(std::istream& stream, Mesh* mesh, Int d,
       mesh->set_rc_from_mesh_array(d,ncomps,class_ids,name,array);
     }
     else {
-      mesh->add_tag(d, name, ncomps, array, true);
+      mesh->add_tag(d, name, ncomps, array, true, array_type);
     }
   };
   apply_to_omega_h_types(static_cast<Omega_h_Type>(type), std::move(f));
