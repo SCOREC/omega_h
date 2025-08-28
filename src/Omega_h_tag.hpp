@@ -1,6 +1,7 @@
 #ifndef OMEGA_H_TAG_HPP
 #define OMEGA_H_TAG_HPP
 
+#include <unordered_map>
 #include <Omega_h_array.hpp>
 
 namespace Omega_h {
@@ -9,20 +10,55 @@ inline void check_tag_name(std::string const& name) {
   OMEGA_H_CHECK(!name.empty());
 }
 
+enum class ArrayType {
+  NotSpecified,
+  Vector2D,
+  Vector3D,
+  Matrix2x2, // 2 x 2
+  Matrix2x3, // 2 x 3
+  SymmetricMatrix3x2, // 3 x 2
+  SymmetricMatrix3x3 , // 3 x 3
+};
+
+ const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
+    {ArrayType::NotSpecified, "NotSpecified"},
+    {ArrayType::Vector2D, "Vector2D"},
+    {ArrayType::Vector3D, "Vector3D"},
+    {ArrayType::Matrix2x2, "Matrix2x2"},
+    {ArrayType::Matrix2x3, "Matrix2x3"},
+    {ArrayType::SymmetricMatrix3x2, "SymmetricMatrix3x2"},
+    {ArrayType::SymmetricMatrix3x3, "SymmetricMatrix3x3"}
+};
+
+const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
+    {"NotSpecified", ArrayType::NotSpecified},
+    {"Vector2D", ArrayType::Vector2D},
+    {"Vector3D", ArrayType::Vector3D},
+    {"Matrix2x2", ArrayType::Matrix2x2},
+    {"Matrix2x3", ArrayType::Matrix2x3},
+    {"SymmetricMatrix3x2", ArrayType::SymmetricMatrix3x2},
+    {"SymmetricMatrix3x3", ArrayType::SymmetricMatrix3x3}
+};
+
 class TagBase {
  public:
   TagBase(std::string const& name_in, Int ncomps_in);
   TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  TagBase(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   virtual ~TagBase();
   std::string const& name() const;
   Int ncomps() const;
   virtual Omega_h_Type type() const = 0;
   LOs class_ids() const;
+  ArrayType array_type() const;
 
  private:
   std::string name_;
   Int ncomps_;
   LOs class_ids_;
+  ArrayType array_type_ = ArrayType::NotSpecified;
 };
 
 template <typename T>
@@ -30,6 +66,9 @@ class Tag : public TagBase {
  public:
   Tag(std::string const& name_in, Int ncomps_in);
   Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  Tag(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   Read<T> array() const;
   void set_array(Read<T> array_in);
   virtual Omega_h_Type type() const override;

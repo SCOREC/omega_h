@@ -60,18 +60,21 @@ void write_tag(
     Mesh *mesh, bool compress);
 
 template <typename T>
-void write_p_data_array(
-    std::ostream& stream, std::string const& name, Int ncomps);
+void write_p_data_array(std::ostream& stream, std::string const& name,
+    Int ncomps, ArrayType array_type = ArrayType::NotSpecified);
 
 template <typename T_osh, typename T_vtk = T_osh>
-void write_array(std::ostream& stream, std::string const& name, Int ncomps,
-    Read<T_osh> array, bool compress);
+void write_array(
+    std::ostream& stream, std::string const& name, Int ncomps, Read<T_osh> array,
+    bool compress, ArrayType array_type = ArrayType::NotSpecified);
 
 #define OMEGA_H_EXPL_INST_DECL(T)                                              \
   extern template void write_p_data_array<T>(                                  \
-      std::ostream & stream, std::string const& name, Int ncomps);             \
-  extern template void write_array(std::ostream& stream,                       \
-      std::string const& name, Int ncomps, Read<T> array, bool compress);
+      std::ostream & stream,std::string const& name, Int ncomps,               \
+      ArrayType array_type);                                                   \
+  extern template void write_array(                                            \
+      std::ostream& stream, std::string const& name, Int ncomps,               \
+      Read<T> array, bool compress, ArrayType array_type);
 OMEGA_H_EXPL_INST_DECL(I8)
 OMEGA_H_EXPL_INST_DECL(I32)
 OMEGA_H_EXPL_INST_DECL(I64)
@@ -79,7 +82,8 @@ OMEGA_H_EXPL_INST_DECL(Real)
 #undef OMEGA_H_EXPL_INST_DECL
 
 extern template void write_array<Real, std::uint8_t>(std::ostream& stream,
-    std::string const& name, Int ncomps, Read<Real> array, bool compress);
+    std::string const& name, Int ncomps, Read<Real> array, bool compress,
+    ArrayType array_type);
 
 }  // namespace vtk
 

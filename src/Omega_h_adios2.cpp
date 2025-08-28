@@ -73,7 +73,7 @@ static void read_value(adios2::IO &io, adios2::Engine &reader,
 
 template <typename T>
 static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh, 
-		Read<T> array, int ncomp, std::string &name)
+		Read<T> array, int ncomp, std::string &name, ArrayType array_type=ArrayType::NotSpecified)
 {
   long unsigned int comm_size = mesh->comm()->size();
   long unsigned int rank = mesh->comm()->rank();
@@ -88,6 +88,14 @@ static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh,
 
   // To avoid narrowing conversion warning.
   size_t n_comp = static_cast <size_t>(ncomp); 
+  
+  if (array_type != ArrayType::NotSpecified){
+    std::string arrayTypeName = ArrayTypeNames.at(array_type);
+    std::string meta_name = name + "/ArrayType";
+
+    adios2::Variable<std::string> ArrayTypeMeta = io.DefineVariable<std::string>(meta_name);
+    writer.Put(ArrayTypeMeta, arrayTypeName, adios2::Mode::Sync);
+  }
  
   // This implementation only works in serial. Implementation to deal with
   // parallel cases will be done in future. (04-23-2025)
@@ -96,6 +104,18 @@ static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh,
 	  io.DefineVariable<T>(
           name, {comm_size * Nx, n_comp}, {rank * Nx,0}, {Nx, n_comp}, adios2::ConstantDims);
   writer.Put(bpData, myData.data(), adios2::Mode::Sync);
+}
+
+static void read_array_type(adios2::IO &io, adios2::Engine &reader,
+                        std::string &name, ArrayType &array_type)
+{
+  adios2::Variable<std::string> ArrayTypeMeta = io.InquireVariable<std::string>(name + "/ArrayType");
+  if (ArrayTypeMeta)
+  {
+    std::string arrayTypeName;
+    reader.Get(ArrayTypeMeta, arrayTypeName, adios2::Mode::Sync);
+    array_type = NamesToArrayType.at(arrayTypeName);
+  }
 }
 
 template <typename T>
@@ -254,10 +274,12 @@ static void write_tag(adios2::IO &io, adios2::Engine &writer,
     write_array(io, writer, mesh, class_ids, 1, name);
   }
 
+  auto array_type = tag->array_type();
+
   auto f = [&](auto type) {
     using T = decltype(type);
     std::string name = pre_name+"data";
-    write_array(io, writer, mesh, as<T>(tag)->array(), ncomp, name);
+    write_array(io, writer, mesh, as<T>(tag)->array(), ncomp, name, array_type);
   };
   apply_to_omega_h_types(tag->type(), std::move(f));
 }
@@ -291,12 +313,14 @@ static void read_tag(adios2::IO &io, adios2::Engine &reader, Mesh* mesh,
     using T = decltype(t);
     Read<T> array;
     name = pre_name + "/"+ tagName + "/data";
+    ArrayType array_type = ArrayType::NotSpecified;
+    read_array_type(io, reader, name, array_type);
     read_array(io, reader, mesh, array, name);
     if(is_rc_tag(tag_name)) {
       mesh->set_rc_from_mesh_array(d,ncomps,class_ids,tag_name,array);
     }
     else {
-      mesh->add_tag(d, tag_name, ncomps, array, true);
+      mesh->add_tag(d, tag_name, ncomps, array, true, array_type);
     }
   };
   apply_to_omega_h_types(type, std::move(f));
