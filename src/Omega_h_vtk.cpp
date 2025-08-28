@@ -114,15 +114,19 @@ struct Traits<T,
 /* end of C++ ritual dance to get a string based on type properties */
 
 template <typename T>
-void describe_array(std::ostream& stream, std::string const& name, Int ncomps) {
+void describe_array(std::ostream& stream, std::string const& name, Int ncomps, 
+    ArrayType array_type) {
   stream << "type=\"" << Traits<T>::name() << "\"";
   stream << " Name=\"" << name << "\"";
   stream << " NumberOfComponents=\"" << ncomps << "\"";
+  if (array_type != ArrayType::NotSpecified) {
+    stream << " ArrayType=\"" << ArrayTypeNames.at(array_type) << "\"";
+  }
   stream << " format=\"binary\"";
 }
 
 static bool read_array_start_tag(std::istream& stream, Omega_h_Type* type_out,
-    std::string* name_out, Int* ncomps_out) {
+    std::string* name_out, Int* ncomps_out, ArrayType* array_type) {
   auto st = xml_lite::read_tag(stream);
   if (st.elem_name != "DataArray" || st.type != xml_lite::Tag::START) {
     OMEGA_H_CHECK(st.type == xml_lite::Tag::END);
@@ -140,19 +144,23 @@ static bool read_array_start_tag(std::istream& stream, Omega_h_Type* type_out,
   *name_out = st.attribs["Name"];
   *ncomps_out = std::stoi(st.attribs["NumberOfComponents"]);
   OMEGA_H_CHECK(st.attribs["format"] == "binary");
+  if (st.attribs.count("ArrayType")) {
+    auto at_name = st.attribs["ArrayType"];
+    *array_type = NamesToArrayType.at(at_name);
+  }
   return true;
 }
 
 template <typename T_osh, typename T_vtk>
 void write_array(std::ostream& stream, std::string const& name, Int ncomps,
-    Read<T_osh> array, bool compress) {
+    Read<T_osh> array, bool compress, ArrayType array_type) {
   OMEGA_H_TIME_FUNCTION;
   if (!(array.exists())) {
     Omega_h_fail("vtk::write_array: \"%s\" doesn't exist\n", name.c_str());
   }
   begin_code("header");
   stream << "<DataArray ";
-  describe_array<T_vtk>(stream, name, ncomps);
+  describe_array<T_vtk>(stream, name, ncomps, array_type);
   stream << ">\n";
   end_code();
   HostRead<T_osh> uncompressed(array);
@@ -268,7 +276,8 @@ static void write_tag_impl(
   const auto ncomps = tag->ncomps();
   const auto name = tag->name();
   auto array = as<T>(tag)->array();
-  write_array(stream, name, ncomps, array, compress);
+  auto array_type = tag->array_type();
+  write_array(stream, name, ncomps, array, compress, array_type);
 }
 template <>
 void write_tag_impl<Real>(
@@ -280,12 +289,12 @@ void write_tag_impl<Real>(
   // don't use array from "tag" b/c change_tagToMesh creates new tag
   if (array_type == ArrayType::Vector3D && ncomps != 3) {
     write_array(
-          stream, name, 3, resize_vectors(array, space_dim, 3), compress);
+          stream, name, 3, resize_vectors(array, space_dim, 3), compress, array_type);
   } else if (array_type == ArrayType::SymmetricMatrix3x2 && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
-          resize_symms(array, space_dim, 3), compress);
+          resize_symms(array, space_dim, 3), compress, array_type);
   } else {
-    write_array(stream, name, ncomps, array, compress);
+    write_array(stream, name, ncomps, array, compress, array_type);
   }
 }
 }  // namespace detail
@@ -305,24 +314,32 @@ namespace detail {
 template <typename T>
 static void read_tag_impl(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
     Int ent_dim, std::string const& name, LOs class_ids, bool needs_swapping,
-    bool is_compressed) {
+    bool is_compressed, ArrayType array_type) {
   auto array = read_array<T>(stream, size, needs_swapping, is_compressed);
   if (is_rc_tag(name)) {
     mesh->set_rc_from_mesh_array(ent_dim, ncomps, class_ids, name, array);
   } else {
-    mesh->add_tag(ent_dim, name, ncomps, array, true);
+    mesh->add_tag(ent_dim, name, ncomps, array, true, array_type);
   }
 }
 template <>
 void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
     Int ent_dim, std::string const& name, LOs class_ids, bool needs_swapping,
-    bool is_compressed) {
+    bool is_compressed, ArrayType array_type) {
   auto array = read_array<Real>(stream, size, needs_swapping, is_compressed);
-
+  // special case for reading real tags only
+  // undo the resizes done in write_tag()
+  if (array_type == ArrayType::Vector3D) {
+    array = resize_vectors(array, 3, mesh->dim());
+    ncomps = mesh->dim();
+  } else if (array_type == ArrayType::SymmetricMatrix3x2) {
+    array = resize_symms(array, 3, mesh->dim());
+    ncomps = symm_ncomps(mesh->dim());
+  }
   if (is_rc_tag(name)) {
     mesh->set_rc_from_mesh_array(ent_dim, ncomps, class_ids, name, array);
   } else {
-    mesh->add_tag(ent_dim, name, ncomps, array, true);
+    mesh->add_tag(ent_dim, name, ncomps, array, true, array_type);
   }
 }
 
@@ -333,7 +350,8 @@ static bool read_tag(std::istream& stream, Mesh* mesh, Int ent_dim,
   Omega_h_Type type = OMEGA_H_I8;
   std::string name;
   Int ncomps = -1;
-  if (!read_array_start_tag(stream, &type, &name, &ncomps)) {
+  ArrayType array_type = ArrayType::NotSpecified;
+  if (!read_array_start_tag(stream, &type, &name, &ncomps, &array_type)) {
     return false;
   }
   auto class_ids = LOs();
@@ -345,7 +363,7 @@ static bool read_tag(std::istream& stream, Mesh* mesh, Int ent_dim,
   auto size = mesh->nents(ent_dim) * ncomps;
   apply_to_omega_h_types(type, [&](auto t) {
     detail::read_tag_impl<decltype(t)>(stream, mesh, size, ncomps, ent_dim,
-        name, class_ids, needs_swapping, is_compressed);
+        name, class_ids, needs_swapping, is_compressed, array_type);
   });
   auto et = xml_lite::read_tag(stream);
   OMEGA_H_CHECK(et.elem_name == "DataArray");
@@ -625,46 +643,42 @@ static void write_locals_and_owners(std::ostream& stream, Mesh* mesh,
 }
 
 template <typename T>
-void write_p_data_array(
-    std::ostream& stream, std::string const& name, Int ncomps) {
+void write_p_data_array(std::ostream& stream, std::string const& name, Int ncomps,
+    ArrayType array_type) {
   stream << "<PDataArray ";
-  describe_array<T>(stream, name, ncomps);
+  describe_array<T>(stream, name, ncomps, array_type);
   stream << "/>\n";
 }
 
 static void write_p_data_array2(std::ostream& stream, std::string const& name,
-    Int ncomps, Int Omega_h_Type) {
+    Int ncomps, Int Omega_h_Type, ArrayType array_type = ArrayType::NotSpecified) {
   switch (Omega_h_Type) {
     case OMEGA_H_I8:
-      write_p_data_array<I8>(stream, name, ncomps);
+      write_p_data_array<I8>(stream, name, ncomps, array_type);
       break;
     case OMEGA_H_I32:
-      write_p_data_array<I32>(stream, name, ncomps);
+      write_p_data_array<I32>(stream, name, ncomps, array_type);
       break;
     case OMEGA_H_I64:
-      write_p_data_array<I64>(stream, name, ncomps);
+      write_p_data_array<I64>(stream, name, ncomps, array_type);
       break;
     case OMEGA_H_F64:
-      write_p_data_array<Real>(stream, name, ncomps);
+      write_p_data_array<Real>(stream, name, ncomps, array_type);
       break;
   }
 }
 
 void write_p_tag(std::ostream& stream, TagBase const* tag, Int space_dim) {
-  if (tag->type() == OMEGA_H_REAL) {
-    if (1 < space_dim && space_dim < 3) {
-      if (tag->ncomps() == space_dim) {
-        write_p_data_array2(stream, tag->name(), 3, OMEGA_H_REAL);
-      } else if (tag->ncomps() == symm_ncomps(space_dim)) {
-        write_p_data_array2(stream, tag->name(), symm_ncomps(3), OMEGA_H_REAL);
-      } else {
-        write_p_data_array2(stream, tag->name(), tag->ncomps(), OMEGA_H_REAL);
-      }
-    } else {
-      write_p_data_array2(stream, tag->name(), tag->ncomps(), OMEGA_H_REAL);
-    }
+  auto array_type = tag->array_type();
+  if (tag->array_type() == ArrayType::Vector3D && tag->ncomps() != 3) {
+    write_p_data_array2(stream, tag->name(), 3, tag->type(), array_type);
+  } else if (tag->array_type() == ArrayType::SymmetricMatrix3x2 &&
+             tag->ncomps() != symm_ncomps(3)) {
+    write_p_data_array2(
+        stream, tag->name(), symm_ncomps(3), tag->type(), array_type);
   } else {
-    write_p_data_array2(stream, tag->name(), tag->ncomps(), tag->type());
+    write_p_data_array2(
+        stream, tag->name(), tag->ncomps(), tag->type(), array_type);
   }
 }
 
@@ -1324,10 +1338,10 @@ void FullWriter::write() {
 }
 
 #define OMEGA_H_EXPL_INST(T)                                                   \
-  template void write_p_data_array<T>(                                         \
-      std::ostream & stream, std::string const& name, Int ncomps);             \
+  template void write_p_data_array<T>(std::ostream & stream,                   \
+      std::string const& name, Int ncomps, ArrayType array_type);              \
   template void write_array(std::ostream& stream, std::string const& name,     \
-      Int ncomps, Read<T> array, bool compress);
+      Int ncomps, Read<T> array, bool compress, ArrayType array_type);
 OMEGA_H_EXPL_INST(I8)
 OMEGA_H_EXPL_INST(I32)
 OMEGA_H_EXPL_INST(I64)
@@ -1335,7 +1349,7 @@ OMEGA_H_EXPL_INST(Real)
 #undef OMEGA_H_EXPL_INST
 
 template void write_array<Real, std::uint8_t>(std::ostream& stream,
-    std::string const& name, Int ncomps, Read<Real> array, bool compress);
+    std::string const& name, Int ncomps, Read<Real> array, bool compress, ArrayType array_type);
 
 }  // end namespace vtk
 

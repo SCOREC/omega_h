@@ -1,6 +1,7 @@
 #ifndef OMEGA_H_TAG_HPP
 #define OMEGA_H_TAG_HPP
 
+#include <unordered_map>
 #include <Omega_h_array.hpp>
 
 namespace Omega_h {
@@ -17,6 +18,26 @@ enum class ArrayType {
   Matrix2x3, // 2 x 3
   SymmetricMatrix3x2, // 3 x 2
   SymmetricMatrix3x3 , // 3 x 3
+};
+
+ const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
+    {ArrayType::NotSpecified, "NotSpecified"},
+    {ArrayType::Vector2D, "Vector2D"},
+    {ArrayType::Vector3D, "Vector3D"},
+    {ArrayType::Matrix2x2, "Matrix2x2"},
+    {ArrayType::Matrix2x3, "Matrix2x3"},
+    {ArrayType::SymmetricMatrix3x2, "SymmetricMatrix3x2"},
+    {ArrayType::SymmetricMatrix3x3, "SymmetricMatrix3x3"}
+};
+
+const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
+    {"NotSpecified", ArrayType::NotSpecified},
+    {"Vector2D", ArrayType::Vector2D},
+    {"Vector3D", ArrayType::Vector3D},
+    {"Matrix2x2", ArrayType::Matrix2x2},
+    {"Matrix2x3", ArrayType::Matrix2x3},
+    {"SymmetricMatrix3x2", ArrayType::SymmetricMatrix3x2},
+    {"SymmetricMatrix3x3", ArrayType::SymmetricMatrix3x3}
 };
 
 class TagBase {
