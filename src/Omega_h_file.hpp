@@ -28,9 +28,9 @@ namespace meshb {
 void read(Mesh* mesh, std::string const& filepath);
 void write(Mesh* mesh, std::string const& filepath, int version = 2);
 void read_sol(
-    Mesh* mesh, std::string const& filepath, std::string const& sol_name);
+    Mesh* mesh, std::string const& filepath, std::string const& sol_name, bool has_array_type = false);
 void write_sol(Mesh* mesh, std::string const& filepath,
-    std::string const& sol_name, int version = 2);
+    std::string const& sol_name, int version = 2, bool has_array_type = false);
 }  // namespace meshb
 #endif
 

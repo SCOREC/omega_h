@@ -225,10 +225,20 @@ void write(Mesh* mesh, std::string const& filepath, int version) {
 
 template <int version>
 static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
-    std::string const& filepath, std::string const& sol_name) {
+    std::string const& filepath, std::string const& sol_name, bool has_array_type) {
   using GmfReal = typename VersionTypes<version>::RealIn;
   int type_table[1];
   int ntypes, sol_size;
+  int ncomps = -1;
+  ArrayType array_type = ArrayType::NotSpecified;
+  if (has_array_type) {
+    GmfStatKwd(file, GmfPrivateTable, &ntypes, &sol_size, type_table);
+    safe_goto(file, GmfPrivateTable);
+    int array_type_code;
+    GmfGetLin(file, GmfPrivateTable, &array_type_code);
+    GmfGetLin(file, GmfPrivateTable, &ncomps);
+    array_type = static_cast<ArrayType>(array_type_code);
+  }
   LO nverts =
       LO(GmfStatKwd(file, GmfSolAtVertices, &ntypes, &sol_size, type_table));
   safe_goto(file, GmfSolAtVertices);
@@ -238,17 +248,19 @@ static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
     /* also, there was definitely a buffer overflow writing to type_table */
   }
   auto field_type = type_table[0];
-  Int ncomps = -1;
-  if (field_type == 1)
-    ncomps = 1;
-  else if (field_type == 2)
-    ncomps = dim;
-  else if (field_type == 3)
-    ncomps = symm_ncomps(dim);
-  else {
-    Omega_h_fail(
-        "unexpected field type %d in \"%s\"\n", field_type, filepath.c_str());
+  if (ncomps == -1) {
+    if (field_type == 1)
+      ncomps = 1;
+    else if (field_type == 2)
+      ncomps = dim;
+    else if (field_type == 3)
+      ncomps = symm_ncomps(dim);
+    else {
+      Omega_h_fail(
+          "unexpected field type %d in \"%s\"\n", field_type, filepath.c_str());
+    }
   }
+  
   HostWrite<Real> hw(ncomps * nverts);
   for (LO i = 0; i < nverts; ++i) {
     Few<GmfReal, 6> tmp;
@@ -257,12 +269,19 @@ static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
   }
   GmfCloseMesh(file);
   auto dr = Reals(hw.write());
-  if (field_type == 3) dr = symms_inria2osh(dim, dr);
-  mesh->add_tag(VERT, sol_name, ncomps, dr);
+  if (has_array_type) {
+    if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
+      dr = symms_inria2osh(dim, dr);
+    }
+  }
+  else {
+    if (field_type == 3) dr = symms_inria2osh(dim, dr);
+  }
+  mesh->add_tag(VERT, sol_name, ncomps, dr, false, array_type);
 }
 
 void read_sol(
-    Mesh* mesh, std::string const& filepath, std::string const& sol_name) {
+    Mesh* mesh, std::string const& filepath, std::string const& sol_name, bool has_array_type) {
   int version, dim;
   auto file = GmfOpenMesh(filepath.c_str(), GmfRead, &version, &dim);
   if (!file) {
@@ -272,16 +291,16 @@ void read_sol(
   OMEGA_H_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
-      read_sol_version<1>(mesh, file, dim, filepath, sol_name);
+      read_sol_version<1>(mesh, file, dim, filepath, sol_name, has_array_type);
       return;
     case 2:
-      read_sol_version<2>(mesh, file, dim, filepath, sol_name);
+      read_sol_version<2>(mesh, file, dim, filepath, sol_name, has_array_type);
       return;
     case 3:
-      read_sol_version<3>(mesh, file, dim, filepath, sol_name);
+      read_sol_version<3>(mesh, file, dim, filepath, sol_name, has_array_type);
       return;
     case 4:
-      read_sol_version<4>(mesh, file, dim, filepath, sol_name);
+      read_sol_version<4>(mesh, file, dim, filepath, sol_name, has_array_type);
       return;
   }
   Omega_h_fail("unknown libMeshb solution version %d when reading\n", version);
@@ -289,7 +308,7 @@ void read_sol(
 
 template <int version>
 static void write_sol_version(
-    Mesh* mesh, GmfFile file, std::string const& sol_name) {
+    Mesh* mesh, GmfFile file, std::string const& sol_name, bool has_array_type) {
   auto dim = mesh->dim();
   using GmfReal = typename VersionTypes<version>::RealIn;
   auto nverts = mesh->nverts();
@@ -306,11 +325,24 @@ static void write_sol_version(
     Omega_h_fail(
         "unexpected # of components %d in tag %s\n", ncomps, sol_name.c_str());
   }
-  int type_table[1] = {field_type};
   constexpr int ntypes = 1;
+  auto array_type = tag->array_type();
+  if (has_array_type) {
+    int array_type_code = static_cast<int>(array_type);
+    GmfSetKwd(file, GmfPrivateTable, ntypes);
+    GmfSetLin(file, GmfPrivateTable, array_type_code);
+    GmfSetLin(file, GmfPrivateTable, ncomps);
+  }
+  int type_table[1] = {field_type};
   GmfSetKwd(file, GmfSolAtVertices, GmfLine(nverts), ntypes, type_table);
   auto dr = tag->array();
-  if (field_type == 3) dr = symms_osh2inria(dim, dr);
+  if (has_array_type) {
+    if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
+      dr = symms_osh2inria(dim, dr);
+  }
+  } else {
+      if (field_type == 3) dr = symms_osh2inria(dim, dr);
+  }
   HostRead<Real> hr(dr);
   for (LO i = 0; i < nverts; ++i) {
     Few<GmfReal, 6> tmp;
@@ -321,7 +353,7 @@ static void write_sol_version(
 }
 
 void write_sol(Mesh* mesh, std::string const& filepath,
-    std::string const& sol_name, int version) {
+    std::string const& sol_name, int version, bool has_array_type) {
   auto dim = int(mesh->dim());
   auto file = GmfOpenMesh(filepath.c_str(), GmfWrite, version, dim);
   if (!file) {
@@ -331,16 +363,16 @@ void write_sol(Mesh* mesh, std::string const& filepath,
   OMEGA_H_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
-      write_sol_version<1>(mesh, file, sol_name);
+      write_sol_version<1>(mesh, file, sol_name, has_array_type);
       return;
     case 2:
-      write_sol_version<2>(mesh, file, sol_name);
+      write_sol_version<2>(mesh, file, sol_name, has_array_type);
       return;
     case 3:
-      write_sol_version<3>(mesh, file, sol_name);
+      write_sol_version<3>(mesh, file, sol_name, has_array_type);
       return;
     case 4:
-      write_sol_version<4>(mesh, file, sol_name);
+      write_sol_version<4>(mesh, file, sol_name, has_array_type);
       return;
   }
   Omega_h_fail("unknown libMeshb solution version %d when reading\n", version);
