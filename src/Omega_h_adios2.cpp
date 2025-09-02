@@ -174,7 +174,7 @@ static void read_down(adios2::IO &io, adios2::Engine &reader, Mesh* mesh, int d,
 static void write_meta(adios2::IO &io, adios2::Engine &writer, Mesh* mesh, std::string pref)
 {
   std::string name=pref+"mesh_version";
-  int writer_version = 1;  // update this version with every major release.
+  int writer_version = 2;  // update this version with every major release.
   write_value(io, writer, mesh->comm(), (int32_t)writer_version, name);
   name=pref+"family";
   write_value(io, writer, mesh->comm(), (int32_t)mesh->family(), name);
@@ -201,7 +201,7 @@ static void read_meta(adios2::IO &io, adios2::Engine &reader, Mesh* mesh, std::s
 {
   int32_t writer_version, family, dim, commsize, commrank, parting, nghost_layers, have_hints, naxes;
   std::string name=pref+"mesh_version";
-  int reader_version = 1;  // update this version with every major release.
+  int reader_version = 2;  // update this version with every major release.
   read_value(io, reader, mesh->comm(), &writer_version, name);
   if (writer_version < reader_version)
   {
