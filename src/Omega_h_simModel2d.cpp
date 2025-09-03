@@ -436,13 +436,6 @@ const Model2D Model2D::SimModel2D_load(std::string const& filename) {
   mdl.setAdjInfo(Graph(LOs(adj.e2eu.offset), LOs(adj.e2eu.values)), LOs(adj.eu2v.values), LOs(adj.lu2f.values), LOs(adj.eu2lu.values));
 
   GM_release(g);
-  //sample the simmetrix spline?
-  //creating the omegah splines and the simmetrix splines in createEdges from
-  //the same input points seems like a much better approach
-  // - would need to write a file with the omegah splines
-  // - move the bspline creation functions to omegah <Already copied... need to
-  //   be renamed etc.> - modify to use omegah types (i.e., hostRead etc..) so 
-  //   they can use existing methods to be written to file
   return mdl;
 }
 

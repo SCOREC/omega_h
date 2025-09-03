@@ -778,6 +778,8 @@ set(Omega_h_HEADERS
   Omega_h_mesh.hpp
   Omega_h_mixedMesh.hpp
   Omega_h_metric.hpp
+  Omega_h_model2d.hpp
+  Omega_h_bsplineModel2d.hpp
   Omega_h_mpi.h
   Omega_h_owners.hpp
   Omega_h_parser.hpp
