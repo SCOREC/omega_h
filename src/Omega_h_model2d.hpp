@@ -3,7 +3,6 @@
 
 #include <Omega_h_array.hpp>
 #include <Omega_h_graph.hpp>
-#include <splineInterpolation.h>
 
 namespace Omega_h {
 
