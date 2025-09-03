@@ -2,6 +2,7 @@
 #define OMEGA_H_BSPLINEMODEL2D_HPP
 
 #include "Omega_h_file.hpp"
+#include "Omega_h_model2d.hpp"
 
 namespace Omega_h {
 
@@ -15,19 +16,19 @@ class BsplineModel2D : public Model2D {
 
     LOs order; //polynomial order of each spline
 
+    void read(filesystem::path const& omegahGeomFile);
+
   public:
     /**
-     * fill the splines from a file of omegah binary arrays
-     * it is assumed the file contains the needed model topology and spline info
+     * fill the topo and splines from a file of omegah binary arrays
      */
-    BsplineModel2D(filesystem::path const& path);
+    BsplineModel2D(filesystem::path const& omegahGeomFile);
+
     /**
-     * not sure if this makes sense...
+     * create the omegah model from a Simmetrix GeomSim model file and a file of omegah binary arrays with spline info
      */
-    BsplineModel2D(LOs splineToCtrlPtsIn, Reals ctrlPtsIn, LOs splineToKnotsIn, Reals knotsIn, LOs orderIn) :
-      splineToCtrlPts(splineToCtrlPtsIn), ctrlPts(ctrlPtsIn), 
-      splineToKnots(splineToKnotsIn), knots(knotsIn),
-      order(orderIn) { assert(splineToCtrlPts.size() == splineToKnots() }
+    BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& spline);
+
     /**
      * given a spline and a local coordinate (parametric) 
      * along that spline, return the corresponding cartesian
@@ -40,7 +41,12 @@ class BsplineModel2D : public Model2D {
      */
     Reals eval(LOs splineIds, Reals localCoords);
 
-};
+    /**
+     * create an omegah model file with topology and spline info
+     */
+    void write(filesystem::path const& outOmegahGeomFile);
+
+};//end BsplineModel2D
 
 }//end namespace Omega_h
 

@@ -40,9 +40,6 @@ private:
   //TODO: Implement a heuristic to determine these tolerances
   Real vtxTol, edgeTol;
   Reals vtxCoords;
-  std::vector<SplineInterp::BSpline2d> splines;
-
-  Model2D() = default;
 
   //Model load helper functions
   void setAdjInfo(Graph edgeToEdgeUse, LOs edgeUseToVtx, LOs loopUseToFace, LOs edgeUseToLoopUse);
