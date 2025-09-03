@@ -468,6 +468,9 @@ if(BUILD_TESTING)
     set(TEST_EXES ${TEST_EXES} simModel2dLoad_square)
     test_func(simModel2dLoad_square 1 ./simModel2dLoad_square
       ${CMAKE_SOURCE_DIR}/meshes/square.smd)
+
+    osh_add_exe(simModelAndSplinesLoad)
+    set(TEST_EXES ${TEST_EXES} simModelAndSplinesLoad)
   endif()
 
   if(Omega_h_USE_SEACASExodus)

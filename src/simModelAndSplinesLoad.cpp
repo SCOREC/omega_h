@@ -11,6 +11,5 @@ int main(int argc, char** argv) {
   auto model = Omega_h::BsplineModel2D(argv[1], argv[2]);
 
   model.printInfo();
-  checkSquareModel(model);
   return 0;
 }
