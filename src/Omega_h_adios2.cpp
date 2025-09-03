@@ -206,9 +206,10 @@ static void read_meta(adios2::IO &io, adios2::Engine &reader, Mesh* mesh, std::s
   if (writer_version < reader_version)
   {
     Omega_h_fail("Mesh was written with Omegah to adios2 writer version %d.\n"
-		 "Latest adios2 to Omegah reader version is %d. Make sure \n"
-                 "to update meshes in adios2 with latest writer version %d. \n"
-                  , writer_version, reader_version, reader_version);
+             "Latest adios2 to Omegah reader version is %d. This may cause unwanted\n"
+             "behavior including setting ArrayTypes to NotSpecified. Make sure\n"
+             "to update meshes in adios2 with latest writer version %d.\n",
+             writer_version, reader_version, reader_version);
   }
   name=pref+"family";
   read_value(io, reader, mesh->comm(), &family, name);
