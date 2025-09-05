@@ -225,14 +225,14 @@ void write(Mesh* mesh, std::string const& filepath, int version) {
 
 template <int version>
 static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
-    std::string const& filepath, std::string const& sol_name, bool has_array_type) {
+    std::string const& filepath, std::string const& sol_name) {
   using GmfReal = typename VersionTypes<version>::RealIn;
   int type_table[1];
   int ntypes, sol_size;
   int ncomps = -1;
   ArrayType array_type = ArrayType::NotSpecified;
+  int has_array_type = GmfStatKwd(file, GmfPrivateTable, &ntypes, &sol_size, type_table);
   if (has_array_type) {
-    GmfStatKwd(file, GmfPrivateTable, &ntypes, &sol_size, type_table);
     safe_goto(file, GmfPrivateTable);
     int array_type_code;
     GmfGetLin(file, GmfPrivateTable, &array_type_code);
@@ -281,7 +281,7 @@ static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
 }
 
 void read_sol(
-    Mesh* mesh, std::string const& filepath, std::string const& sol_name, bool has_array_type) {
+    Mesh* mesh, std::string const& filepath, std::string const& sol_name) {
   int version, dim;
   auto file = GmfOpenMesh(filepath.c_str(), GmfRead, &version, &dim);
   if (!file) {
@@ -291,16 +291,16 @@ void read_sol(
   OMEGA_H_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
-      read_sol_version<1>(mesh, file, dim, filepath, sol_name, has_array_type);
+      read_sol_version<1>(mesh, file, dim, filepath, sol_name);
       return;
     case 2:
-      read_sol_version<2>(mesh, file, dim, filepath, sol_name, has_array_type);
+      read_sol_version<2>(mesh, file, dim, filepath, sol_name);
       return;
     case 3:
-      read_sol_version<3>(mesh, file, dim, filepath, sol_name, has_array_type);
+      read_sol_version<3>(mesh, file, dim, filepath, sol_name);
       return;
     case 4:
-      read_sol_version<4>(mesh, file, dim, filepath, sol_name, has_array_type);
+      read_sol_version<4>(mesh, file, dim, filepath, sol_name);
       return;
   }
   Omega_h_fail("unknown libMeshb solution version %d when reading\n", version);
@@ -308,7 +308,7 @@ void read_sol(
 
 template <int version>
 static void write_sol_version(
-    Mesh* mesh, GmfFile file, std::string const& sol_name, bool has_array_type) {
+    Mesh* mesh, GmfFile file, std::string const& sol_name) {
   auto dim = mesh->dim();
   using GmfReal = typename VersionTypes<version>::RealIn;
   auto nverts = mesh->nverts();
@@ -327,21 +327,15 @@ static void write_sol_version(
   }
   constexpr int ntypes = 1;
   auto array_type = tag->array_type();
-  if (has_array_type) {
-    int array_type_code = static_cast<int>(array_type);
-    GmfSetKwd(file, GmfPrivateTable, ntypes);
-    GmfSetLin(file, GmfPrivateTable, array_type_code);
-    GmfSetLin(file, GmfPrivateTable, ncomps);
-  }
+  int array_type_code = static_cast<int>(array_type);
+  GmfSetKwd(file, GmfPrivateTable, ntypes);
+  GmfSetLin(file, GmfPrivateTable, array_type_code);
+  GmfSetLin(file, GmfPrivateTable, ncomps);
   int type_table[1] = {field_type};
   GmfSetKwd(file, GmfSolAtVertices, GmfLine(nverts), ntypes, type_table);
   auto dr = tag->array();
-  if (has_array_type) {
-    if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
+  if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
       dr = symms_osh2inria(dim, dr);
-  }
-  } else {
-      if (field_type == 3) dr = symms_osh2inria(dim, dr);
   }
   HostRead<Real> hr(dr);
   for (LO i = 0; i < nverts; ++i) {
@@ -353,7 +347,7 @@ static void write_sol_version(
 }
 
 void write_sol(Mesh* mesh, std::string const& filepath,
-    std::string const& sol_name, int version, bool has_array_type) {
+    std::string const& sol_name, int version) {
   auto dim = int(mesh->dim());
   auto file = GmfOpenMesh(filepath.c_str(), GmfWrite, version, dim);
   if (!file) {
@@ -363,16 +357,16 @@ void write_sol(Mesh* mesh, std::string const& filepath,
   OMEGA_H_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
-      write_sol_version<1>(mesh, file, sol_name, has_array_type);
+      write_sol_version<1>(mesh, file, sol_name);
       return;
     case 2:
-      write_sol_version<2>(mesh, file, sol_name, has_array_type);
+      write_sol_version<2>(mesh, file, sol_name);
       return;
     case 3:
-      write_sol_version<3>(mesh, file, sol_name, has_array_type);
+      write_sol_version<3>(mesh, file, sol_name);
       return;
     case 4:
-      write_sol_version<4>(mesh, file, sol_name, has_array_type);
+      write_sol_version<4>(mesh, file, sol_name);
       return;
   }
   Omega_h_fail("unknown libMeshb solution version %d when reading\n", version);
