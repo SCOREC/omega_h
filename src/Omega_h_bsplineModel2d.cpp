@@ -1,15 +1,47 @@
 #include "Omega_h_bsplineModel2d.hpp"
+#include "Omega_h_for.hpp" //parallel_for
+#include <fstream>
 
 namespace Omega_h {
+  bool areKnotsIncreasing(Reals x, Reals y) {
+    parallel_for(x.size()-1, OMEGA_H_LAMBDA(LO i) {
+        OMEGA_H_CHECK(x[i] <= x[i+1]);
+    });
+    parallel_for(y.size()-1, OMEGA_H_LAMBDA(LO i) {
+        OMEGA_H_CHECK(y[i] <= y[i+1]);
+    });
+    return true;
+  }
+
   BsplineModel2D::BsplineModel2D(filesystem::path const& omegahGeomFile)
   {
     read(omegahGeomFile);
   }
 
-  BsplineModel2D::BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& spline) :
+  BsplineModel2D::BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& splineFile) :
      Model2D( Omega_h::Model2D::SimModel2D_load(geomSimModelFile.string()) )
   {
-    //read from spline file and set private arrays
+    std::ifstream file(splineFile.string());
+    OMEGA_H_CHECK(file.is_open());
+    bool compressed = true;
+    bool needs_swapping = false; //FIXME - check for this
+    binary::read_array(file, splineToCtrlPts, compressed, needs_swapping);
+    binary::read_array(file, splineToKnots, compressed, needs_swapping);
+    binary::read_array(file, ctrlPtsX, compressed, needs_swapping);
+    binary::read_array(file, ctrlPtsY, compressed, needs_swapping);
+    binary::read_array(file, knotsX, compressed, needs_swapping);
+    binary::read_array(file, knotsY, compressed, needs_swapping);
+    binary::read_array(file, order, compressed, needs_swapping);
+
+    const auto numEdges = getNumEnts(OMEGA_H_EDGE);
+    OMEGA_H_CHECK(order.size() == numEdges);
+    OMEGA_H_CHECK(splineToCtrlPts.size() == numEdges+1); //offset array
+    OMEGA_H_CHECK(splineToKnots.size() == numEdges+1); //offset array
+    OMEGA_H_CHECK(splineToCtrlPts.get(numEdges) == ctrlPtsX.size()); //last entry should be numCtrlPts
+    OMEGA_H_CHECK(ctrlPtsX.size() == ctrlPtsY.size());
+    OMEGA_H_CHECK(splineToKnots.get(numEdges) == knotsX.size()); //last entry should be numKnots
+    OMEGA_H_CHECK(knotsX.size() == knotsY.size());
+    OMEGA_H_CHECK(areKnotsIncreasing(knotsX, knotsY));
   }
   
   Reals BsplineModel2D::eval(LOs splineIds, Reals localCoords) {
