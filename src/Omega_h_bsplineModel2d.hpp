@@ -9,10 +9,12 @@ namespace Omega_h {
 class BsplineModel2D : public Model2D {
   private:
     LOs splineToCtrlPts; //offset array mapping splines to control points
-    Reals ctrlPts; //each ctrl point is defined by two doubles
+    Reals ctrlPtsX; //each ctrl point is defined by two doubles
+    Reals ctrlPtsY; //each ctrl point is defined by two doubles
 
     LOs splineToKnots; //offset array mapping splines to knots
-    Reals knots; //each knot is defined by two doubles
+    Reals knotsX; //each knot is defined by one double
+    Reals knotsY; //each knot is defined by one double
 
     LOs order; //polynomial order of each spline
 

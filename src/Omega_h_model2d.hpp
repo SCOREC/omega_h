@@ -69,7 +69,18 @@ public:
   static const Model2D SimModel2D_load(std::string const& filename);
 #endif
   void printInfo() const;
-  
+
+  //accessors
+  /** @brief Get the number of entities in the specified dimension
+   */
+  OMEGA_H_INLINE LO getNumEnts(size_t dim) const {
+    if(dim==0) return vtxIds.size();
+    else if(dim==1) return edgeIds.size();
+    else if(dim==2) return faceIds.size();
+    else Omega_h_fail("Omega_h::Model2D::getNumEnts(%d): invalid dimension!\n", dim);
+    return -1;
+  }
+
   //accessors
   /** @brief Get the vertex ids of the model.
    *  
