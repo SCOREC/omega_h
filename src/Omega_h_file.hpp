@@ -218,7 +218,7 @@ I32 read_version(filesystem::path const& path, CommPtr comm);
 void read_in_comm(
     filesystem::path const& path, CommPtr comm, Mesh* mesh, I32 version);
 
-constexpr I32 latest_version = 10;
+constexpr I32 latest_version = 11;
 
 template <typename T>
 void swap_bytes(T&);

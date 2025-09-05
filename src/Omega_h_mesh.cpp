@@ -153,12 +153,18 @@ GO Mesh::nglobal_ents(Int ent_dim) {
 
 template <typename T>
 void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps) {
-  this->add_tag(ent_dim, name, ncomps, Read<T>(), true);
+  this->add_tag(ent_dim, name, ncomps, Read<T>(), true, ArrayType::NotSpecified);
 }
 
 template <typename T>
 void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps,
-    Read<T> array, bool internal) {
+    ArrayType array_type) {
+  this->add_tag(ent_dim, name, ncomps, Read<T>(), true, array_type);
+}
+
+template <typename T>
+void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps,
+    Read<T> array, bool internal, ArrayType array_type) {
   auto it = this->tag_iter(ent_dim, name);
   bool const had = (it != tags_[ent_dim].end());
   if (!had) {
@@ -168,7 +174,7 @@ void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps,
     OMEGA_H_CHECK(ncomps <= Int(INT8_MAX));
     OMEGA_H_CHECK(tags_[ent_dim].size() < size_t(INT8_MAX));
   }
-  auto ptr = std::make_shared<Tag<T>>(name, ncomps);
+  auto ptr = std::make_shared<Tag<T>>(name, ncomps, array_type);
   if (array.exists()) {
     OMEGA_H_CHECK(array.size() == nents_[ent_dim] * ncomps);
     ptr->set_array(array);
@@ -187,12 +193,12 @@ void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps,
 
 template <typename T>
 void Mesh::set_tag(
-    Int ent_dim, std::string const& name, Read<T> array, bool internal) {
+    Int ent_dim, std::string const& name, Read<T> array, bool internal, ArrayType array_type) {
   if (!has_tag(ent_dim, name)) {
     Omega_h_fail("set_tag(%s, %s): tag doesn't exist (use add_tag first)\n",
         topological_plural_name(family(), ent_dim), name.c_str());
   }
-  this->add_tag(ent_dim, name, divide_no_remainder(array.size(), nents(ent_dim)), array, internal);
+  this->add_tag(ent_dim, name, divide_no_remainder(array.size(), nents(ent_dim)), array, internal, array_type);
 }
 
 void Mesh::react_to_set_tag(Int ent_dim, std::string const& name) {
@@ -1113,10 +1119,12 @@ __host__
   template Read<T> Mesh::get_array<T>(Int dim, std::string const& name) const; \
   template void Mesh::add_tag<T>(                                              \
       Int dim, std::string const& name, Int ncomps);                           \
+  template void Mesh::add_tag<T>(                                              \
+      Int dim, std::string const& name, Int ncomps, ArrayType array_type);     \
   template void Mesh::add_tag<T>(Int dim, std::string const& name, Int ncomps, \
-      Read<T> array, bool internal);                                           \
-  template void Mesh::set_tag(                                                 \
-      Int dim, std::string const& name, Read<T> array, bool internal);         \
+      Read<T> array, bool internal, ArrayType array_type);                     \
+  template void Mesh::set_tag(Int dim, std::string const& name,                \
+      Read<T> array, bool internal, ArrayType array_type);                     \
   template Read<T> Mesh::sync_array(Int ent_dim, Read<T> a, Int width);        \
   template Future<T> Mesh::isync_array(Int ent_dim, Read<T> a, Int width);     \
   template Read<T> Mesh::owned_array(Int ent_dim, Read<T> a, Int width);       \
