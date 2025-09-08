@@ -309,10 +309,6 @@ static void write_rc_tag(std::ostream& stream, TagBase const* tag,
 
 static void read_tag(std::istream& stream, Mesh* mesh, Int d,
     bool is_compressed, I32 version, bool needs_swapping) {
-  if (version <= 10) {
-    Omega_h_fail("Loading legacy version files will set all ArrayTypes to NotSpecified.\n"
-                 "Please resave your mesh with the latest Omega_h version.\n");
-  }
   std::string name;
   read(stream, name, needs_swapping);
   I8 ncomps;
@@ -444,6 +440,12 @@ void write(std::ostream& stream, Mesh* mesh) {
 
 void read(std::istream& stream, Mesh* mesh, I32 version) {
   ScopedTimer timer("binary::read(istream, mesh, version)");
+#ifndef NDEBUG
+  if (version <= 10) {
+    fprintf(stderr, "Loading legacy version files will set all ArrayTypes to NotSpecified.\n"
+            "Please resave your mesh with the latest Omega_h version.\n");
+  }
+#endif
   unsigned char magic_in[2];
   stream.read(reinterpret_cast<char*>(magic_in), sizeof(magic));
   OMEGA_H_CHECK(magic_in[0] == magic[0]);
