@@ -276,7 +276,7 @@ Read<T> Mesh::get_rc_mesh_array_from_rc_array(
   auto f = OMEGA_H_LAMBDA(LO i) {
     auto id = rc_ids[i];
     for (LO n = 0; n < ncomps; ++n) {
-      if ((mesh_field[id * ncomps + n] - OMEGA_H_INTERIOR_VAL) < EPSILON) {
+      if ((mesh_field[id * ncomps + n] - static_cast<T>(OMEGA_H_INTERIOR_VAL)) < EPSILON) {
         mesh_field[id * ncomps + n] = rc_field[i * ncomps + n];
       }
     }

@@ -12,6 +12,13 @@
 #include <sstream>
 #include <string>
 
+#if defined(OMEGA_H_USE_SIMMODSUITE)
+#include "MeshSim.h"
+#if defined(OMEGA_H_USE_SIMDISCRETE)
+#include "SimDiscrete.h"
+#endif
+#endif
+
 #ifdef OMEGA_H_DBG
 Omega_h::Comm *DBG_COMM = 0;
 bool dbg_print_global = false;
@@ -176,6 +183,14 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
   cudaFree(nullptr);
 #endif
   if (cmdline.parsed("--osh-pool")) enable_pooling();
+#if defined(OMEGA_H_USE_SIMMODSUITE)
+  MS_init();
+  SimModel_start();
+  Sim_readLicenseFile(NULL);
+  #if defined(OMEGA_H_USE_SIMDISCRETE)
+  SimDiscrete_start(0);
+  #endif
+#endif
 }
 
 Library::Library(Library const& other)
@@ -221,6 +236,13 @@ Library::~Library() {
     OMEGA_H_CHECK(MPI_SUCCESS == MPI_Finalize());
     we_called_mpi_init = false;
   }
+#endif
+#if defined(OMEGA_H_USE_SIMMODSUITE)
+  MS_exit();
+  #if defined(OMEGA_H_USE_SIMDISCRETE)
+  SimDiscrete_stop(0);
+  #endif
+  SimModel_stop();
 #endif
   delete[] Omega_h::max_memory_stacktrace;
 }

@@ -45,10 +45,7 @@ void finalize_write(int numVerts, const double *coords, int numElems,
                     pEntity *eReturn, const char *mesh_path,
                     const char *model_path) {
   Sim_logOn("importData1.log");
-  MS_init();
-  Sim_readLicenseFile(0);
   pMesh meshtest;
-  SimDiscrete_start(0);
   Sim_setMessageHandler(messageHandler);
   pProgress progress = Progress_new();
   Progress_setDefaultCallback(progress);
@@ -81,9 +78,6 @@ void finalize_write(int numVerts, const double *coords, int numElems,
   M_release(meshtest);
   GM_release(modeltest);
   Progress_delete(progress);
-  SimDiscrete_stop(0);
-  Sim_unregisterAllKeys();
-  MS_exit();
   Sim_logOff();
 }
 

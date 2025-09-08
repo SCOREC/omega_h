@@ -13,11 +13,25 @@ jobs:
         compiler: [g++, clang++]
         mpi: [on, off]
         kokkos: [on, off]
+        kokkos_version: [develop]
         mempool: [on, off]
+        cxx_standard: [17]
         exclude:
         - kokkos: off
           mempool: on
-
+        include:
+           #run one config with the oldest compatible kokkos version        
+           - compiler: g++
+             kokkos: on
+             mempool: on
+             mpi: off
+             kokkos_version: 4.0.00
+           #run one config with g++ and C++20
+           - compiler: g++
+             kokkos: on
+             mempool: on
+             mpi: on
+             cxx_standard: 20            
     env:
       CXX: ${{matrix.compiler}}
       MPICH_CXX: ${{matrix.compiler}}
@@ -32,6 +46,7 @@ jobs:
       with:
         repository: kokkos/kokkos
         path: kokkos
+        ref: ${{matrix.kokkos_version}}
 
     - name: install mpich
       if: ${{ matrix.mpi == 'on' }}
@@ -73,6 +88,7 @@ jobs:
       run: cmake .
            -Bbuild
            -DCMAKE_CXX_COMPILER=$CXX
+           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}
            -DCMAKE_VERBOSE_MAKEFILE=on
            -DOmega_h_USE_MPI=${{ matrix.mpi }}
            -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}

@@ -39,9 +39,10 @@ void printMPIChar(std::string output, int comm_size, int comm_rank) {
         MPI_Probe(sender, 0, MPI_COMM_WORLD, &status);
         int count;
         MPI_Get_count(&status, MPI_CHAR, &count);
-        char buf [count];
+        char* buf = new char[count];
         MPI_Recv(&buf, count, MPI_CHAR, sender, 0, MPI_COMM_WORLD, &status);
         std::cout << buf;
+        delete [] buf;
     }
 #else
     std::cout << output;

@@ -13,8 +13,16 @@ jobs:
     strategy:
       matrix:
         mempool: [on, off]
+        cxx_standard: [17]
+        #run one config with C++20
+        include:
+          - mempool: on
+            cxx_standard: 20     
 
     steps:
+    - name: Install CMake and ZLib
+      run: apt update && apt install -y cmake zlib1g-dev git
+    
     - uses: actions/checkout@v4
       with:
         path: omega_h
@@ -23,9 +31,6 @@ jobs:
       with:
         repository: kokkos/kokkos
         path: kokkos
-
-    - name: Install CMake and ZLib
-      run: apt update && apt install -y cmake zlib1g-dev
 
     - name: Configure Kokkos
       shell: bash
@@ -46,6 +51,7 @@ jobs:
       run: cmake .
            -Bbuild
            -DCMAKE_VERBOSE_MAKEFILE=on
+           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}
            -DOmega_h_USE_MPI=off
            -DOmega_h_USE_CUDA=on
            -DOmega_h_CUDA_ARCH=75

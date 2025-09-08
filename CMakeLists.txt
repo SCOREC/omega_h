@@ -14,10 +14,6 @@ endif()
 include(cmake/bob.cmake)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_MODULE_PATH
-  ${CMAKE_MODULE_PATH}
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
-
 bob_begin_package()
 
 bob_option(Omega_h_CHECK_BOUNDS "Check array bounds when running on host (makes code slow too)" OFF)
@@ -58,7 +54,7 @@ endif()
 set(Omega_h_USE_ZLIB_DEFAULT ON)
 bob_add_dependency(PUBLIC NAME ZLIB TARGETS ZLIB::ZLIB)
 
-set(Kokkos_REQUIRED_VERSION 3.7)
+set(Kokkos_REQUIRED_VERSION 4.0)
 set(Omega_h_USE_Kokkos_DEFAULT OFF)
 set(KokkosCore_PREFIX_DEFAULT ${Kokkos_PREFIX})
 bob_add_dependency(PUBLIC NAME Kokkos TARGETS Kokkos::kokkos)

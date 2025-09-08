@@ -1,0 +1,57 @@
+  /**
+   * @mainpage
+   * Reliable mesh adaptation
+   *
+   * Omega\_h is a C++17 library that implements tetrahedron and triangle mesh adaptativity,
+   * with a focus on scalable HPC performance using (optionally) MPI and OpenMP or CUDA.
+   * It is intended to provided adaptive functionality to existing simulation codes.
+   * Mesh adaptivity allows one to minimize both discretization error and number
+   * of degrees of freedom live during the simulation, as well as enabling moving
+   * object and evolving geometry simulations.
+   * Omega\_h will do this for you in a way that is fast, memory-efficient, and
+   * portable across many different architectures.
+   *
+   * ## Extensions
+   *
+   * This fork of Omega\_h from https://github.com/sandialabs/omega_h v9.34.12 adds support for:
+   *
+   * - loading serial Simmetrix meshes
+   * - reverse classification, and defining tags on sets of mesh entities defined by a reverse classification relation
+   * - representing single-process mixed meshes
+   * - domains with matched/periodic entities
+   * - portability to NVIDIA, AMD and Intel GPUs via Kokkos
+   *
+   * ## Installing / Getting started
+   *
+   * For a bare minimum setup with no parallelism, you just need [CMake][0],
+   * a C++17 compiler, and preferably [ZLib][6] installed.
+   *
+   * ```shell
+   * git clone git@github.com:SCOREC/omega_h.git
+   * cd omega_h
+   * cmake . -DCMAKE_INSTALL_PREFIX=/your/choice
+   * make install
+   * ```
+   *
+   * This should install Omega\_h under the given prefix in a way you can
+   * access from your own CMake files using these CMake commands:
+   *
+   * ```cmake
+   * find_package(Omega_h)
+   * target_link_libraries(myprogram Omega_h::omega_h)
+   * ```
+   *
+   * ## Features
+   *
+   * Omega\_h provides at least the following:
+   * * Adaptation of tetrahedral and triangle meshes in parallel
+   * * Anisotropic metric field support
+   * * Given good input element quality, the output element
+   *   quality is also guaranteed.
+   * * Scalable MPI parallelism
+   * * On-node parallelism via Kokkos
+   * * Fully deterministic execution
+   * * Given the same mesh, global numbering, and size field,
+   *   results will be independent of parallel partitioning
+   *   and ordering.
+   */
