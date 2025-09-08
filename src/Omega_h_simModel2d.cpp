@@ -365,7 +365,10 @@ struct Adjacencies {
     checkDegree(lu2f.offset, lu2fDegree);
     checkDegree(eu2lu.offset, eu2luDegree);
     checkDegree(eu2v.offset, eu2vDegree);
-    checkDegree(e2eu.offset, e2euDegree);
+    //FIXME - A loop that bounds two faces will have four uses, each edge that
+    //        is part of those uses will have one edge use.  This check
+    //        incorrectly asserts that each edge has exactly two uses.
+    //checkDegree(e2eu.offset, e2euDegree); //FIXME
   }
 };
 
