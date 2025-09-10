@@ -471,6 +471,9 @@ if(BUILD_TESTING)
 
     osh_add_exe(simModelAndSplinesLoad)
     set(TEST_EXES ${TEST_EXES} simModelAndSplinesLoad)
+    test_func(simModelAndSplinesLoad_twoSquares 1 ./simModelAndSplinesLoad
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
   endif()
 
   if(Omega_h_USE_SEACASExodus)
