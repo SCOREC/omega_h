@@ -3,12 +3,13 @@
 #include <fstream>
 
 namespace Omega_h {
-  bool areKnotsIncreasing(Reals x, Reals y) {
-    parallel_for(x.size()-1, OMEGA_H_LAMBDA(LO i) {
-        OMEGA_H_CHECK(x[i] <= x[i+1]);
-    });
-    parallel_for(y.size()-1, OMEGA_H_LAMBDA(LO i) {
-        OMEGA_H_CHECK(y[i] <= y[i+1]);
+  bool areKnotsIncreasing(LOs splineToKnots, Reals x, Reals y) {
+    assert(x.size() == y.size());
+    parallel_for(splineToKnots.size()-1, OMEGA_H_LAMBDA(LO i) {
+        for (auto j = splineToKnots[i]; j < splineToKnots[i+1]-1; j++) {
+          OMEGA_H_CHECK(x[j] <= x[j+1]);
+          OMEGA_H_CHECK(y[j] <= y[j+1]);
+        }
     });
     return true;
   }
@@ -41,7 +42,7 @@ namespace Omega_h {
     OMEGA_H_CHECK(ctrlPtsX.size() == ctrlPtsY.size());
     OMEGA_H_CHECK(splineToKnots.get(numEdges) == knotsX.size()); //last entry should be numKnots
     OMEGA_H_CHECK(knotsX.size() == knotsY.size());
-    OMEGA_H_CHECK(areKnotsIncreasing(knotsX, knotsY));
+    OMEGA_H_CHECK(areKnotsIncreasing(splineToKnots, knotsX, knotsY));
   }
   
   Reals BsplineModel2D::eval(LOs splineIds, Reals localCoords) {
