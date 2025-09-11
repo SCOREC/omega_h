@@ -24,8 +24,10 @@ namespace Omega_h {
   {
     std::ifstream file(splineFile.string());
     OMEGA_H_CHECK(file.is_open());
+    //FIXME copied swap and compression test from read(stream, mesh, ...) in Omega_h_file.cpp
     bool compressed = true;
-    bool needs_swapping = false; //FIXME - check for this
+    bool needs_swapping = false;
+
     binary::read_array(file, splineToCtrlPts, compressed, needs_swapping);
     binary::read_array(file, splineToKnots, compressed, needs_swapping);
     binary::read_array(file, ctrlPtsX, compressed, needs_swapping);
@@ -44,10 +46,74 @@ namespace Omega_h {
     OMEGA_H_CHECK(knotsX.size() == knotsY.size());
     OMEGA_H_CHECK(areKnotsIncreasing(splineToKnots, knotsX, knotsY));
   }
-  
-  Reals BsplineModel2D::eval(LOs splineIds, Reals localCoords) {
-    //port Bspline.cpp::eval here
-    return Reals();
+
+  /** \brief given a pair of parametric coordinates along each spline
+    *        return the corresponding cartesian coordinates of that point
+    *
+    * Not clear what the best API for this is:
+    *  a) CSR to group evaluation points by spline
+    *  b) two arrays of equal length: model edge ids and evaluation points
+    *  c) ...
+    * For now, taking approach (b).
+    *
+    * \param edgeIds (In) array of model edge ids for each pair of parametric coordinates 
+    *                       specified in localCoords
+    * \param localCoords (In) array of parametric coordinates
+    * \return the array of coordinates (x0,y0,x1,y1,...,xN-1,yN-1) in order
+    *         they were specified in the input arrays
+    */
+  Reals BsplineModel2D::eval(LOs edgeIds, Reals localCoords) {
+    assert(edgeIds.size()*2 == localCoords.size());
+    Write<Real> coords(localCoords.size()); 
+
+    //localize class members for use in lambda
+    const auto s2k = splineToKnots;
+    const auto kx = knotsX;
+    const auto ky = knotsY;
+    const auto s2cp = splineToCtrlPts;
+    const auto cx = ctrlPtsX;
+    const auto cy = ctrlPtsY;
+    const auto ord = order;
+
+    Write<Real> pts(ctrlPtsX.size());
+
+    //TODO use team based loop or expand index range by 2x to run eval
+    //on X and Y separately
+    parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
+      const auto spline = edgeIds[i];
+      const auto sOrder = ord[i];
+      auto sKnots = Kokkos::subview(knotsX.view(), s2k[spline], s2k[spline+1]);
+      auto sCtrlPts = Kokkos::subview(cx.view(), s2cp[spline], s2cp[spline+1]);
+      // first find the interval of x in knots
+      int leftKnot = sOrder - 1;
+      int leftPt = 0;
+      while (sKnots(leftKnot + 1) < x) {
+        leftKnot++;
+        leftPt++;
+        if (leftKnot == sKnots.size() - 1)
+          break;
+      }
+
+      auto ptsLocal = Kokkos::subview(pts, leftPt, leftPt + sOrder);
+      //vector<double> localKnots(&(knots[leftKnot - sOrder + 2]), &(knots[leftKnot + sOrder]));
+      const auto localKnots = Kokkos::subview(sKnots, leftKnot - sOrder + 2, leftKnot + sOrder);
+
+      for (int r = 1; r <= sOrder; r++) {
+        // from bottom to top to save a buff
+        for (int i = sOrder - 1; i >= r; i--) {
+          double a_left = localKnots(i - 1);
+          double a_right = localKnots(i + sOrder - r - 1);
+          double alpha;
+          if (a_right == a_left)
+            alpha = 0.; // not sure??
+          else
+            alpha = (x - a_left) / (a_right - a_left);
+          ptsLocal(i) = (1. - alpha) * ptsLocal(i - 1) + alpha * ptsLocal(i);
+        }
+      }
+      coords[i*2] = ptsLocal(sOrder - 1);
+    });
+    return coords;
   }
 
   void BsplineModel2D::write(filesystem::path const& outOmegahGeomFile) {
