@@ -56,6 +56,9 @@ namespace Omega_h {
     *  c) ...
     * For now, taking approach (b).
     *
+    * This implementation was ported from BSpline.cc in 
+    * github.com/scorec/simLandIceMeshGen main @ 9f85d2e .
+    *
     * \param edgeIds (In) array of model edge ids for each pair of parametric coordinates 
     *                       specified in localCoords
     * \param localCoords (In) array of parametric coordinates
