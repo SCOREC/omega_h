@@ -2,6 +2,8 @@
 #define OMEGA_H_2DMESH_HPP
 
 #include <Omega_h_mesh.hpp>
+#include <Omega_h_model2d.hpp>
+#include <optional>
 
 namespace Omega_h {
 
@@ -16,6 +18,11 @@ public:
     OMEGA_H_CHECK(0 <= dim_ && dim_ <= 2);
     return dim_;
   }
+
+  [[nodiscard]] std::optional<const Model2D> getModel() const;
+
+private:
+  std::optional<const Model2D> model;
 };
 
 } // Omega_h
