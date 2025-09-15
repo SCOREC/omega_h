@@ -1,5 +1,6 @@
 #include "Omega_h_bsplineModel2d.hpp"
 #include "Omega_h_for.hpp" //parallel_for
+#include <Kokkos_Core.hpp>
 #include <fstream>
 
 namespace Omega_h {
