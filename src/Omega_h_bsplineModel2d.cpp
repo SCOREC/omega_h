@@ -62,7 +62,7 @@ namespace Omega_h {
     *
     * \param edgeIds (In) array of model edge ids for each pair of parametric coordinates 
     *                       specified in localCoords
-    * \param localCoords (In) array of parametric coordinates
+    * \param localCoords (In) array of parametric coordinates (x0,x1,x2,...,xN-1)
     * \return the array of coordinates (x0,y0,x1,y1,...,xN-1,yN-1) in order
     *         they were specified in the input arrays
     */
@@ -86,21 +86,21 @@ namespace Omega_h {
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
       const auto spline = edgeIds[i];
       const auto sOrder = ord[i];
-      auto sKnots = Kokkos::subview(knotsX.view(), s2k[spline], s2k[spline+1]);
-      auto sCtrlPts = Kokkos::subview(cx.view(), s2cp[spline], s2cp[spline+1]);
+      auto sKnots = Kokkos::subview(knotsX.view(), std::make_pair(s2k[spline], s2k[spline+1]));
+      auto sCtrlPts = Kokkos::subview(cx.view(), std::make_pair(s2cp[spline], s2cp[spline+1]));
       // first find the interval of x in knots
       int leftKnot = sOrder - 1;
       int leftPt = 0;
-      while (sKnots(leftKnot + 1) < x) {
+      while (sKnots(leftKnot + 1) < localCoords[i]) {
         leftKnot++;
         leftPt++;
         if (leftKnot == sKnots.size() - 1)
           break;
       }
 
-      auto ptsLocal = Kokkos::subview(pts, leftPt, leftPt + sOrder);
+      auto ptsLocal = Kokkos::subview(pts.view(), std::make_pair(leftPt, leftPt + sOrder));
       //vector<double> localKnots(&(knots[leftKnot - sOrder + 2]), &(knots[leftKnot + sOrder]));
-      const auto localKnots = Kokkos::subview(sKnots, leftKnot - sOrder + 2, leftKnot + sOrder);
+      const auto localKnots = Kokkos::subview(sKnots, std::make_pair(leftKnot - sOrder + 2, leftKnot + sOrder));
 
       for (int r = 1; r <= sOrder; r++) {
         // from bottom to top to save a buff
@@ -111,7 +111,7 @@ namespace Omega_h {
           if (a_right == a_left)
             alpha = 0.; // not sure??
           else
-            alpha = (x - a_left) / (a_right - a_left);
+            alpha = (localCoords[i] - a_left) / (a_right - a_left);
           ptsLocal(i) = (1. - alpha) * ptsLocal(i - 1) + alpha * ptsLocal(i);
         }
       }
