@@ -154,7 +154,7 @@ template <typename T>
 class HostWrite {
   Write<T> write_;
 #ifdef OMEGA_H_USE_KOKKOS
-  typename View<T*>::HostMirror mirror_;
+  typename View<T*>::host_mirror_type mirror_;
 #elif defined(OMEGA_H_USE_CUDA)
   std::shared_ptr<T[]> mirror_;
 #endif

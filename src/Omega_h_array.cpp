@@ -172,10 +172,10 @@ T Read<T>::last() const {
 
 #ifdef OMEGA_H_USE_KOKKOS
 template <class T, class... P>
-inline typename Kokkos::View<T, P...>::HostMirror create_uninit_mirror(
+inline typename Kokkos::View<T, P...>::host_mirror_type create_uninit_mirror(
     const Kokkos::View<T, P...>& src) {
   typedef Kokkos::View<T, P...> src_type;
-  typedef typename src_type::HostMirror dst_type;
+  typedef typename src_type::host_mirror_type dst_type;
   static_assert(src_type::rank == 1, "Hardcoded for 1D Views!");
   return dst_type(Kokkos::ViewAllocateWithoutInitializing(
                       std::string("host_") + src.label()),
@@ -183,25 +183,25 @@ inline typename Kokkos::View<T, P...>::HostMirror create_uninit_mirror(
 }
 
 template <class T, class... P>
-inline typename Kokkos::View<T, P...>::HostMirror create_uninit_mirror_view(
+inline typename Kokkos::View<T, P...>::host_mirror_type create_uninit_mirror_view(
     const Kokkos::View<T, P...>& src,
     typename std::enable_if<(
         std::is_same<typename Kokkos::View<T, P...>::memory_space,
-            typename Kokkos::View<T, P...>::HostMirror::memory_space>::value &&
+            typename Kokkos::View<T, P...>::host_mirror_type::memory_space>::value &&
         std::is_same<typename Kokkos::View<T, P...>::data_type,
-            typename Kokkos::View<T, P...>::HostMirror::data_type>::value)>::
+            typename Kokkos::View<T, P...>::host_mirror_type::data_type>::value)>::
         type* = nullptr) {
   return src;
 }
 
 template <class T, class... P>
-inline typename Kokkos::View<T, P...>::HostMirror create_uninit_mirror_view(
+inline typename Kokkos::View<T, P...>::host_mirror_type create_uninit_mirror_view(
     const Kokkos::View<T, P...>& src,
     typename std::enable_if<!(
         std::is_same<typename Kokkos::View<T, P...>::memory_space,
-            typename Kokkos::View<T, P...>::HostMirror::memory_space>::value &&
+            typename Kokkos::View<T, P...>::host_mirror_type::memory_space>::value &&
         std::is_same<typename Kokkos::View<T, P...>::data_type,
-            typename Kokkos::View<T, P...>::HostMirror::data_type>::value)>::
+            typename Kokkos::View<T, P...>::host_mirror_type::data_type>::value)>::
         type* = nullptr) {
   return create_uninit_mirror(src);
 }

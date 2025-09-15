@@ -20,6 +20,9 @@ jobs:
             cxx_standard: 20     
 
     steps:
+    - name: Install CMake and ZLib
+      run: apt update && apt install -y cmake zlib1g-dev git
+    
     - uses: actions/checkout@v4
       with:
         path: omega_h
@@ -28,9 +31,6 @@ jobs:
       with:
         repository: kokkos/kokkos
         path: kokkos
-
-    - name: Install CMake and ZLib
-      run: apt update && apt install -y cmake zlib1g-dev
 
     - name: Configure Kokkos
       shell: bash
