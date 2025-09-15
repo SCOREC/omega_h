@@ -110,7 +110,7 @@ set(Omega_h_SOURCES
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
   Omega_h_model2d.cpp
-  Omega_h_bsplineModel2d.cpp
+  Omega_h_bsplineModel2d.cpp #FIXME - requires kokkos
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
