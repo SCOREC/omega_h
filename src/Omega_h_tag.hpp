@@ -3,6 +3,9 @@
 
 #include <unordered_map>
 #include <Omega_h_array.hpp>
+#ifdef OMEGA_H_USE_MPI
+#include <mpi.h>
+#endif
 
 namespace Omega_h {
 
@@ -22,10 +25,19 @@ enum class ArrayType {
 };
 
 inline void check_array_type(ArrayType array_type) {
-  if (array_type == ArrayType::NotSpecified) {
-    fprintf(stderr,
-      "Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+#ifndef NDEBUG 
+  int rank = 0;
+#ifdef OMEGA_H_USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  if (rank == 0) {
+    if (array_type == ArrayType::NotSpecified) {
+      fprintf(stderr,
+        "Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+    }
   }
+
+#endif
 }
 
  const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {

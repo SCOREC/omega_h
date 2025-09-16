@@ -297,6 +297,22 @@ void write_tag_impl<Real>(
   } else if (array_type == ArrayType::SymmetricMatrix3x2 && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
           resize_symms(array, space_dim, 3), compress, array_type);
+  } else if (array_type == ArrayType::NotSpecified) {
+    if (1 < space_dim && space_dim < 3) {
+      if (ncomps == space_dim) {
+        write_array(
+            stream, name, 3, resize_vectors(array, space_dim, 3), compress);
+      } else if (ncomps == symm_ncomps(space_dim)) {
+        // Likewise, ParaView has component names specially set up for
+        // 3D symmetric tensors
+        write_array(stream, name, symm_ncomps(3),
+            resize_symms(array, space_dim, 3), compress);
+      } else {
+        write_array(stream, name, ncomps, array, compress);
+      }
+    } else {
+      write_array(stream, name, ncomps, array, compress);
+    }
   } else {
     write_array(stream, name, ncomps, array, compress, array_type);
   }
@@ -339,6 +355,16 @@ void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
   } else if (array_type == ArrayType::SymmetricMatrix3x2) {
     array = resize_symms(array, 3, mesh->dim());
     ncomps = symm_ncomps(mesh->dim());
+  } else if (array_type == ArrayType::NotSpecified) {
+    if (1 < mesh->dim() && mesh->dim() < 3) {
+      if (ncomps == 3) {
+        array = resize_vectors(array, 3, mesh->dim());
+        ncomps = mesh->dim();
+      } else if (ncomps == symm_ncomps(3)) {
+        array = resize_symms(array, 3, mesh->dim());
+        ncomps = symm_ncomps(mesh->dim());
+      }
+    }
   }
   if (is_rc_tag(name)) {
     mesh->set_rc_from_mesh_array(ent_dim, ncomps, class_ids, name, array);
@@ -680,6 +706,22 @@ void write_p_tag(std::ostream& stream, TagBase const* tag, Int space_dim) {
              tag->ncomps() != symm_ncomps(3)) {
     write_p_data_array2(
         stream, tag->name(), symm_ncomps(3), tag->type(), array_type);
+  } else if (array_type == ArrayType::NotSpecified) {
+    if (tag->type() == OMEGA_H_REAL) {
+      if (1 < space_dim && space_dim < 3) {
+        if (tag->ncomps() == space_dim) {
+          write_p_data_array2(stream, tag->name(), 3, OMEGA_H_REAL);
+        } else if (tag->ncomps() == symm_ncomps(space_dim)) {
+          write_p_data_array2(stream, tag->name(), symm_ncomps(3), OMEGA_H_REAL);
+        } else {
+          write_p_data_array2(stream, tag->name(), tag->ncomps(), OMEGA_H_REAL);
+        }
+      } else {
+        write_p_data_array2(stream, tag->name(), tag->ncomps(), OMEGA_H_REAL);
+      }
+    } else {
+      write_p_data_array2(stream, tag->name(), tag->ncomps(), tag->type());
+    }
   } else {
     write_p_data_array2(
         stream, tag->name(), tag->ncomps(), tag->type(), array_type);
