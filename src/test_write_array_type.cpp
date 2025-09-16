@@ -8,18 +8,9 @@
 #include "Omega_h_vtk.hpp"
 #include "Omega_h_xml_lite.hpp"
 #include "Omega_h_file.hpp"
-#include "Omega_h_adios2.hpp"
+#include "Omega_h_for.hpp"
 
 using namespace Omega_h;
-
-template <typename T>
-void print_helper(Kokkos::View<const T*> view) {
-  std::cout << "The size of " << view.extent(0) << std::endl;
-  Kokkos::parallel_for("print", view.extent(0), OMEGA_H_LAMBDA(int i) {
-    // std::cout << "The value of " << i << " is " << view(i) << std::endl;
-    Kokkos::printf("The value of %d is %f\n", i, double(view(i)));
-  });
-}
 
 void check_tag(const Tag<Real>* tag, int flag) {
   if (flag) {
@@ -56,6 +47,7 @@ void test_binary(
 
 }
 
+#ifdef Omega_h_USE_ADIOS2
 void test_adios2(
   Mesh* mesh, Library* lib, const std::string& tag_name, int flag) {
   printf("Testing ADIOS2\n");
@@ -66,7 +58,9 @@ void test_adios2(
   std::cout << "ArrayType: " << ArrayTypeNames.at(tag->array_type()) << std::endl;
   check_tag(tag, flag);
 }
+#endif
 
+#ifdef Omega_h_USE_libMeshb
 void test_meshb(
   Mesh* mesh, Library* lib, const std::string& tag_name, int flag) {
   printf("Testing Meshb\n");
@@ -80,15 +74,12 @@ void test_meshb(
   std::cout << "ArrayType: " << ArrayTypeNames.at(tag->array_type()) << std::endl;
   check_tag(tag, flag);
 }
+#endif
 
 void test_vtk_parallel(Mesh* mesh, CommPtr world, Library* lib, const std::string& tag_name, int flag){
   Omega_h::vtk::write_parallel("fields_parallel", mesh, mesh->dim());
     auto mesh_vtk_parallel = Omega_h::Mesh(lib);
     Omega_h::vtk::read_parallel("fields_parallel/pieces.pvtu", world, &mesh_vtk_parallel);
-    Kokkos::parallel_for("print_tags", mesh_vtk_parallel.ntags(0), OMEGA_H_LAMBDA(int i) {
-      auto tag = mesh_vtk_parallel.get_tag(0, i);
-      Kokkos::printf("Tag %d: %s\n", i, tag->name().c_str());
-    });
     auto tag = mesh_vtk_parallel.get_tag<Omega_h::Real>(0, tag_name);
     std::cout << "Parallel VTK Components: " << tag->ncomps() << std::endl;
     std::cout << "ArrayType: " << ArrayTypeNames.at(tag->array_type()) << std::endl;
@@ -118,15 +109,14 @@ int main(int argc, char** argv) {
     piece_w[r * 2 + 0] = 1.0;
     piece_w[r * 2 + 1] = 2.0;
   };
-  Kokkos::parallel_for(mesh.nverts(), init_piece);
+  Omega_h::parallel_for(mesh.nverts(), init_piece);
   mesh.set_tag(0, "Piece", Omega_h::Reals(piece_w), false);
 
   mesh.add_tag<Omega_h::Real>(0, "electric_field", 3);
   const std::string tag_name = "electric_field";
   Omega_h::Write<Omega_h::Real> E_node(mesh.nverts() * 3, 0);
 
-  Kokkos::parallel_for(
-      "set_electric_field", mesh.nverts() * 3, OMEGA_H_LAMBDA(int i) {
+  Omega_h::parallel_for(mesh.nverts() * 3, OMEGA_H_LAMBDA(int i) {
         E_node[i] = 7.0;
       });
 

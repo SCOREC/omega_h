@@ -15,13 +15,13 @@ inline void check_tag_name(std::string const& name) {
 
 enum class ArrayType {
   NotSpecified,
-  VectorND,
+  VectorND, // vector with N components
   Vector2D,
   Vector3D,
-  Matrix2x2, // 2 x 2
-  Matrix2x3, // 2 x 3
-  SymmetricMatrix3x2, // 3 x 2
-  SymmetricMatrix3x3 , // 3 x 3
+  Matrix2x2,
+  Matrix2x3,
+  SymmetricMatrix3x2,
+  SymmetricMatrix3x3 ,
 };
 
 inline void check_array_type(ArrayType array_type) {
