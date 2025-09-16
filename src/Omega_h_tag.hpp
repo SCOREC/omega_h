@@ -1,7 +1,11 @@
 #ifndef OMEGA_H_TAG_HPP
 #define OMEGA_H_TAG_HPP
 
+#include <unordered_map>
 #include <Omega_h_array.hpp>
+#ifdef OMEGA_H_USE_MPI
+#include <mpi.h>
+#endif
 
 namespace Omega_h {
 
@@ -9,20 +13,74 @@ inline void check_tag_name(std::string const& name) {
   OMEGA_H_CHECK(!name.empty());
 }
 
+enum class ArrayType {
+  NotSpecified,
+  VectorND, // vector with N components
+  Vector2D,
+  Vector3D,
+  Matrix2x2,
+  Matrix2x3,
+  SymmetricMatrix3x2,
+  SymmetricMatrix3x3 ,
+};
+
+inline void check_array_type(ArrayType array_type) {
+#ifndef NDEBUG 
+  int rank = 0;
+#ifdef OMEGA_H_USE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+  if (rank == 0) {
+    if (array_type == ArrayType::NotSpecified) {
+      fprintf(stderr,
+        "Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+    }
+  }
+
+#endif
+}
+
+ const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
+    {ArrayType::NotSpecified, "NotSpecified"},
+    {ArrayType::VectorND, "VectorND"},
+    {ArrayType::Vector2D, "Vector2D"},
+    {ArrayType::Vector3D, "Vector3D"},
+    {ArrayType::Matrix2x2, "Matrix2x2"},
+    {ArrayType::Matrix2x3, "Matrix2x3"},
+    {ArrayType::SymmetricMatrix3x2, "SymmetricMatrix3x2"},
+    {ArrayType::SymmetricMatrix3x3, "SymmetricMatrix3x3"}
+};
+
+const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
+    {"NotSpecified", ArrayType::NotSpecified},
+    {"VectorND", ArrayType::VectorND},
+    {"Vector2D", ArrayType::Vector2D},
+    {"Vector3D", ArrayType::Vector3D},
+    {"Matrix2x2", ArrayType::Matrix2x2},
+    {"Matrix2x3", ArrayType::Matrix2x3},
+    {"SymmetricMatrix3x2", ArrayType::SymmetricMatrix3x2},
+    {"SymmetricMatrix3x3", ArrayType::SymmetricMatrix3x3}
+};
+
 class TagBase {
  public:
   TagBase(std::string const& name_in, Int ncomps_in);
   TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  TagBase(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   virtual ~TagBase();
   std::string const& name() const;
   Int ncomps() const;
   virtual Omega_h_Type type() const = 0;
   LOs class_ids() const;
+  ArrayType array_type() const;
 
  private:
   std::string name_;
   Int ncomps_;
   LOs class_ids_;
+  ArrayType array_type_ = ArrayType::NotSpecified;
 };
 
 template <typename T>
@@ -30,6 +88,9 @@ class Tag : public TagBase {
  public:
   Tag(std::string const& name_in, Int ncomps_in);
   Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in);
+  Tag(std::string const& name_in, Int ncomps_in, ArrayType array_type_in);
+  Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+      ArrayType array_type_in);
   Read<T> array() const;
   void set_array(Read<T> array_in);
   virtual Omega_h_Type type() const override;

@@ -5,11 +5,29 @@ namespace Omega_h {
 TagBase::TagBase(std::string const& name_in, Int ncomps_in)
     : name_(name_in), ncomps_(ncomps_in) {
   check_tag_name(name_in);
+  check_array_type(ArrayType::NotSpecified);
 }
 
 TagBase::TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in)
     : name_(name_in), ncomps_(ncomps_in), class_ids_(class_ids_in) {
   check_tag_name(name_in);
+  check_array_type(ArrayType::NotSpecified);
+}
+
+TagBase::TagBase(std::string const& name_in, Int ncomps_in, ArrayType array_type_in)
+    : name_(name_in), ncomps_(ncomps_in), array_type_(array_type_in) {
+  check_tag_name(name_in);
+  check_array_type(array_type_in);
+}
+
+TagBase::TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+    ArrayType array_type_in)
+    : name_(name_in),
+      ncomps_(ncomps_in),
+      class_ids_(class_ids_in),
+      array_type_(array_type_in) {
+  check_tag_name(name_in);
+  check_array_type(array_type_in);
 }
 
 TagBase::~TagBase() = default;
@@ -19,6 +37,8 @@ std::string const& TagBase::name() const { return name_; }
 Int TagBase::ncomps() const { return ncomps_; }
 
 LOs TagBase::class_ids() const { return class_ids_; }
+
+ArrayType TagBase::array_type() const { return array_type_; }
 
 template <typename T>
 bool is(TagBase const* t) {
@@ -44,6 +64,15 @@ Tag<T>::Tag(std::string const& name_in, Int ncomps_in)
 template <typename T>
 Tag<T>::Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in)
     : TagBase(name_in, ncomps_in, class_ids_in) {}
+
+template <typename T>
+Tag<T>::Tag(std::string const& name_in, Int ncomps_in, ArrayType array_type_in)
+    : TagBase(name_in, ncomps_in, array_type_in) {}
+
+template <typename T>
+Tag<T>::Tag(std::string const& name_in, Int ncomps_in, LOs class_ids_in,
+    ArrayType array_type_in)
+    : TagBase(name_in, ncomps_in, class_ids_in, array_type_in) {}
 
 template <typename T>
 Read<T> Tag<T>::array() const {

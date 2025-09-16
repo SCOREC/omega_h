@@ -63,11 +63,13 @@ class Mesh {
   template <typename T>
   void add_tag(Int dim, std::string const& name, Int ncomps);
   template <typename T>
+  void add_tag(Int dim, std::string const& name, Int ncomps, ArrayType array_type);
+  template <typename T>
   void add_tag(Int dim, std::string const& name, Int ncomps, Read<T> array,
-      bool internal = false);
+      bool internal = false, ArrayType array_type = ArrayType::NotSpecified);
   template <typename T>
   void set_tag(
-      Int dim, std::string const& name, Read<T> array, bool internal = false);
+      Int dim, std::string const& name, Read<T> array, bool internal = false, ArrayType array_type = ArrayType::NotSpecified);
   TagBase const* get_tagbase(Int dim, std::string const& name) const;
   template <typename T>
   Tag<T> const* get_tag(Int dim, std::string const& name) const;
@@ -415,10 +417,12 @@ __host__
       const;                                                                   \
   extern template void Mesh::add_tag<T>(                                       \
       Int dim, std::string const& name, Int ncomps);                           \
+  extern template void Mesh::add_tag<T>(                                       \
+      Int dim, std::string const& name, Int ncomps, ArrayType array_type);     \
   extern template void Mesh::add_tag<T>(Int dim, std::string const& name,      \
-      Int ncomps, Read<T> array, bool internal);                               \
-  extern template void Mesh::set_tag(                                          \
-      Int dim, std::string const& name, Read<T> array, bool internal);         \
+      Int ncomps, Read<T> array, bool internal, ArrayType array_type);         \
+  extern template void Mesh::set_tag(Int dim, std::string const& name,         \
+      Read<T> array, bool internal, ArrayType array_type);                     \
   extern template Read<T> Mesh::sync_array(Int ent_dim, Read<T> a, Int width); \
   extern template Future<T> Mesh::isync_array(                                 \
       Int ent_dim, Read<T> a, Int width);                                      \
