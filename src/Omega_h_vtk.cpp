@@ -286,8 +286,12 @@ void write_tag_impl<Real>(
   const auto name = tag->name();
   auto array = as<Real>(tag)->array();
   auto array_type = tag->array_type();
-  // don't use array from "tag" b/c change_tagToMesh creates new tag
-  if (array_type == ArrayType::Vector3D && ncomps != 3) {
+  // don't use array from "tag" b/c change_tagToMesh creates new tag.
+  // VTK / ParaView expect vector fields to have 3 components
+  // regardless of whether this is a 2D mesh or not.
+  // this filter adds a 3rd zero component to fields 
+  // with 2 components that are marked as Vector2D
+  if (array_type == ArrayType::Vector2D && ncomps != 3) {
     write_array(
           stream, name, 3, resize_vectors(array, space_dim, 3), compress, array_type);
   } else if (array_type == ArrayType::SymmetricMatrix3x2 && ncomps != symm_ncomps(3)) {
@@ -329,7 +333,7 @@ void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
   auto array = read_array<Real>(stream, size, needs_swapping, is_compressed);
   // special case for reading real tags only
   // undo the resizes done in write_tag()
-  if (array_type == ArrayType::Vector3D) {
+  if (array_type == ArrayType::Vector2D) {
     array = resize_vectors(array, 3, mesh->dim());
     ncomps = mesh->dim();
   } else if (array_type == ArrayType::SymmetricMatrix3x2) {
@@ -670,7 +674,7 @@ static void write_p_data_array2(std::ostream& stream, std::string const& name,
 
 void write_p_tag(std::ostream& stream, TagBase const* tag, Int space_dim) {
   auto array_type = tag->array_type();
-  if (tag->array_type() == ArrayType::Vector3D && tag->ncomps() != 3) {
+  if (tag->array_type() == ArrayType::Vector2D && tag->ncomps() != 3) {
     write_p_data_array2(stream, tag->name(), 3, tag->type(), array_type);
   } else if (tag->array_type() == ArrayType::SymmetricMatrix3x2 &&
              tag->ncomps() != symm_ncomps(3)) {

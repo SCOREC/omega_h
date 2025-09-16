@@ -12,6 +12,7 @@ inline void check_tag_name(std::string const& name) {
 
 enum class ArrayType {
   NotSpecified,
+  VectorND,
   Vector2D,
   Vector3D,
   Matrix2x2, // 2 x 2
@@ -20,8 +21,16 @@ enum class ArrayType {
   SymmetricMatrix3x3 , // 3 x 3
 };
 
+inline void check_array_type(ArrayType array_type) {
+  if (array_type == ArrayType::NotSpecified) {
+    fprintf(stderr,
+      "Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+  }
+}
+
  const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
     {ArrayType::NotSpecified, "NotSpecified"},
+    {ArrayType::VectorND, "VectorND"},
     {ArrayType::Vector2D, "Vector2D"},
     {ArrayType::Vector3D, "Vector3D"},
     {ArrayType::Matrix2x2, "Matrix2x2"},
@@ -32,6 +41,7 @@ enum class ArrayType {
 
 const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
     {"NotSpecified", ArrayType::NotSpecified},
+    {"VectorND", ArrayType::VectorND},
     {"Vector2D", ArrayType::Vector2D},
     {"Vector3D", ArrayType::Vector3D},
     {"Matrix2x2", ArrayType::Matrix2x2},
