@@ -31,17 +31,35 @@ class BsplineModel2D : public Model2D {
      */
     BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& spline);
 
-    /**
-     * given a spline and a local coordinate (parametric) 
-     * along that spline, return the corresponding cartesian
-     * coordinate 
-     * @remark splineIds.size() == localCoords.size()
-     * @param splineIds (in) array of spline Ids
-     * @param localCoord (in) array of local coordinates
-     * @return array of cartesian coordinates in the order of the provided
-     *         inputs, the layout is (x0, y0, x1, y1, ..., xN-1, yN-1)
-     */
-    Reals eval(LOs splineIds, Reals localCoords);
+    const LOs& getSplineToKnots() const {
+      return splineToKnots;
+    }
+
+    /** \brief given a parametric coordinate and the id of the corresponding
+    *        spline, return the corresponding cartesian coordinates of that point
+    *
+    * Not clear what the best API for this is:
+    *  a) CSR to group evaluation points by spline
+    *  b) two arrays of equal length: model edge ids and evaluation points
+    *  c) ...
+    * For now, taking approach (b).
+    *
+    * This implementation was ported from BSpline.cc in
+    * github.com/scorec/simLandIceMeshGen main @ 9f85d2e .
+    *
+    * \param edgeIds (In) array of model edge ids for each pair of parametric coordinates
+    *                     specified in localCoords
+    * \param edgeToLocalCoords (In) offset array from edgeIds to the set of
+    *                               localCoordinates to evaluate for that edge
+    *                               e.g., edgeToLocalCoords[i] and
+    *                               edgeToLocalCoords[i+1] respectively define the
+    *                               starting and last (exclusive) indices into
+    *                               localCoords for edge i
+    * \param localCoords (In) array of parametric coordinates (x0,x1,x2,...,xN-1)
+    * \return the array of coordinates (x0,y0,x1,y1,...,xN-1,yN-1) in order
+    *         they were specified in the input arrays
+    */
+    Reals eval(Omega_h::LOs edgeIds, Omega_h::LOs edgeToLocalCoords, Omega_h::Reals localCoords);
 
     /**
      * create an omegah model file with topology and spline info
