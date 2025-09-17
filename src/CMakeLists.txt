@@ -477,6 +477,15 @@ if(BUILD_TESTING)
     test_func(simModelAndSplinesLoad_gis 1 ./simModelAndSplinesLoad
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
+
+    osh_add_exe(splineSample)
+    set(TEST_EXES ${TEST_EXES} splineSample)
+    test_func(splineSample_twoSquares 1 ./splineSample
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
+    test_func(splineSample_gis 1 ./splineSample
+      ${CMAKE_SOURCE_DIR}/meshes/gis.smd
+      ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
   endif()
 
   if(Omega_h_USE_SEACASExodus)
