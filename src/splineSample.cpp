@@ -17,10 +17,10 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   Omega_h::Write<Omega_h::LO> ids(numEdges, "splineIds");
   Omega_h::Write<Omega_h::LO> edgeSampleDegree(numEdges, "edgeSampleDegree");
 
-  const double invFactor = 1.0/factor;
+  const double step = 1.0/(factor-1);
   Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
     for(int j = 0; j < factor; ++j) {
-      auto t = invFactor * j;
+      auto t = step * j;
       samplePts[i*factor+j] = t;
       ids[i] = i;
     }
