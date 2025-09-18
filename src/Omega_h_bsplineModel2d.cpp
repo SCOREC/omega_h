@@ -1,14 +1,15 @@
 #include "Omega_h_bsplineModel2d.hpp"
 #include "Omega_h_for.hpp" //parallel_for
-#include "Omega_h_array_ops.hpp" //parallel_for
-#include "Omega_h_int_scan.hpp" //parallel_for
+#include "Omega_h_array_ops.hpp" //get_max
+#include "Omega_h_int_scan.hpp" //offset_scan
 #include <Kokkos_Core.hpp>
 #include <fstream>
 
 namespace {
-  template<typename ViewT>
-  OMEGA_H_INLINE double splineEval(const int sOrder, ViewT sKnots, ViewT sCtrlPts,
-      ViewT work, const double parametricCoord) {
+  template<typename ViewConstT, typename ViewT>
+  OMEGA_H_INLINE double splineEval(const int sOrder,
+      ViewConstT sKnots, ViewConstT sCtrlPts, ViewT work,
+      const double parametricCoord) {
     // first find the interval of parametricCoord in knots
     int leftKnot = sOrder - 1;
     int leftPt = 0;
@@ -20,13 +21,11 @@ namespace {
     }
 
     //initialize the work array
-    assert(sCtrlPts.size() > leftPt+sOrder);
     int j = 0;
     for(int i=leftPt; i<leftPt+sOrder; i++) {
       work(j++) = sCtrlPts(i);
     }
 
-    assert(sKnots.size() > leftKnot+sOrder);
     const auto localKnots = Kokkos::subview(sKnots, std::make_pair(leftKnot - sOrder + 2, leftKnot + sOrder));
 
     for (int r = 1; r <= sOrder; r++) {
@@ -139,10 +138,10 @@ namespace Omega_h {
         auto work = Kokkos::subview(workArray.view(), orderRange);
 
         for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
-          coords[i*2] = splineEval(sOrder, xKnots, xCtrlPts, workArray, localCoords[j]);
-          coords[i*2+1] = splineEval(sOrder, yKnots, yCtrlPts, workArray, localCoords[j]);
+          coords[i*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]);
+          coords[i*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
         }
-    };
+    });
 
     return coords;
   }
