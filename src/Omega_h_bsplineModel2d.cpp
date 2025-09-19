@@ -84,6 +84,8 @@ namespace Omega_h {
     binary::read_array(file, knotsY, compressed, needs_swapping);
     binary::read_array(file, order, compressed, needs_swapping);
 
+    file.close();
+
     const auto numEdges = getNumEnts(OMEGA_H_EDGE);
     OMEGA_H_CHECK(order.size() == numEdges);
     OMEGA_H_CHECK(splineToCtrlPts.size() == numEdges+1); //offset array
