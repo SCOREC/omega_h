@@ -65,9 +65,16 @@ namespace Omega_h {
   {
     std::ifstream file(splineFile.string());
     OMEGA_H_CHECK(file.is_open());
-    //FIXME copied swap and compression test from read(stream, mesh, ...) in Omega_h_file.cpp
-    bool compressed = true;
-    bool needs_swapping = false;
+
+    //the following is from src/Omega_h_file.cpp read(...)
+    unsigned char const magic[2] = {0xa1, 0x1a};
+    unsigned char magic_in[2];
+    file.read(reinterpret_cast<char*>(magic_in), sizeof(magic));
+    OMEGA_H_CHECK(magic_in[0] == magic[0]);
+    OMEGA_H_CHECK(magic_in[1] == magic[1]);
+    bool needs_swapping = !is_little_endian_cpu();
+    int compressed;
+    binary::read_value(file, compressed, needs_swapping);
 
     binary::read_array(file, splineToCtrlPts, compressed, needs_swapping);
     binary::read_array(file, splineToKnots, compressed, needs_swapping);
@@ -103,7 +110,7 @@ namespace Omega_h {
     const auto cy = ctrlPtsY;
     const auto ord = order;
 
-    std::cout << "max order " << get_max(order) << "\n";
+    std::cout << "max order " << get_max(ord) << "\n";
 
     // Need a work array whose length is sum(spline[i].order) where i is the index
     // for an edge specified in edgeIds and an offset array constructed from an
@@ -115,7 +122,7 @@ namespace Omega_h {
     Write<LO> edgeOrder(edgeIds.size());
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
         const auto sIdx = edgeIds[i];
-        edgeOrder[i] = order[sIdx];
+        edgeOrder[i] = ord[sIdx];
     });
     auto edgeOrderOffset = offset_scan(Omega_h::read(edgeOrder));
     Write<Real> workArray(edgeOrderOffset.last()); //storage for intermediate values 
@@ -138,8 +145,8 @@ namespace Omega_h {
         auto work = Kokkos::subview(workArray.view(), orderRange);
 
         for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
-          coords[i*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]);
-          coords[i*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
+          coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]); //FIXME bad coords index, use j
+          coords[j*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
         }
     });
 
