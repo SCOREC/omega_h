@@ -32,12 +32,13 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   const auto pts = model.eval(ids,edgeToSamples,samplePts);
 
   Omega_h::HostRead<Omega_h::Real> pts_h(pts);
-  for(int i=0; i<numEdges; i++) {
-    for(int j=0; j<factor; j++) {
-      file << i << "," << pts_h[i*factor+(j*2)]
-                << "," << pts_h[i*factor+(j*2)+1]
-                << "\n";
-    }
+  int edgeIdx = 0;
+  for(int pt=0; pt<pts_h.size()/2; pt++) {
+    if(pt>0 && pt%factor == 0) edgeIdx++;
+    file << edgeIdx
+         << "," << pts_h[pt*2]
+         << "," << pts_h[pt*2+1]
+         << "\n";
   }
 
 }
