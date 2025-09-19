@@ -40,7 +40,7 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
          << "," << pts_h[pt*2+1]
          << "\n";
   }
-
+  file.close();
 }
 
 int main(int argc, char** argv) {
