@@ -491,18 +491,12 @@ if(BUILD_TESTING)
     set(TEST_EXES ${TEST_EXES} splineEval)
     test_func(splineEval_twoSquares 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
-    test_diff(diff_splineEval_twoSquares
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines_eval_gold.csv
-      twoSquares_splines_eval.csv
-      splineEval_twoSquares)
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines_eval_gold.oshb)
     test_func(splineEval_gis 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
-      ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
-    test_diff(diff_splineEval_gis
-      ${CMAKE_SOURCE_DIR}/meshes/gis_splines_eval_gold.csv
-      gis_splines_eval.csv
-      splineEval_gis)
+      ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb
+      ${CMAKE_SOURCE_DIR}/meshes/gis_splines_eval_gold.oshb)
   endif()
 
   if(Omega_h_USE_SEACASExodus)
