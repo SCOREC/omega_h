@@ -11,7 +11,7 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   Omega_h::Write<Omega_h::LO> samplesPerEdge(numEdges, "samplesPerEdge");
   const auto s2k = model.getSplineToKnots();
   const int factor = 4;
-  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
+  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO i) {
       samplesPerEdge[i] = (s2k[i+1]-s2k[i]) * factor;
   });
   const auto edgeToSamples = Omega_h::offset_scan(Omega_h::read(samplesPerEdge));
@@ -19,7 +19,7 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   const int numSamples = edgeToSamples.last();
   Omega_h::Write<Omega_h::Real> samplePts(numSamples, "splineSamplePoints");
 
-  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
+  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO i) {
     const auto n = edgeToSamples[i+1]-edgeToSamples[i];
     //will result in overlapping points and the geometric model vertices
     const double step = 1.0/(n-1);
