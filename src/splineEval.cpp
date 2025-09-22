@@ -6,7 +6,13 @@
 #include <fstream>
 #include <filesystem> //std::filesystem
 
-void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
+struct Samples {
+  Omega_h::LOs ids;
+  Omega_h::LOs edgeToSamples;
+  Omega_h::Reals pts; //the cartesian locations along the splines
+};
+
+Samples getSamples(Omega_h::BsplineModel2D& model) {
   const auto numEdges = model.getNumEnts(OMEGA_H_EDGE);
   Omega_h::Write<Omega_h::LO> samplesPerEdge(numEdges, "samplesPerEdge");
   const auto s2k = model.getSplineToKnots();
@@ -33,13 +39,17 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   Omega_h::Write<Omega_h::LO> ids(numEdges, 0, 1, "splineIds"); //array from 0..numEdges-1
   const auto pts = model.eval(ids,edgeToSamples,samplePts);
 
+  return {ids,edgeToSamples,pts};
+}
+
+void writeSamplesToCsv(const Samples& samples, std::string filename) {
   std::ofstream file(filename);
   assert(file.is_open());
   file << "splineId, x, y\n";
-  Omega_h::HostRead<Omega_h::Real> pts_h(pts);
+  Omega_h::HostRead<Omega_h::Real> pts_h(samples.pts);
 
-  Omega_h::HostRead<Omega_h::LO> edgeToSamples_h(edgeToSamples);
-  Omega_h::HostRead<Omega_h::LO> ids_h(ids);
+  Omega_h::HostRead<Omega_h::LO> edgeToSamples_h(samples.edgeToSamples);
+  Omega_h::HostRead<Omega_h::LO> ids_h(samples.ids);
   for(int i=0; i<ids_h.size(); i++) {
     const auto id = ids_h[i];
     for(int j = edgeToSamples_h[i]; j < edgeToSamples_h[i+1]; j++) {
@@ -63,9 +73,11 @@ int main(int argc, char** argv) {
   }
   OMEGA_H_CHECK(argc == 3);
   auto model = Omega_h::BsplineModel2D(argv[1], argv[2]);
+  const auto samples = getSamples(model);
+
   std::filesystem::path splineFile(argv[2]);
   const auto outputFile = splineFile.stem().string()+"_eval.csv";
-  writeSamplesToCsv(model, outputFile);
+  writeSamplesToCsv(samples, outputFile);
 
   model.printInfo();
   return 0;
