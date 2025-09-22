@@ -478,12 +478,12 @@ if(BUILD_TESTING)
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
 
-    osh_add_exe(splineSample)
-    set(TEST_EXES ${TEST_EXES} splineSample)
-    test_func(splineSample_twoSquares 1 ./splineSample
+    osh_add_exe(splineEval)
+    set(TEST_EXES ${TEST_EXES} splineEval)
+    test_func(splineEval_twoSquares 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
       ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
-    test_func(splineSample_gis 1 ./splineSample
+    test_func(splineEval_gis 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
   endif()
