@@ -6,40 +6,48 @@
 #include <fstream>
 
 void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
+  const auto numEdges = model.getNumEnts(OMEGA_H_EDGE);
+  Omega_h::Write<Omega_h::LO> samplesPerEdge(numEdges, "samplesPerEdge");
+  const auto s2k = model.getSplineToKnots();
+  const int factor = 4;
+  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
+      samplesPerEdge[i] = (s2k[i+1]-s2k[i]) * factor;
+  });
+  const auto edgeToSamples = Omega_h::offset_scan(Omega_h::read(samplesPerEdge));
+
+  const int numSamples = edgeToSamples.last();
+  Omega_h::Write<Omega_h::Real> samplePts(numSamples, "splineSamplePoints");
+
+  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
+    const auto n = edgeToSamples[i+1]-edgeToSamples[i];
+    //will result in overlapping points and the geometric model vertices
+    const double step = 1.0/(n-1);
+    for(int j = 0; j < n; ++j) {
+      const auto t = step * j;
+      const auto idx = edgeToSamples[i]+j;
+      samplePts[idx] = t;
+    }
+  });
+
+  Omega_h::Write<Omega_h::LO> ids(numEdges, 0, 1, "splineIds"); //array from 0..numEdges-1
+  const auto pts = model.eval(ids,edgeToSamples,samplePts);
+
   std::ofstream file(filename);
   assert(file.is_open());
   file << "splineId, x, y\n";
-
-  const auto numEdges = model.getNumEnts(OMEGA_H_EDGE);
-  const int factor = 4;
-  const int numSamples = numEdges*factor;
-  Omega_h::Write<Omega_h::Real> samplePts(numSamples, "splineSamplePoints");
-  Omega_h::Write<Omega_h::LO> ids(numEdges, "splineIds");
-  Omega_h::Write<Omega_h::LO> edgeSampleDegree(numEdges, "edgeSampleDegree");
-
-  const double step = 1.0/(factor-1);
-  Omega_h::parallel_for(numEdges, OMEGA_H_LAMBDA(Omega_h::LO& i) {
-    for(int j = 0; j < factor; ++j) {
-      auto t = step * j;
-      samplePts[i*factor+j] = t;
-      ids[i] = i;
-    }
-    edgeSampleDegree[i] = factor;
-  });
-
-  auto edgeToSamples = offset_scan(Omega_h::read(edgeSampleDegree));
-
-  const auto pts = model.eval(ids,edgeToSamples,samplePts);
-
   Omega_h::HostRead<Omega_h::Real> pts_h(pts);
-  int edgeIdx = 0;
-  for(int pt=0; pt<pts_h.size()/2; pt++) {
-    if(pt>0 && pt%factor == 0) edgeIdx++;
-    file << edgeIdx
-         << "," << pts_h[pt*2]
-         << "," << pts_h[pt*2+1]
-         << "\n";
-  }
+
+  Omega_h::HostRead<Omega_h::LO> edgeToSamples_h(edgeToSamples);
+  Omega_h::HostRead<Omega_h::LO> ids_h(ids);
+  for(int i=0; i<ids_h.size(); i++) {
+    const auto id = ids_h[i];
+    for(int j = edgeToSamples_h[i]; j < edgeToSamples_h[i+1]; j++) {
+      file << id
+           << "," << pts_h[j*2]
+           << "," << pts_h[j*2+1]
+           << "\n";
+    }
+  };
   file.close();
 }
 
