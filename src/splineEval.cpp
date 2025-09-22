@@ -4,6 +4,7 @@
 #include "Omega_h_int_scan.hpp" //offset_scan
 #include <Omega_h_bsplineModel2d.hpp>
 #include <fstream>
+#include <filesystem> //std::filesystem
 
 void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
   const auto numEdges = model.getNumEnts(OMEGA_H_EDGE);
@@ -54,12 +55,17 @@ void writeSamplesToCsv(Omega_h::BsplineModel2D& model, std::string filename) {
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
   if( argc != 3 ) {
-    fprintf(stderr, "Usage: %s inputSimModel.smd inputSplines.bin\n", argv[0]);
+    fprintf(stderr, "Usage: %s inputSimModel.smd inputSplines.oshb\n", argv[0]);
+    fprintf(stderr, "inputSimModel.smd: Simmetrix GeomSim geometric model\n"
+                    "inputSplines.oshb: Omega_h binary file containing spline information\n"
+                    "                   associated with the topology of inputSimModel.smd\n");
     exit(EXIT_FAILURE);
   }
   OMEGA_H_CHECK(argc == 3);
   auto model = Omega_h::BsplineModel2D(argv[1], argv[2]);
-  writeSamplesToCsv(model, "samples.csv");
+  std::filesystem::path splineFile(argv[2]);
+  const auto outputFile = splineFile.stem().string()+"_eval.csv";
+  writeSamplesToCsv(model, outputFile);
 
   model.printInfo();
   return 0;
