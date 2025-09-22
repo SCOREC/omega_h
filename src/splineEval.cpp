@@ -3,14 +3,26 @@
 #include <Omega_h_for.hpp> //parallel_for
 #include "Omega_h_int_scan.hpp" //offset_scan
 #include <Omega_h_bsplineModel2d.hpp>
+#include <Omega_h_file.hpp> //binary::<write|read>
+#include <Omega_h_array_ops.hpp> //LOs::==, are_close
 #include <fstream>
 #include <filesystem> //std::filesystem
+
+
+unsigned char const magic[2] = {0xa1, 0x1a};
 
 struct Samples {
   Omega_h::LOs ids;
   Omega_h::LOs edgeToSamples;
   Omega_h::Reals pts; //the cartesian locations along the splines
 };
+
+bool areSamplesClose(const Samples& ref, const Samples& test) {
+  auto isSameIds = (ref.ids == test.ids);
+  auto isSameE2S = (ref.edgeToSamples == test.edgeToSamples);
+  auto isClosePts = Omega_h::are_close(ref.pts, test.pts);
+  return (isSameIds && isSameE2S && isClosePts);
+}
 
 Samples getSamples(Omega_h::BsplineModel2D& model) {
   const auto numEdges = model.getNumEnts(OMEGA_H_EDGE);
@@ -42,6 +54,42 @@ Samples getSamples(Omega_h::BsplineModel2D& model) {
   return {ids,edgeToSamples,pts};
 }
 
+void writeSamplesToBinary(const Samples& samples, std::string filename) {
+  std::ofstream file(filename);
+  assert(file.is_open());
+
+  const int compressed = 0;
+  //the following is from src/Omega_h_file.cpp write(...)
+  file.write(reinterpret_cast<const char*>(magic), sizeof(magic));
+  bool needs_swapping = !Omega_h::is_little_endian_cpu();
+  Omega_h::binary::write_value(file, compressed, needs_swapping);
+
+  Omega_h::binary::write_array(file, samples.ids, compressed, needs_swapping);
+  Omega_h::binary::write_array(file, samples.edgeToSamples, compressed, needs_swapping);
+  Omega_h::binary::write_array(file, samples.pts, compressed, needs_swapping);
+  file.close();
+}
+
+Samples readSamplesFromBinary(std::string filename) {
+  std::ifstream file(filename);
+  assert(file.is_open());
+  //the following is from src/Omega_h_file.cpp read(...)
+  unsigned char magic_in[2];
+  file.read(reinterpret_cast<char*>(magic_in), sizeof(magic));
+  OMEGA_H_CHECK(magic_in[0] == magic[0]);
+  OMEGA_H_CHECK(magic_in[1] == magic[1]);
+  bool needs_swapping = !Omega_h::is_little_endian_cpu();
+  int compressed;
+  Omega_h::binary::read_value(file, compressed, needs_swapping);
+
+  Samples in;
+  Omega_h::binary::read_array(file, in.ids, compressed, needs_swapping);
+  Omega_h::binary::read_array(file, in.edgeToSamples, compressed, needs_swapping);
+  Omega_h::binary::read_array(file, in.pts, compressed, needs_swapping);
+  file.close();
+  return in;
+}
+
 void writeSamplesToCsv(const Samples& samples, std::string filename) {
   std::ofstream file(filename);
   assert(file.is_open());
@@ -64,20 +112,28 @@ void writeSamplesToCsv(const Samples& samples, std::string filename) {
 
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
-  if( argc != 3 ) {
-    fprintf(stderr, "Usage: %s inputSimModel.smd inputSplines.oshb\n", argv[0]);
+  if( argc != 4 ) {
+    fprintf(stderr, "Usage: %s inputSimModel.smd inputSplines.oshb referenceSamples.oshb\n", argv[0]);
     fprintf(stderr, "inputSimModel.smd: Simmetrix GeomSim geometric model\n"
                     "inputSplines.oshb: Omega_h binary file containing spline information\n"
-                    "                   associated with the topology of inputSimModel.smd\n");
+                    "                   associated with the topology of inputSimModel.smd\n"
+                    "referenceSamples.oshb: Omega_h binary file containing the expected\n"
+                    "                       result of evaluation\n");
     exit(EXIT_FAILURE);
   }
-  OMEGA_H_CHECK(argc == 3);
+  OMEGA_H_CHECK(argc == 4);
   auto model = Omega_h::BsplineModel2D(argv[1], argv[2]);
   const auto samples = getSamples(model);
 
   std::filesystem::path splineFile(argv[2]);
-  const auto outputFile = splineFile.stem().string()+"_eval.csv";
-  writeSamplesToCsv(samples, outputFile);
+  const auto outputCsvFile = splineFile.stem().string()+"_eval.csv";
+  writeSamplesToCsv(samples, outputCsvFile);
+
+  const auto outputBinFile = splineFile.stem().string()+"_eval.oshb";
+  writeSamplesToBinary(samples, outputBinFile);
+
+  const auto refSamples = readSamplesFromBinary(argv[3]);
+  assert( areSamplesClose(refSamples, samples) );
 
   model.printInfo();
   return 0;
