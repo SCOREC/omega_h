@@ -105,11 +105,11 @@ namespace Omega_h {
 
     //localize class members for use in lambda
     const auto s2k = splineToKnots;
-    const auto kx = knotsX;
-    const auto ky = knotsY;
     const auto s2cp = splineToCtrlPts;
-    const auto cx = ctrlPtsX;
-    const auto cy = ctrlPtsY;
+    const auto kx = knotsX.view();
+    const auto ky = knotsY.view();
+    const auto cx = ctrlPtsX.view();
+    const auto cy = ctrlPtsY.view();
     const auto ord = order;
 
     std::cout << "max order " << get_max(ord) << "\n";
@@ -127,7 +127,7 @@ namespace Omega_h {
         edgeOrder[i] = ord[sIdx];
     });
     auto edgeOrderOffset = offset_scan(Omega_h::read(edgeOrder));
-    Write<Real> workArray(edgeOrderOffset.last()); //storage for intermediate values 
+    Kokkos::View<Real*> workArray("workArray", edgeOrderOffset.last()); //storage for intermediate values
 
     //TODO use team based loop or expand index range by 2x to run eval
     //on X and Y separately
@@ -137,14 +137,14 @@ namespace Omega_h {
         const auto knotRange = std::make_pair(s2k[spline], s2k[spline+1]);
         const auto ctrlPtRange = std::make_pair(s2cp[spline], s2cp[spline+1]);
 
-        auto xKnots = Kokkos::subview(kx.view(), knotRange);
-        auto xCtrlPts = Kokkos::subview(cx.view(), ctrlPtRange);
+        auto xKnots = Kokkos::subview(kx, knotRange);
+        auto xCtrlPts = Kokkos::subview(cx, ctrlPtRange);
 
-        auto yKnots = Kokkos::subview(ky.view(), knotRange);
-        auto yCtrlPts = Kokkos::subview(cy.view(), ctrlPtRange);
+        auto yKnots = Kokkos::subview(ky, knotRange);
+        auto yCtrlPts = Kokkos::subview(cy, ctrlPtRange);
 
         const auto orderRange = std::make_pair(edgeOrderOffset[i], edgeOrderOffset[i+1]);
-        auto work = Kokkos::subview(workArray.view(), orderRange);
+        auto work = Kokkos::subview(workArray, orderRange);
 
         for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
           coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]); //FIXME bad coords index, use j

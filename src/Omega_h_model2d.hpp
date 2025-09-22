@@ -77,7 +77,7 @@ public:
     if(dim==0) return vtxIds.size();
     else if(dim==1) return edgeIds.size();
     else if(dim==2) return faceIds.size();
-    else Omega_h_fail("Omega_h::Model2D::getNumEnts(%d): invalid dimension!\n", dim);
+    else assert(false); // invalid dimension
     return -1;
   }
 
