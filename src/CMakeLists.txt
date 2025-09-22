@@ -399,6 +399,15 @@ if(BUILD_TESTING)
     endif()
   endfunction()
 
+  function(test_diff TEST_NAME FILE_A FILE_B PARENT)
+    add_test(NAME ${TEST_NAME} COMMAND diff ${FILE_A} ${FILE_B})
+    if(TEST ${TEST_NAME})
+      set_property(TEST ${TEST_NAME} PROPERTY LABELS "mesh")
+    endif()
+    set_tests_properties(${PARENT} PROPERTIES FIXTURES_SETUP  ${TEST_NAME}_fixture)
+    set_tests_properties(${TEST_NAME} PROPERTIES FIXTURES_REQUIRED ${TEST_NAME}_fixture)
+  endfunction()
+
   osh_add_exe(for_test)
   osh_add_exe(reprosum_test)
   osh_add_exe(arrayops_test)
@@ -483,9 +492,17 @@ if(BUILD_TESTING)
     test_func(splineEval_twoSquares 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
       ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
+    test_diff(diff_splineEval_twoSquares
+      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines_eval_gold.csv
+      twoSquares_splines_eval.csv
+      splineEval_twoSquares)
     test_func(splineEval_gis 1 ./splineEval
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
+    test_diff(diff_splineEval_gis
+      ${CMAKE_SOURCE_DIR}/meshes/gis_splines_eval_gold.csv
+      gis_splines_eval.csv
+      splineEval_gis)
   endif()
 
   if(Omega_h_USE_SEACASExodus)
@@ -714,14 +731,6 @@ if(BUILD_TESTING)
 	  output.bp)
   endif()
 
-  function(test_diff TEST_NAME FILE_A FILE_B PARENT)
-    add_test(NAME ${TEST_NAME} COMMAND diff ${FILE_A} ${FILE_B})
-    if(TEST ${TEST_NAME})
-      set_property(TEST ${TEST_NAME} PROPERTY LABELS "mesh")
-    endif()
-    set_tests_properties(${PARENT} PROPERTIES FIXTURES_SETUP  ${TEST_NAME}_fixture)
-    set_tests_properties(${TEST_NAME} PROPERTIES FIXTURES_REQUIRED ${TEST_NAME}_fixture)
-  endfunction()
   test_func(run_osh2xgc 1 ./osh2xgc
     ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
     plate_6elem_xgc)
