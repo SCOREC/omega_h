@@ -16,7 +16,6 @@ inline void check_tag_name(std::string const& name) {
 enum class ArrayType {
   NotSpecified,
   VectorND, // vector with N components
-  Vector2D, // 2D vector stored with 3 components
   SymmetricMatrix, // symmetric matrix with dim*(dim+1)/2 components
   FullMatrix , // full matrix with dim*dim components
 };
@@ -40,7 +39,6 @@ inline void check_array_type(ArrayType array_type) {
  const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
     {ArrayType::NotSpecified, "NotSpecified"},
     {ArrayType::VectorND, "VectorND"},
-    {ArrayType::Vector2D, "Vector2D"},
     {ArrayType::SymmetricMatrix, "SymmetricMatrix"},
     {ArrayType::FullMatrix, "FullMatrix"}
 };
@@ -48,7 +46,6 @@ inline void check_array_type(ArrayType array_type) {
 const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
     {"NotSpecified", ArrayType::NotSpecified},
     {"VectorND", ArrayType::VectorND},
-    {"Vector2D", ArrayType::Vector2D},
     {"SymmetricMatrix", ArrayType::SymmetricMatrix},
     {"FullMatrix", ArrayType::FullMatrix}
 };
