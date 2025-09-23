@@ -487,7 +487,7 @@ void read(std::istream& stream, Mesh* mesh, I32 version) {
 }
 
 static void write_int_file(
-    filesystem::path const& filepath, Mesh* mesh, I32 value) {
+    std::filesystem::path const& filepath, Mesh* mesh, I32 value) {
   if (mesh->comm()->rank() == 0) {
     std::ofstream file(filepath.c_str());
     OMEGA_H_CHECK(file.is_open());
@@ -495,15 +495,15 @@ static void write_int_file(
   }
 }
 
-static void write_nparts(filesystem::path const& path, Mesh* mesh) {
+static void write_nparts(std::filesystem::path const& path, Mesh* mesh) {
   write_int_file(path / "nparts", mesh, mesh->comm()->size());
 }
 
-static void write_version(filesystem::path const& path, Mesh* mesh) {
+static void write_version(std::filesystem::path const& path, Mesh* mesh) {
   write_int_file(path / "version", mesh, latest_version);
 }
 
-I32 read_nparts(filesystem::path const& path, CommPtr comm) {
+I32 read_nparts(std::filesystem::path const& path, CommPtr comm) {
   I32 nparts;
   if (comm->rank() == 0) {
     auto const filepath = path / "nparts";
@@ -520,7 +520,7 @@ I32 read_nparts(filesystem::path const& path, CommPtr comm) {
   return nparts;
 }
 
-I32 read_version(filesystem::path const& path, CommPtr comm) {
+I32 read_version(std::filesystem::path const& path, CommPtr comm) {
   I32 version;
   if (comm->rank() == 0) {
     auto const filepath = path / "version";
@@ -538,14 +538,14 @@ I32 read_version(filesystem::path const& path, CommPtr comm) {
   return version;
 }
 
-void write(filesystem::path const& path, Mesh* mesh) {
+void write(std::filesystem::path const& path, Mesh* mesh) {
   begin_code("binary::write(path,Mesh)");
   if (path.extension().string() != ".osh" && can_print(mesh)) {
     std::cout
         << "it is strongly recommended to end Omega_h paths in \".osh\",\n";
     std::cout << "instead of just \"" << path << "\"\n";
   }
-  filesystem::create_directory(path);
+  std::filesystem::create_directory(path);
   mesh->comm()->barrier();
   auto filepath = path;
   filepath /= std::to_string(mesh->comm()->rank());
@@ -560,7 +560,7 @@ void write(filesystem::path const& path, Mesh* mesh) {
 }
 
 void read_in_comm(
-    filesystem::path const& path, CommPtr comm, Mesh* mesh, I32 version) {
+    std::filesystem::path const& path, CommPtr comm, Mesh* mesh, I32 version) {
   ScopedTimer timer("binary::read_in_comm(path, comm, mesh, version)");
   mesh->set_comm(comm);
   auto filepath = path;
@@ -571,7 +571,7 @@ void read_in_comm(
   read(file, mesh, version);
 }
 
-I32 read(filesystem::path const& path, CommPtr comm, Mesh* mesh, bool strict) {
+I32 read(std::filesystem::path const& path, CommPtr comm, Mesh* mesh, bool strict) {
   ScopedTimer timer("binary::read(path, comm, mesh, strict)");
   auto const nparts = read_nparts(path, comm);
   auto const version = read_version(path, comm);
@@ -600,12 +600,12 @@ I32 read(filesystem::path const& path, CommPtr comm, Mesh* mesh, bool strict) {
   return nparts;
 }
 
-Mesh read(filesystem::path const& path, Library* lib, bool strict) {
+Mesh read(std::filesystem::path const& path, Library* lib, bool strict) {
   ScopedTimer timer("binary::read(path, lib, strict)");
   return binary::read(path, lib->world(), strict);
 }
 
-Mesh read(filesystem::path const& path, CommPtr comm, bool strict) {
+Mesh read(std::filesystem::path const& path, CommPtr comm, bool strict) {
   ScopedTimer timer("binary::read(path, comm, strict)");
   auto mesh = Mesh(comm->library());
   binary::read(path, comm, &mesh, strict);
@@ -631,7 +631,7 @@ template void swap_bytes(std::uint64_t&);
 
 }  // end namespace binary
 
-void write_reals_txt(filesystem::path const& filename, Reals a, Int ncomps) {
+void write_reals_txt(std::filesystem::path const& filename, Reals a, Int ncomps) {
   std::ofstream stream(filename.c_str());
   write_reals_txt(stream, a, ncomps);
 }
@@ -649,7 +649,7 @@ void write_reals_txt(std::ostream& stream, Reals a, Int ncomps) {
   }
 }
 
-Reals read_reals_txt(filesystem::path const& filename, LO n, Int ncomps) {
+Reals read_reals_txt(std::filesystem::path const& filename, LO n, Int ncomps) {
   std::ifstream stream(filename.c_str());
   return read_reals_txt(stream, n, ncomps);
 }
@@ -664,7 +664,7 @@ Reals read_reals_txt(std::istream& stream, LO n, Int ncomps) {
   return h_a.write();
 }
 
-OMEGA_H_DLL Mesh read_mesh_file(filesystem::path const& path, CommPtr comm) {
+OMEGA_H_DLL Mesh read_mesh_file(std::filesystem::path const& path, CommPtr comm) {
   auto const extension = path.extension().string();
   if (extension == ".osh") {
     return binary::read(path, comm);
