@@ -110,7 +110,6 @@ set(Omega_h_SOURCES
   Omega_h_yaml.cpp
   Omega_h_mesh2d.cpp
   Omega_h_model2d.cpp
-  Omega_h_bsplineModel2d.cpp #FIXME - requires kokkos
 )
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -191,7 +190,10 @@ if(Omega_h_USE_DOLFIN)
 endif()
 
 if(Omega_h_USE_Kokkos)
-  list(APPEND Omega_h_SOURCES Omega_h_pool_kokkos.cpp)
+  list(APPEND Omega_h_SOURCES
+       Omega_h_pool_kokkos.cpp
+       Omega_h_bsplineModel2d.cpp)
+  list(APPEND Omega_h_HEADERS Omega_h_bsplineModel2d.hpp)
 endif()
 
 if (Omega_h_USE_CUDA AND NOT Omega_h_USE_Kokkos)
@@ -477,25 +479,27 @@ if(BUILD_TESTING)
     test_func(simModel2dLoad_square 1 ./simModel2dLoad_square
       ${CMAKE_SOURCE_DIR}/meshes/square.smd)
 
-    osh_add_exe(simModelAndSplinesLoad)
-    set(TEST_EXES ${TEST_EXES} simModelAndSplinesLoad)
-    test_func(simModelAndSplinesLoad_twoSquares 1 ./simModelAndSplinesLoad
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
-    test_func(simModelAndSplinesLoad_gis 1 ./simModelAndSplinesLoad
-      ${CMAKE_SOURCE_DIR}/meshes/gis.smd
-      ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
+    if(Omega_h_USE_Kokkos)
+      osh_add_exe(simModelAndSplinesLoad)
+      set(TEST_EXES ${TEST_EXES} simModelAndSplinesLoad)
+      test_func(simModelAndSplinesLoad_twoSquares 1 ./simModelAndSplinesLoad
+        ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
+        ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb)
+      test_func(simModelAndSplinesLoad_gis 1 ./simModelAndSplinesLoad
+        ${CMAKE_SOURCE_DIR}/meshes/gis.smd
+        ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb)
 
-    osh_add_exe(splineEval)
-    set(TEST_EXES ${TEST_EXES} splineEval)
-    test_func(splineEval_twoSquares 1 ./splineEval
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb
-      ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines_eval_gold.oshb)
-    test_func(splineEval_gis 1 ./splineEval
-      ${CMAKE_SOURCE_DIR}/meshes/gis.smd
-      ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb
-      ${CMAKE_SOURCE_DIR}/meshes/gis_splines_eval_gold.oshb)
+      osh_add_exe(splineEval)
+      set(TEST_EXES ${TEST_EXES} splineEval)
+      test_func(splineEval_twoSquares 1 ./splineEval
+        ${CMAKE_SOURCE_DIR}/meshes/twoSquares.smd
+        ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines.oshb
+        ${CMAKE_SOURCE_DIR}/meshes/twoSquares_splines_eval_gold.oshb)
+      test_func(splineEval_gis 1 ./splineEval
+        ${CMAKE_SOURCE_DIR}/meshes/gis.smd
+        ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb
+        ${CMAKE_SOURCE_DIR}/meshes/gis_splines_eval_gold.oshb)
+    endif()
   endif()
 
   if(Omega_h_USE_SEACASExodus)
@@ -786,7 +790,6 @@ set(Omega_h_HEADERS
   Omega_h_mixedMesh.hpp
   Omega_h_metric.hpp
   Omega_h_model2d.hpp
-  Omega_h_bsplineModel2d.hpp
   Omega_h_mpi.h
   Omega_h_owners.hpp
   Omega_h_parser.hpp
