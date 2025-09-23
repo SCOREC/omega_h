@@ -270,7 +270,7 @@ static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
   GmfCloseMesh(file);
   auto dr = Reals(hw.write());
   if (has_array_type) {
-    if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
+    if (array_type == ArrayType::SymmetricMatrix) {
       dr = symms_inria2osh(dim, dr);
     }
   }
@@ -334,7 +334,7 @@ static void write_sol_version(
   int type_table[1] = {field_type};
   GmfSetKwd(file, GmfSolAtVertices, GmfLine(nverts), ntypes, type_table);
   auto dr = tag->array();
-  if (array_type == ArrayType::SymmetricMatrix3x2 || array_type == ArrayType::SymmetricMatrix3x3) {
+  if (array_type == ArrayType::SymmetricMatrix) {
       dr = symms_osh2inria(dim, dr);
   }
   HostRead<Real> hr(dr);

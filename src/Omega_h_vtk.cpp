@@ -294,7 +294,7 @@ void write_tag_impl<Real>(
   if (array_type == ArrayType::Vector2D && ncomps != 3) {
     write_array(
           stream, name, 3, resize_vectors(array, space_dim, 3), compress, array_type);
-  } else if (array_type == ArrayType::SymmetricMatrix3x2 && ncomps != symm_ncomps(3)) {
+  } else if (array_type == ArrayType::SymmetricMatrix && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
           resize_symms(array, space_dim, 3), compress, array_type);
   } else if (array_type == ArrayType::NotSpecified) {
@@ -352,7 +352,7 @@ void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
   if (array_type == ArrayType::Vector2D) {
     array = resize_vectors(array, 3, mesh->dim());
     ncomps = mesh->dim();
-  } else if (array_type == ArrayType::SymmetricMatrix3x2) {
+  } else if (array_type == ArrayType::SymmetricMatrix) {
     array = resize_symms(array, 3, mesh->dim());
     ncomps = symm_ncomps(mesh->dim());
   } else if (array_type == ArrayType::NotSpecified) {
@@ -702,7 +702,7 @@ void write_p_tag(std::ostream& stream, TagBase const* tag, Int space_dim) {
   auto array_type = tag->array_type();
   if (tag->array_type() == ArrayType::Vector2D && tag->ncomps() != 3) {
     write_p_data_array2(stream, tag->name(), 3, tag->type(), array_type);
-  } else if (tag->array_type() == ArrayType::SymmetricMatrix3x2 &&
+  } else if (tag->array_type() == ArrayType::SymmetricMatrix &&
              tag->ncomps() != symm_ncomps(3)) {
     write_p_data_array2(
         stream, tag->name(), symm_ncomps(3), tag->type(), array_type);
