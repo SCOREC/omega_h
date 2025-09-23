@@ -228,12 +228,12 @@ struct SimMeshEntInfo {
       vtxInfo.dim[v] = classType(vtx);
       if(vtxInfo.dim[v] >= 0 && vtxInfo.dim[v] <= 2) {
         const auto parametric = classParametricCoord(vtx,vtxInfo.dim[v]);
-        vtxInfo.parametric[v] = parametric[0];
-        vtxInfo.parametric[v+1] = parametric[1];
+        vtxInfo.parametric[v*2] = parametric[0];
+        vtxInfo.parametric[v*2+1] = parametric[1];
       } else {
         //visualization without some 'small' default value is messy
-        vtxInfo.parametric[v] = -1;
-        vtxInfo.parametric[v+1] = -1;
+        vtxInfo.parametric[v*2] = -1;
+        vtxInfo.parametric[v*2+1] = -1;
       }
       if(hasNumbering) {
         vtxInfo.numbering[v] = getNumber(numbering,vtx);
