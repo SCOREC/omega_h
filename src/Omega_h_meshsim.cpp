@@ -14,6 +14,30 @@
 #endif
 
 namespace {
+
+  // get the parametric coordinates of a mesh vertex classified on
+  // a model vertex, edge, or face
+  std::array<double,2> classParametricCoord(pVertex meshVtx, int classDim) {
+    assert(classDim >= 0 && classDim <= 2);
+    if( classDim == 0 ) {
+      return {0,0};
+    }
+    pPoint pt = V_point(meshVtx);
+    if ( classDim == 1 ) {
+      double x = P_param1(pt);
+      return {x,0};
+    } else if ( classDim == 2 ) {
+      double x, y;
+      int ignored = 0; //see simmodsuite docs
+      P_param2(pt, &x, &y, &ignored);
+      return {x,y};
+    } else {
+      fprintf(stderr, "%s: classDim=(%d), must be >=0 and <= 2 ... exiting\n",
+                       __func__, classDim);
+      exit(EXIT_FAILURE);
+    }
+  }
+
   int classId(pEntity e) {
     pGEntity g = EN_whatIn(e);
     assert(g);
@@ -150,6 +174,7 @@ struct SimMeshEntInfo {
     HostWrite<GO> entId;
     HostWrite<I8> dim;
     HostWrite<LO> numbering;
+    HostWrite<Real> parametric;
   };
 
   VertexInfo readVerts(pMesh m,pMeshNex numbering) {
@@ -159,6 +184,10 @@ struct SimMeshEntInfo {
     vtxInfo.id = HostWrite<LO>(numVtx);
     vtxInfo.entId = HostWrite<GO>(numVtx);
     vtxInfo.dim = HostWrite<I8>(numVtx);
+    //only storing parametric locations for
+    //mesh vertices classified on geometric model
+    //edges or faces
+    vtxInfo.parametric = HostWrite<Real>(numVtx*2);
     if(hasNumbering)
       vtxInfo.numbering = HostWrite<LO>(numVtx);
 
@@ -197,6 +226,11 @@ struct SimMeshEntInfo {
       vtxInfo.id[v] = classId(vtx);
       vtxInfo.entId[v] = EN_id(vtx);
       vtxInfo.dim[v] = classType(vtx);
+      if(vtxInfo.dim[v] >= 0 && vtxInfo.dim[v] <= 2) {
+        const auto parametric = classParametricCoord(vtx,vtxInfo.dim[v]);
+        vtxInfo.parametric[v] = parametric[0];
+        vtxInfo.parametric[v+1] = parametric[1];
+      }
       if(hasNumbering) {
         vtxInfo.numbering[v] = getNumber(numbering,vtx);
       }
@@ -482,6 +516,8 @@ void readMixed_internal(pMesh m, MixedMesh* mesh, SimMeshInfo info) {
                 Read<GO>(vtxInfo.entId.write()));
   mesh->add_tag<I8>(Topo_type::vertex, "class_dim", 1,
                     Read<I8>(vtxInfo.dim.write()));
+  mesh->add_tag<Real>(Topo_type::vertex, "class_parametric", 2,
+                    Read<Real>(vtxInfo.parametric.write()));
 
   // process edges
   auto edges = simEnts.readEdges(m);
@@ -622,6 +658,8 @@ void read_internal(pMesh m, Mesh* mesh, pMeshNex numbering, SimMeshInfo info, pM
       Read<GO>(vtxInfo.entId.write()));
   mesh->add_tag<I8>(0, "class_dim", 1,
       Read<I8>(vtxInfo.dim.write()));
+  mesh->add_tag<Real>(0, "class_parametric", 2,
+        Read<Real>(vtxInfo.parametric.write()));
   if(hasNumbering) {
     mesh->add_tag<LO>(0, "simNumbering", 1,
         Read<LO>(vtxInfo.numbering.write()));
