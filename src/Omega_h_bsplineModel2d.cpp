@@ -147,7 +147,7 @@ namespace Omega_h {
         auto work = Kokkos::subview(workArray, orderRange);
 
         for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
-          coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]); //FIXME bad coords index, use j
+          coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]);
           coords[j*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
         }
     });
