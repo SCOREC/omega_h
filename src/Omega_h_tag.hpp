@@ -16,8 +16,8 @@ inline void check_tag_name(std::string const& name) {
 enum class ArrayType {
   NotSpecified,
   VectorND, // vector with N components
-  SymmetricMatrix, // symmetric matrix with dim*(dim+1)/2 components
-  FullMatrix , // full matrix with dim*dim components
+  SymmetricSquareMatrix, // symmetric matrix with dim*(dim+1)/2 components
+  FullSquareMatrix , // full matrix with dim*dim components
 };
 
 inline void check_array_type(ArrayType array_type) {
@@ -39,15 +39,15 @@ inline void check_array_type(ArrayType array_type) {
  const std::unordered_map<ArrayType, std::string> ArrayTypeNames = {
     {ArrayType::NotSpecified, "NotSpecified"},
     {ArrayType::VectorND, "VectorND"},
-    {ArrayType::SymmetricMatrix, "SymmetricMatrix"},
-    {ArrayType::FullMatrix, "FullMatrix"}
+    {ArrayType::SymmetricSquareMatrix, "SymmetricSquareMatrix"},
+    {ArrayType::FullSquareMatrix, "FullSquareMatrix"}
 };
 
 const std::unordered_map<std::string, ArrayType> NamesToArrayType = {
     {"NotSpecified", ArrayType::NotSpecified},
     {"VectorND", ArrayType::VectorND},
-    {"SymmetricMatrix", ArrayType::SymmetricMatrix},
-    {"FullMatrix", ArrayType::FullMatrix}
+    {"SymmetricSquareMatrix", ArrayType::SymmetricSquareMatrix},
+    {"FullSquareMatrix", ArrayType::FullSquareMatrix}
 };
 
 class TagBase {

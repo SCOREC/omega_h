@@ -14,7 +14,7 @@ using namespace Omega_h;
 
 void check_tag(const Tag<Real>* tag, int flag) {
   if (flag) {
-    OMEGA_H_CHECK(tag->array_type() == ArrayType::SymmetricMatrix);
+    OMEGA_H_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
   } else {
     OMEGA_H_CHECK(tag->array_type() == ArrayType::NotSpecified);
   }
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
   int input_array_type_flag = atoi(argv[1]);
   auto array_type_flag = ArrayType::NotSpecified;
   if (input_array_type_flag) {
-    array_type_flag = ArrayType::SymmetricMatrix;
+    array_type_flag = ArrayType::SymmetricSquareMatrix;
   }
 
   mesh.add_tag<Omega_h::Real>(0, "Piece", 2);

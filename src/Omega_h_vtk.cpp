@@ -292,7 +292,7 @@ void write_tag_impl<Real>(
   // Older version added a 3rd zero component to fields 
   // with 2 components. This constrains seem to be removed in recent ParaView.
   // However, we keep this behavior for backward compatibility when ArrayType is NotSpecified.
-  if (array_type == ArrayType::SymmetricMatrix && ncomps != symm_ncomps(3)) {
+  if (array_type == ArrayType::SymmetricSquareMatrix && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
           resize_symms(array, space_dim, 3), compress, array_type);
   } else if (array_type == ArrayType::NotSpecified) {
@@ -347,7 +347,7 @@ void read_tag_impl<Real>(std::istream& stream, Mesh* mesh, LO size, Int ncomps,
   auto array = read_array<Real>(stream, size, needs_swapping, is_compressed);
   // special case for reading real tags only
   // undo the resizes done in write_tag()
-  if (array_type == ArrayType::SymmetricMatrix) {
+  if (array_type == ArrayType::SymmetricSquareMatrix) {
     array = resize_symms(array, 3, mesh->dim());
     ncomps = symm_ncomps(mesh->dim());
   } else if (array_type == ArrayType::NotSpecified) {
@@ -695,7 +695,7 @@ static void write_p_data_array2(std::ostream& stream, std::string const& name,
 
 void write_p_tag(std::ostream& stream, TagBase const* tag, Int space_dim) {
   auto array_type = tag->array_type();
-  if (tag->array_type() == ArrayType::SymmetricMatrix &&
+  if (tag->array_type() == ArrayType::SymmetricSquareMatrix &&
              tag->ncomps() != symm_ncomps(3)) {
     write_p_data_array2(
         stream, tag->name(), symm_ncomps(3), tag->type(), array_type);
