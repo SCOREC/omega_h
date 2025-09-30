@@ -290,7 +290,8 @@ void write_tag_impl<Real>(
   // VTK / ParaView expected vector fields to have 3 components
   // regardless of whether this is a 2D mesh or not.
   // Older version added a 3rd zero component to fields 
-  // with 2 components. This constrains seem to be removed in recent ParaView.
+  // with 2 components. with 2 components. This requirement is removed in
+  // recent versions of ParaView (at least >=6.0.0).
   // However, we keep this behavior for backward compatibility when ArrayType is NotSpecified.
   if (array_type == ArrayType::SymmetricSquareMatrix && ncomps != symm_ncomps(3)) {
     write_array(stream, name, symm_ncomps(3),
