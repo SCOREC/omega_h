@@ -80,9 +80,10 @@ static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh,
 
   if( !array.exists() ) return;
 
+  HostRead<T> h_array(array);
   std::vector<T> myData;
-  for (size_t i = 0; i<array.size(); ++i)
-     myData.push_back(array.data()[i]);
+  for (size_t i = 0; i<h_array.size(); ++i)
+     myData.push_back(h_array.data()[i]);
 
   const std::size_t Nx = myData.size()/ncomp;
 

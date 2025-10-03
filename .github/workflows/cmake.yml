@@ -53,11 +53,26 @@ jobs:
       run: |
            sudo apt update
            sudo apt install mpich
+    
+    - name: install gmsh
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --branch gmsh_4_14_1 https://gitlab.onelab.info/gmsh/gmsh.git
+           cd gmsh
+           mkdir build
+           cmake . \
+            -Bbuild \
+            -DENABLE_BUILD_DYNAMIC=1 \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DENABLE_BUILD_LIB=ON \
+            -DENABLE_BUILD_SHARED=ON
+           cmake --build build -j 4 --target install
 
     - name: set mpi compiler wrapper
       if: ${{ matrix.mpi == 'on' }}
       run: |
            echo "CXX=mpicxx" >> $GITHUB_ENV
+           echo "CC=mpicc" >> $GITHUB_ENV
 
     - name: print info      
       run: |
@@ -82,20 +97,49 @@ jobs:
       shell: bash
       run: cmake --build $GITHUB_WORKSPACE/kokkos/build --target install
 
+    - name: Checkout ADIOS2
+      uses: actions/checkout@v4
+      if: ${{ matrix.mpi == 'on' }}
+      with:
+        repository: ornladios/ADIOS2
+        path: ADIOS2
+
+    - name: Configure ADIOS2
+      if: ${{ matrix.mpi == 'on' }}
+      shell: bash
+      working-directory: ${{github.workspace}}/ADIOS2
+      run: cmake .
+           -Bbuild
+           -DCMAKE_INSTALL_PREFIX=build/install
+           -DADIOS2_USE_CUDA=OFF
+           -DADIOS2_USE_ZFP=OFF
+    
+    - name: Build ADIOS2
+      if: ${{ matrix.mpi == 'on' }}
+      shell: bash
+      run: cmake --build $GITHUB_WORKSPACE/ADIOS2/build --target install
+
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/omega_h
-      run: cmake .
-           -Bbuild
-           -DCMAKE_CXX_COMPILER=$CXX
-           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }}
-           -DCMAKE_VERBOSE_MAKEFILE=on
-           -DOmega_h_USE_MPI=${{ matrix.mpi }}
-           -DOmega_h_USE_Kokkos=${{ matrix.kokkos }}
-           -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install
-           -DBUILD_TESTING=ON
-           -DBUILD_SHARED_LIBS=OFF
-           -DENABLE_CTEST_MEMPOOL=${{ matrix.mempool }}
+      run: |
+          export CMAKE_PREFIX_PATH="${{runner.temp }}/gmsh/install:$CMAKE_PREFIX_PATH"
+          export LD_LIBRARY_PATH="${{runner.temp }}/gmsh/install/lib:$LD_LIBRARY_PATH"
+          export CMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/ADIOS2/build/install:$CMAKE_PREFIX_PATH"
+          cmake . -Bbuild \
+          -DCMAKE_CXX_COMPILER=$CXX \
+          -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} \
+          -DCMAKE_VERBOSE_MAKEFILE=on \
+          -DOmega_h_USE_MPI=${{ matrix.mpi }} \
+          -DOmega_h_USE_Kokkos=${{ matrix.kokkos }} \
+          -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install \
+          -DOmega_h_USE_Gmsh=ON \
+          -DGmsh_INCLUDE_DIRS=${{runner.temp }}/gmsh/install/include \
+          -DGmsh_LIBRARIES=${{runner.temp }}/gmsh/install/lib/libgmsh.so.4.14.1 \
+          -DOmega_h_USE_ADIOS2=${{ matrix.mpi }} \
+          -DBUILD_TESTING=ON \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DENABLE_CTEST_MEMPOOL=${{ matrix.mempool }}
 
     - name: Build
       working-directory: ${{github.workspace}}/omega_h/build

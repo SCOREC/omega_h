@@ -148,6 +148,8 @@ class HostRead {
   T const* data() const;
   T get(LO i) const;
   T last() const;
+  T const* begin() const noexcept { return data(); }
+  T const* end() const noexcept { return data() + size(); }
 };
 
 template <typename T>
@@ -188,6 +190,8 @@ class HostWrite {
   }
   void set(LO i, T value);
   T get(LO i) const;
+  T* begin() const noexcept { return data(); }
+  T* end() const OMEGA_H_NOEXCEPT { return data() + size(); }
 };
 
 template <typename T>

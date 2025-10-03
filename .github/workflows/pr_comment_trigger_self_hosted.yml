@@ -66,6 +66,28 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$kkbdir/install
           cmake --build $kkbdir --target install -j 4
 
+          # adios2
+          git clone https://github.com/ornladios/ADIOS2.git ${workDir}/ADIOS2
+          adiosbdir=${workDir}/build-ADIOS2
+          cmake - S ${workDir}/ADIOS2 -B $adiosbdir \
+            -DCMAKE_INSTALL_PREFIX=$adiosbdir/install \
+            -DADIOS2_USE_CUDA=on \
+            -DADIOS2_USE_ZFP=off
+          cmake --build $adiosbdir --target install -j 4
+          export CMAKE_PREFIX_PATH="$adiosbdir/install:$CMAKE_PREFIX_PATH"
+
+          # gmsh
+          git clone --branch gmsh_4_14_1 https://gitlab.onelab.info/gmsh/gmsh.git ${workDir}/gmsh
+          gmsbdir=${workDir}/build-gmsh
+          cmake -S ${workDir}/gmsh -B $gmsbdir \
+            -DCMAKE_INSTALL_PREFIX=$gmsbdir/install \
+            -DENABLE_BUILD_DYNAMIC=1 \
+            -DENABLE_BUILD_LIB=ON \
+            -DENABLE_BUILD_SHARED=ON
+          cmake --build $gmsbdir --target install -j 4
+          export CMAKE_PREFIX_PATH="$gmsbdir/install:$CMAKE_PREFIX_PATH"
+          export LD_LIBRARY_PATH="$gmsbdir/install/lib64:$LD_LIBRARY_PATH"
+
           # omegah
           bdir=${workDir}/build-omegah
           cmake -S omegah_${{ github.event.issue.number }} -B $bdir \
@@ -81,6 +103,10 @@ jobs:
             -DOmega_h_CUDA_ARCH="80" \
             -DCMAKE_CUDA_ARCHITECTURES="80" \
             -DKokkos_PREFIX=$kkbdir/install \
+            -DOmega_h_USE_ADIOS2=ON \
+            -DOmega_h_USE_Gmsh=ON \
+            -DGmsh_INCLUDE_DIRS=$gmsbdir/install/include \
+            -DGmsh_LIBRARIES=$gmsbdir/install/lib64/libgmsh.so.4.14.1 \
             -DBUILD_SHARED_LIBS=on
           cmake --build $bdir -j 4
           ctest --test-dir $bdir --output-on-failure

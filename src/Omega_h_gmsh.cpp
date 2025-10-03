@@ -556,12 +556,12 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
   }
 
   std::map<GO, LO> node_number_map;
-  Write<GO> vert_globals_w(nnodes);
+  HostWrite<GO> h_vert_globals_w(nnodes);
   for (LO local_index = 0; local_index < nnodes; ++local_index) {
     const auto global_index =
         static_cast<GO>(node_tags[static_cast<std::size_t>(local_index)]);
     node_number_map[global_index] = local_index;
-    vert_globals_w[local_index] = global_index;
+    h_vert_globals_w[local_index] = global_index;
   }
 
   std::array<std::vector<int>, 4> ent_class_ids;
@@ -648,7 +648,7 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
   // shift elements global identifiers so that they start at 0
   shift_container_values(ent_globals[max_dim]);
   // shift vertices global identifiers so that they start at 0
-  shift_container_values(vert_globals_w);
+  shift_container_values(h_vert_globals_w);
 
   HostWrite<Real> host_coords(nnodes * max_dim);
   for (LO local_index = 0; local_index < nnodes; ++local_index) {
@@ -659,7 +659,7 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
   }
   for (Int ent_dim = max_dim; ent_dim >= 0; --ent_dim) {
     const auto ndim_ents = static_cast<LO>(ent_globals[ent_dim].size());
-    Write<GO> host_elem_globals(ndim_ents);
+    HostWrite<GO> host_elem_globals(ndim_ents);
     HostWrite<LO> host_class_id(ndim_ents);
     HostWrite<LO> host_ev2v(ent_nodes[ent_dim].size());
     if (ndim_ents > 0) {
@@ -678,6 +678,8 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
       }
     }
     LOs eqv2v(host_ev2v.write());
+    Write<GO> elem_globals(host_elem_globals.write());
+    Write<GO> vert_globals_w(h_vert_globals_w.write());
     if (ent_dim == max_dim) {
       // build_from_elems2verts(
       // &mesh, mesh.library()->self(), OMEGA_H_SIMPLEX, dim, eqv2v,
@@ -692,7 +694,7 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
         auto mv2v = find_unique(eqv2v, mesh.family(), ent_dim, mdim);
         add_ents2verts(&mesh, mdim, mv2v, vert_globals_w, GOs());
       }
-      add_ents2verts(&mesh, ent_dim, eqv2v, vert_globals_w, host_elem_globals);
+      add_ents2verts(&mesh, ent_dim, eqv2v, vert_globals_w, elem_globals);
       // if (!comm->reduce_and(is_sorted(vert_globals))) {
       //  reorder_by_globals(&mesh);
       //}
@@ -777,34 +779,38 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh) {
   const auto dim = mesh.dim();
   const auto nnodes = mesh.nverts();
   const auto globals_v = mesh.globals(VERT);
+  const auto h_globals_v = HostRead<GO>(globals_v);
   const auto coords = mesh.coords();
+  const auto h_coords = HostRead<Real>(coords);
   const auto gmsh_dims = 3;
 
   std::vector<std::size_t> node_tags(static_cast<size_t>(nnodes));
   std::vector<double> node_coords(gmsh_dims * static_cast<size_t>(nnodes), 0);
   for (LO local_index = 0; local_index < nnodes; ++local_index) {
     node_tags[static_cast<std::size_t>(local_index)] =
-        static_cast<size_t>(globals_v[local_index]) + 1;
+        static_cast<size_t>(h_globals_v[local_index]) + 1;
     // cleaner to use gather_vector on coords
     for (LO j = 0; j < dim; ++j) {
       node_coords[static_cast<std::size_t>(local_index * gmsh_dims + j)] =
-          coords[local_index * dim + j];
+          h_coords[local_index * dim + j];
     }
   }
 
   auto ents2verts = mesh.ask_elem_verts();
+  auto h_ents2verts = HostRead<LO>(ents2verts);
   const LO ndim_ents = mesh.nelems();
   std::vector<std::size_t> element_tags(static_cast<size_t>(ndim_ents));
   std::vector<std::size_t> ent_nodes(
       static_cast<size_t>((dim + 1) * ndim_ents));
   const auto globals_e = mesh.globals(dim);
+  const auto h_globals_e = HostRead<GO>(globals_e);
   for (LO local_index = 0; local_index < ndim_ents; ++local_index) {
     element_tags[static_cast<std::size_t>(local_index)] =
-        static_cast<size_t>(globals_e[local_index]) + 1;
+        static_cast<size_t>(h_globals_e[local_index]) + 1;
     for (Int j = 0; j < dim + 1; ++j) {
       ent_nodes[static_cast<std::size_t>(local_index * (dim + 1) + j)] =
           static_cast<size_t>(
-              globals_v[ents2verts[local_index * (dim + 1) + j]]) +
+              h_globals_v[h_ents2verts[local_index * (dim + 1) + j]]) +
           1;
     }
   }

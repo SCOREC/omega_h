@@ -1234,6 +1234,13 @@ std::ostream& operator<<(std::ostream& ostr, const Omega_h::Read<T>& array) {
   return ostr << ']';
 }
 
+template <typename T>
+std::ostream& operator<<(std::ostream& ostr, const Omega_h::HostRead<T>& array) {
+  ostr << '[';
+  std::copy(array.begin(), array.end(), std::ostream_iterator<T>(ostr, " "));
+  return ostr << ']';
+}
+
 #ifdef OMEGA_H_USE_GMSH
 Omega_h_Comparison light_compare_meshes(Mesh& a, Mesh& b) {
   OMEGA_H_CHECK(a.comm()->size() == b.comm()->size());
@@ -1268,8 +1275,10 @@ Omega_h_Comparison light_compare_meshes(Mesh& a, Mesh& b) {
       }
     }
     if (comm->size() == 1) {
-      const auto& a_globals = a.globals(dim);
-      const auto& b_globals = b.globals(dim);
+      const auto& d_a_globals = a.globals(dim);
+      const auto& d_b_globals = b.globals(dim);
+      const auto& a_globals = HostRead<GO>(d_a_globals);
+      const auto& b_globals = HostRead<GO>(d_b_globals);
       if (!std::equal(a_globals.begin(), a_globals.end(), b_globals.begin())) {
         if (should_print) {
           std::clog << "global " << topological_singular_name(a.family(), dim)
@@ -1304,8 +1313,10 @@ static void check_entities_global_ordering(Mesh& mesh) {
     /// global id of entities owned by this rank
     std::vector<Omega_h::GO> local_globals;
     {
-      const auto& owned = mesh.owned(dim);
-      const auto& globals = mesh.globals(dim);
+      const auto& d_owned = mesh.owned(dim);
+      const auto& d_globals = mesh.globals(dim);
+      const auto& owned = HostRead<I8>(d_owned);
+      const auto& globals = HostRead<GO>(d_globals);
       for (int i = 0; i < owned.size(); ++i) {
         if (owned[i]) {
           local_globals.push_back(globals[i]);
