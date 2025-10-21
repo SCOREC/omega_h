@@ -24,6 +24,13 @@ int main(int argc, char** argv) {
   // todo: make scale a vector for anisotropic scaling
   auto scale = cmdline.get<double>("scale");
 
+  if (scale <= 0.0) {
+    if (world->rank() == 0) {
+      printf("ErrScale factor must be positive. Given %f.\n", scale);
+    }
+    return -1;
+  }
+
   auto mesh = Omega_h::Mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
 
