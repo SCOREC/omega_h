@@ -2,14 +2,13 @@
 #define OMEGA_H_STACK_HPP
 
 #include <Omega_h_timer.hpp>
-#include <Omega_h_filesystem.hpp>
 #include <cstring>
 #include <vector>
 #include <memory>
+#include <filesystem>
 #ifdef OMEGA_H_USE_KOKKOS
 #include <Omega_h_kokkos.hpp>
 #endif
-
 namespace Omega_h {
 
 class Comm;
@@ -191,7 +190,7 @@ inline void begin_code(char const* name, char const* file=0) {
       file = "Omega_h";
     }
     if (profile::global_singleton_history->add_filename) {
-      std::string str = ::Omega_h::filesystem::path(file).filename().string()+"::"+std::string(name);
+      std::string str = std::filesystem::path(file).filename().string() + "::" + std::string(name);
       profile::global_singleton_history->start(str.c_str());
     } else {
       profile::global_singleton_history->start(name);
