@@ -119,9 +119,7 @@ void describe_array(std::ostream& stream, std::string const& name, Int ncomps,
   stream << "type=\"" << Traits<T>::name() << "\"";
   stream << " Name=\"" << name << "\"";
   stream << " NumberOfComponents=\"" << ncomps << "\"";
-  if (array_type != ArrayType::NotSpecified) {
-    stream << " ArrayType=\"" << ArrayTypeNames.at(array_type) << "\"";
-  }
+  stream << " ArrayType=\"" << ArrayTypeNames.at(array_type) << "\"";
   stream << " format=\"binary\"";
 }
 
@@ -376,7 +374,7 @@ static bool read_tag(std::istream& stream, Mesh* mesh, Int ent_dim,
   Omega_h_Type type = OMEGA_H_I8;
   std::string name;
   Int ncomps = -1;
-  ArrayType array_type = ArrayType::NotSpecified;
+  ArrayType array_type = ArrayType::VectorND;
   if (!read_array_start_tag(stream, &type, &name, &ncomps, &array_type)) {
     return false;
   }
@@ -677,7 +675,7 @@ void write_p_data_array(std::ostream& stream, std::string const& name, Int ncomp
 }
 
 static void write_p_data_array2(std::ostream& stream, std::string const& name,
-    Int ncomps, Int Omega_h_Type, ArrayType array_type = ArrayType::NotSpecified) {
+    Int ncomps, Int Omega_h_Type, ArrayType array_type = ArrayType::VectorND) {
   switch (Omega_h_Type) {
     case OMEGA_H_I8:
       write_p_data_array<I8>(stream, name, ncomps, array_type);

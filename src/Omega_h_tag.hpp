@@ -29,7 +29,7 @@ inline void check_array_type(ArrayType array_type) {
   if (rank == 0) {
     if (array_type == ArrayType::NotSpecified && warningCount == 0) {
       fprintf(stderr,
-        "Omega_h Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+        "Omega_h Warning: Tag array type is NotSpecified. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
       warningCount++;
     }
   }
@@ -67,7 +67,7 @@ class TagBase {
   std::string name_;
   Int ncomps_;
   LOs class_ids_;
-  ArrayType array_type_ = ArrayType::NotSpecified;
+  ArrayType array_type_ = ArrayType::VectorND;
 };
 
 template <typename T>

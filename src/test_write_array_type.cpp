@@ -16,7 +16,7 @@ void check_tag(const Tag<Real>* tag, int flag) {
   if (flag) {
     OMEGA_H_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
   } else {
-    OMEGA_H_CHECK(tag->array_type() == ArrayType::NotSpecified);
+    OMEGA_H_CHECK(tag->array_type() == ArrayType::VectorND);
   }
   OMEGA_H_CHECK(tag->ncomps() == 3);
 }
@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
   mesh.set_parting(OMEGA_H_GHOSTED, 0);
 
   int input_array_type_flag = atoi(argv[1]);
-  auto array_type_flag = ArrayType::NotSpecified;
+  auto array_type_flag = ArrayType::VectorND;
   if (input_array_type_flag) {
     array_type_flag = ArrayType::SymmetricSquareMatrix;
   }

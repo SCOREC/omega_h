@@ -66,10 +66,10 @@ class Mesh {
   void add_tag(Int dim, std::string const& name, Int ncomps, ArrayType array_type);
   template <typename T>
   void add_tag(Int dim, std::string const& name, Int ncomps, Read<T> array,
-      bool internal = false, ArrayType array_type = ArrayType::NotSpecified);
+      bool internal = false, ArrayType array_type = ArrayType::VectorND);
   template <typename T>
   void set_tag(
-      Int dim, std::string const& name, Read<T> array, bool internal = false, ArrayType array_type = ArrayType::NotSpecified);
+      Int dim, std::string const& name, Read<T> array, bool internal = false, ArrayType array_type = ArrayType::VectorND);
   TagBase const* get_tagbase(Int dim, std::string const& name) const;
   template <typename T>
   Tag<T> const* get_tag(Int dim, std::string const& name) const;

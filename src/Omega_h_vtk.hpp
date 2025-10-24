@@ -61,12 +61,12 @@ void write_tag(
 
 template <typename T>
 void write_p_data_array(std::ostream& stream, std::string const& name,
-    Int ncomps, ArrayType array_type = ArrayType::NotSpecified);
+    Int ncomps, ArrayType array_type = ArrayType::VectorND);
 
 template <typename T_osh, typename T_vtk = T_osh>
 void write_array(
     std::ostream& stream, std::string const& name, Int ncomps, Read<T_osh> array,
-    bool compress, ArrayType array_type = ArrayType::NotSpecified);
+    bool compress, ArrayType array_type = ArrayType::VectorND);
 
 #define OMEGA_H_EXPL_INST_DECL(T)                                              \
   extern template void write_p_data_array<T>(                                  \

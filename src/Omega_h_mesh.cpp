@@ -153,7 +153,7 @@ GO Mesh::nglobal_ents(Int ent_dim) {
 
 template <typename T>
 void Mesh::add_tag(Int ent_dim, std::string const& name, Int ncomps) {
-  this->add_tag(ent_dim, name, ncomps, Read<T>(), true, ArrayType::NotSpecified);
+  this->add_tag(ent_dim, name, ncomps, Read<T>(), true, ArrayType::VectorND);
 }
 
 template <typename T>

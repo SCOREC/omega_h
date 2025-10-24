@@ -5,13 +5,13 @@ namespace Omega_h {
 TagBase::TagBase(std::string const& name_in, Int ncomps_in)
     : name_(name_in), ncomps_(ncomps_in) {
   check_tag_name(name_in);
-  check_array_type(ArrayType::NotSpecified);
+  check_array_type(ArrayType::VectorND);
 }
 
 TagBase::TagBase(std::string const& name_in, Int ncomps_in, LOs class_ids_in)
     : name_(name_in), ncomps_(ncomps_in), class_ids_(class_ids_in) {
   check_tag_name(name_in);
-  check_array_type(ArrayType::NotSpecified);
+  check_array_type(ArrayType::VectorND);
 }
 
 TagBase::TagBase(std::string const& name_in, Int ncomps_in, ArrayType array_type_in)

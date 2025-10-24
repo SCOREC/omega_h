@@ -73,7 +73,7 @@ static void read_value(adios2::IO &io, adios2::Engine &reader,
 
 template <typename T>
 static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh, 
-		Read<T> array, int ncomp, std::string &name, ArrayType array_type=ArrayType::NotSpecified)
+		Read<T> array, int ncomp, std::string &name, ArrayType array_type=ArrayType::VectorND)
 {
   long unsigned int comm_size = mesh->comm()->size();
   long unsigned int rank = mesh->comm()->rank();
@@ -90,13 +90,11 @@ static void write_array(adios2::IO &io, adios2::Engine &writer, Mesh* mesh,
   // To avoid narrowing conversion warning.
   size_t n_comp = static_cast <size_t>(ncomp); 
   
-  if (array_type != ArrayType::NotSpecified){
-    std::string arrayTypeName = ArrayTypeNames.at(array_type);
-    std::string meta_name = name + "/ArrayType";
+  std::string arrayTypeName = ArrayTypeNames.at(array_type);
+  std::string meta_name = name + "/ArrayType";
 
-    adios2::Variable<std::string> ArrayTypeMeta = io.DefineVariable<std::string>(meta_name);
-    writer.Put(ArrayTypeMeta, arrayTypeName, adios2::Mode::Sync);
-  }
+  adios2::Variable<std::string> ArrayTypeMeta = io.DefineVariable<std::string>(meta_name);
+  writer.Put(ArrayTypeMeta, arrayTypeName, adios2::Mode::Sync);
  
   // This implementation only works in serial. Implementation to deal with
   // parallel cases will be done in future. (04-23-2025)
@@ -208,7 +206,7 @@ static void read_meta(adios2::IO &io, adios2::Engine &reader, Mesh* mesh, std::s
   {
     Omega_h_fail("Mesh was written with Omegah to adios2 writer version %d.\n"
              "Latest adios2 to Omegah reader version is %d. This may cause unwanted\n"
-             "behavior including setting ArrayTypes to NotSpecified. Make sure\n"
+             "behavior including setting ArrayTypes to VectorND. Make sure\n"
              "to update meshes in adios2 with latest writer version %d.\n",
              writer_version, reader_version, reader_version);
   }
