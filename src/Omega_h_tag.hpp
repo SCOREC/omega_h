@@ -21,14 +21,16 @@ enum class ArrayType {
 
 inline void check_array_type(ArrayType array_type) {
 #ifndef NDEBUG 
+  static int warningCount = 0;
   int rank = 0;
 #ifdef OMEGA_H_USE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   if (rank == 0) {
-    if (array_type == ArrayType::NotSpecified) {
+    if (array_type == ArrayType::NotSpecified && warningCount == 0) {
       fprintf(stderr,
-        "Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+        "Omega_h Warning: Tag array type is NotSpecified. This will be deprecated in a future version. The default type will become VectorND, which treats the array as an n-dimensional vector based on ncomponents. It is recommended to set a specific array type for better clarity and to avoid unexpected behavior.\n");
+      warningCount++;
     }
   }
 
