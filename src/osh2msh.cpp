@@ -1,5 +1,5 @@
 //
-// Converts Omega_h Mesh to Gmsh Mesh
+// Converts Omega_h Mesh (Serial Mesh Only) to Gmsh Mesh
 //
 
 #include "Omega_h_file.hpp"
