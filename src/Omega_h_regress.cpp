@@ -7,7 +7,7 @@
 
 namespace Omega_h {
 
-bool check_regression(filesystem::path const& prefix, Mesh* mesh) {
+bool check_regression(std::filesystem::path const& prefix, Mesh* mesh) {
   auto comm = mesh->comm();
   auto goldpath = prefix;
   goldpath += ".osh";
