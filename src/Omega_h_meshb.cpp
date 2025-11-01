@@ -230,7 +230,7 @@ static void read_sol_version(Mesh* mesh, GmfFile file, Int dim,
   int type_table[1];
   int ntypes, sol_size;
   int ncomps = -1;
-  ArrayType array_type = ArrayType::NotSpecified;
+  ArrayType array_type = ArrayType::VectorND;
   int has_array_type = GmfStatKwd(file, GmfPrivateTable, &ntypes, &sol_size, type_table);
   if (has_array_type) {
     safe_goto(file, GmfPrivateTable);

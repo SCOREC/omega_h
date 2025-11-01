@@ -3,6 +3,7 @@
 
 #include <iosfwd>
 #include <vector>
+#include <fstream>
 
 #include <Omega_h_config.h>
 #include <Omega_h_array.hpp>

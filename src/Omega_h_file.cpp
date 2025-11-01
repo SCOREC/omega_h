@@ -323,7 +323,7 @@ static void read_tag(std::istream& stream, Mesh* mesh, Int d,
       read_value(stream, outflags_i8, needs_swapping);
     }
   }
-  ArrayType array_type = ArrayType::NotSpecified;
+  ArrayType array_type = ArrayType::VectorND;
   if (version > 10) {
     std::string array_type_name;
     read(stream, array_type_name, needs_swapping);
