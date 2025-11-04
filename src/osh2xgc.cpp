@@ -6,6 +6,8 @@
 #include "Omega_h_mark.hpp"
 #include "Omega_h_mesh.hpp"
 
+Omega_h::Read<Omega_h::I8> mark_exposed_nodes(Omega_h::Mesh* mesh);
+
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
   auto comm = lib.world();
@@ -36,7 +38,7 @@ int main(int argc, char** argv) {
   const auto num_vertices = mesh.nverts();
   const auto coords = mesh.coords();
   const auto e2v = mesh.ask_elem_verts();
-  const auto exposed_nodes = Omega_h::mark_exposed_nodes(&mesh);
+  const auto exposed_nodes = mark_exposed_nodes(&mesh);
 
   Omega_h::HostRead coords_host(coords);
   Omega_h::HostRead e2v_host(e2v);
@@ -72,4 +74,11 @@ int main(int argc, char** argv) {
   ele_out.close();
 
   return 0;
+}
+
+Omega_h::Read<Omega_h::I8> mark_exposed_nodes(Omega_h::Mesh* mesh) {
+  auto exposed_sides = mark_exposed_sides(mesh);
+  auto exposed_nodes = mark_down(mesh, mesh->dim() - 1, 0, exposed_sides);
+
+  return exposed_nodes;
 }

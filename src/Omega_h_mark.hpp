@@ -1,9 +1,10 @@
 #ifndef OMEGA_H_MARK_HPP
 #define OMEGA_H_MARK_HPP
 
+#include <vector>
+
 #include <Omega_h_array.hpp>
 #include <Omega_h_mesh.hpp>
-#include <vector>
 
 namespace Omega_h {
 
@@ -21,7 +22,6 @@ Read<I8> mark_dual_layers(Mesh* mesh, Read<I8> marks, Int nlayers);
 GO count_owned_marks(Mesh* mesh, Int ent_dim, Read<I8> marks);
 Read<I8> mark_sliver_layers(Mesh* mesh, Real qual_ceil, Int nlayers);
 Read<I8> mark_exposed_sides(Mesh* mesh);
-Read<I8> mark_exposed_nodes(Mesh* mesh);
 Read<I8> mark_class_closure(
     Mesh* mesh, Int ent_dim, Int class_dim, LO class_id);
 
