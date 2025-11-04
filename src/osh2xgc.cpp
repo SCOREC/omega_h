@@ -1,8 +1,9 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
 #include "Omega_h_cmdline.hpp"
 #include "Omega_h_file.hpp"
+#include "Omega_h_mark.hpp"
 #include "Omega_h_mesh.hpp"
 
 int main(int argc, char** argv) {
@@ -22,11 +23,12 @@ int main(int argc, char** argv) {
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
 
-
   const auto dim = mesh.dim();
   if (dim != 2) {
-    // ref https://xgc.pppl.gov/html/mesh_file_format.html#:~:text=XGC%20only%20supports,boundary%20markers%20%3D%201
-    std::cerr << "Only 2D meshes are supported in XGC Mesh File Format." << std::endl;
+    // ref
+    // https://xgc.pppl.gov/html/mesh_file_format.html#:~:text=XGC%20only%20supports,boundary%20markers%20%3D%201
+    std::cerr << "Only 2D meshes are supported in XGC Mesh File Format."
+              << std::endl;
     return -1;
   }
 
@@ -34,9 +36,11 @@ int main(int argc, char** argv) {
   const auto num_vertices = mesh.nverts();
   const auto coords = mesh.coords();
   const auto e2v = mesh.ask_elem_verts();
+  const auto exposed_nodes = Omega_h::mark_exposed_nodes(&mesh);
 
   Omega_h::HostRead coords_host(coords);
   Omega_h::HostRead e2v_host(e2v);
+  Omega_h::HostRead exposed_nodes_host(exposed_nodes);
 
   assert(coords_host.size() == dim * num_vertices);
   assert(e2v_host.size() == num_elements * (dim + 1));
@@ -45,11 +49,12 @@ int main(int argc, char** argv) {
   std::ofstream node_out(node_file);
   node_out << num_vertices << " 2 0 1\n";
   for (Omega_h::LO i = 0; i < num_vertices; ++i) {
-        node_out << i + 1 << " " << coords_host[i * dim] << " " << coords_host[i * dim + 1] << " 0\n";
+    node_out << i + 1 << " " << coords_host[i * dim] << " "
+             << coords_host[i * dim + 1] << " "
+             << static_cast<int>(exposed_nodes_host[i]) << "\n";
   }
   node_out << "\n";
   node_out.close();
-
 
   // write the ele file
   std::ofstream ele_out(ele_file);
@@ -57,7 +62,9 @@ int main(int argc, char** argv) {
   for (Omega_h::LO i = 0; i < num_elements; ++i) {
     ele_out << i + 1;
     for (Omega_h::LO j = 0; j < dim + 1; ++j) {
-      ele_out << " " << e2v_host[i * (dim + 1) + j] + 1; // convert to 1-based indexing
+      ele_out << " "
+              << e2v_host[i * (dim + 1) + j] +
+                     1;  // convert to 1-based indexing
     }
     ele_out << "\n";
   }
@@ -66,4 +73,3 @@ int main(int argc, char** argv) {
 
   return 0;
 }
-

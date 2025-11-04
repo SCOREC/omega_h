@@ -18,6 +18,13 @@ Read<I8> mark_exposed_sides(Mesh* mesh) {
   return exposed;
 }
 
+Read<I8> mark_exposed_nodes(Mesh* mesh) {
+  auto exposed_sides = mark_exposed_sides(mesh);
+  auto exposed_nodes = mark_down(mesh, mesh->dim() - 1, 0, exposed_sides);
+
+  return exposed_nodes;
+}
+
 Read<I8> mark_down(Graph l2h, Read<I8> high_marked) {
   auto l2lh = l2h.a2ab;
   auto lh2h = l2h.ab2b;
