@@ -482,7 +482,13 @@ function(bob_config_header HEADER_PATH)
 
 #endif
 ")
-  file(WRITE "${HEADER_PATH}" "${HEADER_CONTENT}")
+
+  set(TEMP_PATH "${HEADER_PATH}.tmp")
+  file(WRITE "${TEMP_PATH}" "${HEADER_CONTENT}")
+  # Only update if content changed; changing the header will trigger a rebuild
+  execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${TEMP_PATH}" "${HEADER_PATH}")
+  file(REMOVE "${TEMP_PATH}")
 endfunction()
 
 function(bob_get_link_libs tgt var)
