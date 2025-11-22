@@ -268,6 +268,33 @@ jobs:
           export OMP_NUM_THREADS=2 #8 cores on asics, largest test requires 4 ranks
           ctest --test-dir $bdir --output-on-failure
 
+      - name: build with Kokkos CUDA backend warnings as errors
+        id: build_kokkos_cuda_wae
+        shell: bash
+        run: |
+          source $OMEGAH_WORK_DIR/envGcc13.sh
+
+          workDir=$OMEGAH_WORK_DIR
+
+          # omegah
+          bdir=${workDir}/build-omegah
+          cmake -S omegah_${{ github.event.issue.number }} -B $bdir \
+            -DCMAKE_INSTALL_PREFIX=$bdir/install \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS='-Werror' \
+            -DBUILD_TESTING=on  \
+            -DOmega_h_USE_MPI=on  \
+            -DOmega_h_USE_SimModSuite=off \
+            -DSIM_MPI=mpich4.2.3 \
+            -DOmega_h_USE_Kokkos=on \
+            -DOmega_h_CUDA_ARCH="80" \
+            -DCMAKE_CUDA_ARCHITECTURES="80" \
+            -DKokkos_PREFIX=${KOKKOS_CUDA_BUILD}/install \
+            -DENABLE_CTEST_MEMPOOL=on \
+            -DBUILD_SHARED_LIBS=on
+          cmake --build $bdir -j 4
+          ctest --test-dir $bdir --output-on-failure
+
       - name: Save Result Link
         if: ${{ !cancelled() }} #prepare report unless the job was cancelled
         run: |
@@ -278,6 +305,7 @@ jobs:
           echo "- No Kokkos: ${{ steps.build_no_kokkos.outcome }}" >> ./pr/message
           echo "- Kokkos Serial: ${{ steps.build_kokkos_serial.outcome }}" >> ./pr/message
           echo "- Kokkos OpenMP: ${{ steps.build_kokkos_openmp.outcome }}" >> ./pr/message
+          echo "- Kokkos CUDA Warnings as Errors: ${{ steps.build_kokkos_cuda_wae.outcome }}" >> ./pr/message
           echo "" >> ./pr/message
           echo "[(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
 
