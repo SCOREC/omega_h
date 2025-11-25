@@ -539,6 +539,12 @@ if(BUILD_TESTING)
     test_func(parallel_1d_test 2 ./1d_test)
     test_func(run_mpi_unit_io 2 ./unit_io)
   endif()
+
+  if(Omega_h_USE_MPI)
+    osh_add_exe(test_associated_library_lifetime)
+    will_fail_test_func(run_test_associated_library_lifetime 1 ./test_associated_library_lifetime)
+  endif ()
+
   osh_add_exe(corner_test)
   test_func(run_corner_test 1 ./corner_test)
   osh_add_exe(coarsen_test)
