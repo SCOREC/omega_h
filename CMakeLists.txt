@@ -179,6 +179,18 @@ set(Omega_h_KEY_STRINGS
 bob_get_commit()
 bob_get_semver()
 
+if(${PROJECT_NAME}_ENABLE_GNUINSTALLDIRS) # for GNUInstallDirs
+  file(RELATIVE_PATH relDirRInstallPath
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+  )
+  set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relDirRInstallPath})
+else()
+  # not robust
+  set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/../lib64 $ORIGIN/../lib)
+endif()
+
+
 if(Omega_h_EXAMPLES)
   find_program(GMSH_EXECUTABLE gmsh REQUIRED)
   add_subdirectory(example/field_on_square)
