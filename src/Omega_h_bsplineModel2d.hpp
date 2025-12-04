@@ -68,6 +68,8 @@ class BsplineModel2D : public Model2D {
 
 };//end BsplineModel2D
 
+Reals bspline_get_snap_warp(Mesh* mesh, BsplineModel2D* mdl, bool verbose);
+
 }//end namespace Omega_h
 
 #endif

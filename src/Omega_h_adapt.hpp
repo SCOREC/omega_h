@@ -7,6 +7,7 @@
 #include <Omega_h_compare.hpp>
 #include <Omega_h_defines.hpp>
 #include <Omega_h_mark.hpp>
+#include <Omega_h_bsplineModel2d.hpp>
 
 namespace Omega_h {
 
@@ -62,6 +63,9 @@ struct AdaptOpts {
   Real length_histogram_max;
   Int nlength_histogram_bins;
   Int nquality_histogram_bins;
+#ifdef OMEGA_H_USE_Kokkos //FIXME should not be a kokkos flag...
+  BsplineModel2D* bspline_model;
+#endif
 #ifdef OMEGA_H_USE_EGADS
   Egads* egads_model;
   bool should_smooth_snap;

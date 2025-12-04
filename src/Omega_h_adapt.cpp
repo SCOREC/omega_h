@@ -73,6 +73,12 @@ AdaptOpts::AdaptOpts(Int dim) {
   length_histogram_max = 3.0;
   nlength_histogram_bins = 10;
   nquality_histogram_bins = 10;
+#ifdef OMEGA_H_USE_Kokkos //FIXME should not be a kokkos flag...
+  bspline_model = nullptr;
+  should_smooth_snap = true;
+  snap_smooth_tolerance = 1e-2;
+  allow_snap_failure = false;
+#endif
 #ifdef OMEGA_H_USE_EGADS
   egads_model = nullptr;
   should_smooth_snap = true;
@@ -212,8 +218,13 @@ static bool satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
-#ifdef OMEGA_H_USE_EGADS
+#if defined(OMEGA_H_USE_EGADS) || defined(OMEGA_H_USE_Kokkos) //FIXME don't use kokkos flag for bspline
+  #ifdef OMEGA_H_USE_EGADS
   if (opts.egads_model) {
+  #endif
+  #ifdef OMEGA_H_USE_Kokkos //FIXME don't use kokkos flag for bspline
+  if (opts.bspline_model) {
+  #endif
     ScopedTimer snap_timer("snap");
 
     //mesh->change_all_rcFieldsTorc();
@@ -221,6 +232,14 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
     mesh->set_parting(OMEGA_H_GHOSTED);
 
     //mesh->change_all_rcFieldsToMesh();
+
+    #ifdef OMEGA_H_USE_EGADS
+    auto warp = egads_get_snap_warp(
+        mesh, opts.egads_model, opts.verbosity >= EACH_REBUILD);
+    #elif OMEGA_H_USE_Kokkos //FIXME don't use kokkos flag for bspline
+    auto warp = bspline_get_snap_warp(
+        mesh, opts.bspline_model, opts.verbosity >= EACH_REBUILD);
+    #endif
 
     auto warp = egads_get_snap_warp(
         mesh, opts.egads_model, opts.verbosity >= EACH_REBUILD);
@@ -245,7 +264,7 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
       }
     }
   } else
-#endif
+#endif //EGADS or Kokkos
     satisfy_quality(mesh, opts);
 }
 
