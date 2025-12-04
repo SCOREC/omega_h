@@ -44,6 +44,11 @@ namespace {
 };
 
 namespace Omega_h {
+
+  Reals bspline_get_snap_warp(Mesh* mesh, BsplineModel2D* mdl, bool verbose) {
+    std::cerr << __func__ << "\n";
+  }
+
   bool areKnotsIncreasing(LOs splineToKnots, Reals x, Reals y) {
     assert(x.size() == y.size());
     parallel_for(splineToKnots.size()-1, OMEGA_H_LAMBDA(LO i) {
