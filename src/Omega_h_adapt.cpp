@@ -241,8 +241,6 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
         mesh, opts.bspline_model, opts.verbosity >= EACH_REBUILD);
     #endif
 
-    auto warp = egads_get_snap_warp(
-        mesh, opts.egads_model, opts.verbosity >= EACH_REBUILD);
     if (opts.should_smooth_snap) {
       if (opts.verbosity >= EACH_REBUILD) {
         std::cout << "Solving Laplacian of warp field...\n";
