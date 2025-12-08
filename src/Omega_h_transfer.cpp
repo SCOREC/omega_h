@@ -39,7 +39,7 @@ bool should_interpolate(
   auto& name = tag->name();
   if (!(is_transfer_required(opts, name, OMEGA_H_LINEAR_INTERP) ||
           is_transfer_required(opts, name, OMEGA_H_MOMENTUM_VELOCITY) ||
-          name == "coordinates" || name == "warp")) {
+          name == "coordinates" || name == "warp" || name == "class_parametric")) {
     return false;
   }
   return dim == VERT && tag->type() == OMEGA_H_REAL;
