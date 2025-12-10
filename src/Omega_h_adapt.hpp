@@ -63,8 +63,11 @@ struct AdaptOpts {
   Real length_histogram_max;
   Int nlength_histogram_bins;
   Int nquality_histogram_bins;
-#ifdef OMEGA_H_USE_Kokkos //FIXME should not be a kokkos flag...
+#ifdef OMEGA_H_USE_KOKKOS //FIXME should not be a kokkos flag...
   BsplineModel2D* bspline_model;
+  bool should_smooth_snap;
+  Real snap_smooth_tolerance;
+  bool allow_snap_failure;
 #endif
 #ifdef OMEGA_H_USE_EGADS
   Egads* egads_model;

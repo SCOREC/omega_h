@@ -69,7 +69,7 @@ namespace Omega_h {
       const auto firstMeshEnt = meshEntIds[sidesToSamples[side]];
       sideIds[side] = class_ids[firstMeshEnt];
     };
-    Omega_h::parallel_for(sidesToSamples.size(), setSideIds, "setSideIds");
+    Omega_h::parallel_for(numSides, setSideIds, "setSideIds");
 
     auto samplePts = Omega_h::Write<Omega_h::Real>(numSamples, "splineSamplePoints");
     auto setSamplePts = OMEGA_H_LAMBDA(Omega_h::LO side) {
@@ -77,10 +77,11 @@ namespace Omega_h {
          const auto meshEnt = meshEntIds[ab];
          //class_parametric is a tag with two components per ent
          //only need first component for parametric coord along a spline
-         samplePts[ab] = class_parametric[meshEnt*2];
+         const auto pos = class_parametric[meshEnt*2];
+         samplePts[ab] = pos;
       }
     };
-    Omega_h::parallel_for(sidesToSamples.size(), setSamplePts, "setSamplePts");
+    Omega_h::parallel_for(numSides, setSamplePts, "setSamplePts");
 
     const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
 
@@ -118,7 +119,7 @@ namespace Omega_h {
   }
 
   BsplineModel2D::BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& splineFile) :
-     Model2D( Omega_h::Model2D::SimModel2D_load(geomSimModelFile.string()) )
+     Model2D( Omega_h::Model2D::SimModel2D_load(geomSimModelFile.string()) ) //need model topology
   {
     std::ifstream file(splineFile.string());
     OMEGA_H_CHECK(file.is_open());

@@ -73,7 +73,7 @@ AdaptOpts::AdaptOpts(Int dim) {
   length_histogram_max = 3.0;
   nlength_histogram_bins = 10;
   nquality_histogram_bins = 10;
-#ifdef OMEGA_H_USE_Kokkos //FIXME should not be a kokkos flag...
+#ifdef OMEGA_H_USE_KOKKOS //FIXME should not be a kokkos flag...
   bspline_model = nullptr;
   should_smooth_snap = true;
   snap_smooth_tolerance = 1e-2;
@@ -218,11 +218,11 @@ static bool satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
-#if defined(OMEGA_H_USE_EGADS) || defined(OMEGA_H_USE_Kokkos) //FIXME don't use kokkos flag for bspline
+#if defined(OMEGA_H_USE_EGADS) || defined(OMEGA_H_USE_KOKKOS) //FIXME don't use kokkos flag for bspline
   #ifdef OMEGA_H_USE_EGADS
   if (opts.egads_model) {
   #endif
-  #ifdef OMEGA_H_USE_Kokkos //FIXME don't use kokkos flag for bspline
+  #ifdef OMEGA_H_USE_KOKKOS //FIXME don't use kokkos flag for bspline
   if (opts.bspline_model) {
   #endif
     ScopedTimer snap_timer("snap");
@@ -236,7 +236,8 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
     #ifdef OMEGA_H_USE_EGADS
     auto warp = egads_get_snap_warp(
         mesh, opts.egads_model, opts.verbosity >= EACH_REBUILD);
-    #elif OMEGA_H_USE_Kokkos //FIXME don't use kokkos flag for bspline
+    #endif
+    #ifdef OMEGA_H_USE_KOKKOS //FIXME don't use kokkos flag for bspline
     auto warp = bspline_get_snap_warp(
         mesh, opts.bspline_model, opts.verbosity >= EACH_REBUILD);
     #endif
