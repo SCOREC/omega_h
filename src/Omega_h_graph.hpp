@@ -23,8 +23,8 @@ struct Graph {
   OMEGA_H_INLINE Graph() {}
   explicit Graph(LOs ab2b_) : ab2b(ab2b_) {}
   Graph(LOs a2ab_, LOs ab2b_) : a2ab(a2ab_), ab2b(ab2b_) {}
-  LOs a2ab; //offset array
-  LOs ab2b; //values array
+  LOs a2ab; //nodes-to-edges array
+  LOs ab2b; //edges-to-nodes array
   LO nnodes() const;
   LO nedges() const;
 };
@@ -47,7 +47,37 @@ Reals graph_weighted_average_arc_data(
     Graph a2b, Reals ab_weights, Reals ab_data, Int width);
 Reals graph_weighted_average(
     Graph a2b, Reals ab_weights, Reals b_data, Int width);
+
+/**
+ * \brief filter a graph by removing edges marked for deletion
+ * \param g (in) the input graph
+ * \param keep_edge (in) array of size g.nedges() (the number of entries in the
+ *        ab2b edges-to-nodes array) where keep_edge[i] == 1 keeps edge i, == 0
+ *        removes it
+ * \return a new graph with the same nodes but only the edges where keep_edge[i] == 1
+ *
+ * \details Creates a new graph with all nodes from the input graph but only edges
+ * that are marked to be kept. The node indices remain unchanged. Edge indices in the
+ * returned graph are compacted (renumbered sequentially starting from 0).
+ */
 Graph filter_graph_edges(Graph g, Read<I8> keep_edge);
+
+/**
+ * \brief filter a graph by removing nodes marked for deletion
+ * \param g (in) the input graph
+ * \param keep_node (in) array of size g.nnodes() (the number of entries in the
+ *        a2ab nodes-to-edges array, minus one) where keep_node[i] == 1 keeps
+ *        node i, == 0 removes it
+ * \return a new graph containing only the kept nodes with edges reindexed to
+ *         the new node numbering
+ *
+ * \details Creates a new graph containing only nodes where keep_node[i] == 1.
+ * All edges connecting to removed nodes are also removed.  Remaining nodes
+ * are renumbered sequentially starting from 0, preserving their relative order.
+ * Edge destinations are updated to reference the new node indices. For example,
+ * if nodes [0,2,3] are kept from a four-node graph (node 1 removed), they become
+ * new nodes [0,1,2], and all edge destinations are remapped accordingly.
+ */
 Graph filter_graph_nodes(Graph g, Read<I8> keep_node);
 bool operator==(Graph a, Graph b);
 Graph identity_graph(LO nnodes);
