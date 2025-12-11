@@ -59,6 +59,10 @@ Reals graph_weighted_average(
  * \details Creates a new graph with all nodes from the input graph but only edges
  * that are marked to be kept. The node indices remain unchanged. Edge indices in the
  * returned graph are compacted (renumbered sequentially starting from 0).
+ *
+ * Using this API requires a valid graph structure.  Specifically, each entry
+ * in the edges array (a2ab) must be a valid node index
+ * (i.e., a2ab[j] >=0 && a2ab[j] < g.nnodes() , for j >= 0 && j < g.nedges() ).
  */
 Graph filter_graph_edges(Graph g, Read<I8> keep_edge);
 
@@ -77,6 +81,10 @@ Graph filter_graph_edges(Graph g, Read<I8> keep_edge);
  * Edge destinations are updated to reference the new node indices. For example,
  * if nodes [0,2,3] are kept from a four-node graph (node 1 removed), they become
  * new nodes [0,1,2], and all edge destinations are remapped accordingly.
+ *
+ * Using this API requires a valid graph structure.  Specifically, each entry
+ * in the edges array (a2ab) must be a valid node index
+ * (i.e., a2ab[j] >=0 && a2ab[j] < g.nnodes() , for j >= 0 && j < g.nedges() ).
  */
 Graph filter_graph_nodes(Graph g, Read<I8> keep_node);
 bool operator==(Graph a, Graph b);

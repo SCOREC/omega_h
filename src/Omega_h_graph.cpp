@@ -11,6 +11,20 @@ LO Graph::nnodes() const { return a2ab.size() - 1; }
 
 LO Graph::nedges() const { return ab2b.size(); }
 
+bool isValidGraph(Graph g) {
+  //there may be more checks that could be performed here...
+  const auto maxNodeIdx = get_max(g.ab2b);
+  const auto minNodeIdx = get_min(g.ab2b);
+  if( maxNodeIdx < g.nnodes() && minNodeIdx >= 0 ) {
+    return true;
+  } else {
+    std::cerr << "maxNodeIdx " << maxNodeIdx << " " 
+              << "minNodeIdx " << minNodeIdx << " " 
+              << "g.nnodes " << g.nnodes() << "\n";
+    return false;
+  }
+}
+
 Graph add_edges(Graph g1, Graph g2) {
   OMEGA_H_TIME_FUNCTION;
   auto v2e1 = g1.a2ab;
@@ -92,6 +106,7 @@ struct FilteredGraph {
 };
 
 Graph filter_graph_edges(Graph g, Read<I8> keep_edge) {
+  OMEGA_H_CHECK(isValidGraph(g));
   auto degrees = fan_reduce(g.a2ab, keep_edge, 1, OMEGA_H_SUM);
   auto offsets = offset_scan(degrees);
   auto kept2old = collect_marked(keep_edge);
@@ -100,6 +115,7 @@ Graph filter_graph_edges(Graph g, Read<I8> keep_edge) {
 }
 
 Graph filter_graph_nodes(Graph g, Read<I8> keep_node) {
+  OMEGA_H_CHECK(isValidGraph(g));
   auto const nold_nodes = g.nnodes();
   auto const old_node2old_edge = g.a2ab;
   auto const old_edge2old_node = g.ab2b;
