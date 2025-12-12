@@ -375,7 +375,7 @@ static void test_filter_marked() {
 
     // Should extract data at indices [0, 2, 4, 6, 7] where marks[i] != 0
     Reals expected({0.0, 20.0, 40.0, 60.0, 70.0});
-    OMEGA_H_CHECK(filtered_data == expected);
+    OMEGA_H_CHECK(read(filtered_data) == expected);
     OMEGA_H_CHECK(filtered_data.size() == 5);
   }
 
@@ -392,7 +392,7 @@ static void test_filter_marked() {
 
     // Should extract entries 0 and 2
     Reals expected({1.0, 2.0, 3.0, 7.0, 8.0, 9.0});
-    OMEGA_H_CHECK(filtered_data == expected);
+    OMEGA_H_CHECK(read(filtered_data) == expected);
     OMEGA_H_CHECK(filtered_data.size() == 6);  // 2 entries * 3 components
   }
 
@@ -404,7 +404,7 @@ static void test_filter_marked() {
     auto filtered_data = unmap(collect_marked(marks), data, 1);
 
     // Should be identical to original data
-    OMEGA_H_CHECK(filtered_data == data);
+    OMEGA_H_CHECK(read(filtered_data) == data);
   }
 
   // Test case 4: None marked
@@ -415,8 +415,8 @@ static void test_filter_marked() {
     auto filtered_data = unmap(collect_marked(marks), data, 1);
 
     // Should return empty array
+    OMEGA_H_CHECK(read(filtered_data) == Reals({}));
     OMEGA_H_CHECK(filtered_data.size() == 0);
-    OMEGA_H_CHECK(filtered_data == Reals({}));
   }
 }
 
