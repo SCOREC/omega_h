@@ -220,7 +220,7 @@ void read_internal(std::istream& stream, Mesh* mesh) {
   Int file_type;
   Int data_size;
   stream >> format >> file_type >> data_size;
-  OMEGA_H_CHECK(file_type == 0 || file_type == 1);
+  OMEGA_H_ALWAYS_CHECK(file_type == 0 || file_type == 1);
   bool is_binary = (file_type == 1);
   bool needs_swapping = false;
   if (is_binary) {
@@ -230,10 +230,10 @@ void read_internal(std::istream& stream, Mesh* mesh) {
     if (one != 1) {
       needs_swapping = true;
       binary::swap_bytes(one);
-      OMEGA_H_CHECK(one == 1);
+      OMEGA_H_ALWAYS_CHECK(one == 1);
     }
   }
-  OMEGA_H_CHECK(data_size == sizeof(Real));
+  OMEGA_H_ALWAYS_CHECK(data_size == sizeof(Real));
   std::vector<std::string> physical_names;
   if (seek_optional_section(stream, "$PhysicalNames")) {
     Int num_physicals;
@@ -260,9 +260,9 @@ void read_internal(std::istream& stream, Mesh* mesh) {
       line.erase(std::remove_if(line.begin(), line.end(),
           [](unsigned char c) { return std::isspace(c); }));
     }
-    OMEGA_H_CHECK(line.empty());
+    OMEGA_H_ALWAYS_CHECK(line.empty());
     std::getline(stream, line);
-    OMEGA_H_CHECK(line == "$EndEntities");
+    OMEGA_H_ALWAYS_CHECK(line == "$EndEntities");
   }
   seek_line(stream, "$Nodes");
   std::vector<Vector<3>> node_coords;
@@ -324,7 +324,7 @@ void read_internal(std::istream& stream, Mesh* mesh) {
     }
   } else {
     stream >> nnodes;
-    OMEGA_H_CHECK(nnodes >= 0);
+    OMEGA_H_ALWAYS_CHECK(nnodes >= 0);
     node_coords.reserve(std::size_t(nnodes));
     eat_newlines(stream);
     for (LO i = 0; i < nnodes; ++i) {
@@ -395,7 +395,7 @@ void read_internal(std::istream& stream, Mesh* mesh) {
   } else {
     LO nents;
     stream >> nents;
-    OMEGA_H_CHECK(nents >= 0);
+    OMEGA_H_ALWAYS_CHECK(nents >= 0);
     std::array<std::unordered_map<Int, Int>, 4> ent2physical;
     if (is_binary) {
       eat_newlines(stream);
@@ -711,7 +711,7 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
 #endif  // OMEGA_H_USE_GMSH
 
 void write(std::ostream& stream, Mesh* mesh) {
-  OMEGA_H_CHECK(mesh->comm()->size() == 1);
+  OMEGA_H_ALWAYS_CHECK(mesh->comm()->size() == 1);
   stream << "$MeshFormat\n";
   stream << "2.2 0 " << sizeof(Real) << '\n';
   stream << "$EndMeshFormat\n";

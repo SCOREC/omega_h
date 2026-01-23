@@ -71,7 +71,7 @@ Bytes prevent_coarsen_flip2_dim(Mesh* mesh,
     Reals vert_normals, LOs cands2edges, Bytes cand_codes,
     Real epsilon = OMEGA_H_EPSILON) {  // below this value a dot product is
                                        // considered negative
-  OMEGA_H_CHECK(mesh->dim() == dim);
+  OMEGA_H_ALWAYS_CHECK(mesh->dim() == dim);
   constexpr auto side_dim = dim - 1;
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto sv2v = mesh->ask_verts_of(side_dim);

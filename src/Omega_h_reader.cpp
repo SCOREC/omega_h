@@ -220,7 +220,7 @@ Reader::Reader(ReaderTablesPtr tables_in)
       parser(tables->parser),
       lexer(tables->lexer),
       grammar(get_grammar(parser)) {
-  OMEGA_H_CHECK(get_determinism(lexer));
+  OMEGA_H_ALWAYS_CHECK(get_determinism(lexer));
 }
 
 void Reader::update_position(char c) {

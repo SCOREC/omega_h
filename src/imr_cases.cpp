@@ -183,7 +183,7 @@ static void run_case(Library* lib, Case const& c, Int niters) {
   if (niters == -1) {
     niters = c.time_steps();
   } else {
-    OMEGA_H_CHECK(niters >= 0);
+    OMEGA_H_ALWAYS_CHECK(niters >= 0);
     if (niters > c.time_steps()) {
       std::cerr << "warning: requesting " << niters
                 << " time steps but the case is designed for " << c.time_steps()
