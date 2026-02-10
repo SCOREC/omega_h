@@ -57,12 +57,12 @@ int main(int argc, char** argv) {
   auto vtx_rc = mesh.ask_revClass(0);
   auto vert_rc_ids = (mesh.ask_revClass(0)).ab2b;
   auto nbvert = vert_rc_ids.size();
-  OMEGA_H_CHECK (nbvert < mesh.nverts());
+  OMEGA_H_ALWAYS_CHECK (nbvert < mesh.nverts());
   auto edge_rc_ids = (mesh.ask_revClass(1)).ab2b;
   auto nbedge = edge_rc_ids.size();
   auto face_rc = mesh.ask_revClass(2);
   auto face_a2abSize = face_rc.a2ab.size();
-  OMEGA_H_CHECK(face_a2abSize);
+  OMEGA_H_ALWAYS_CHECK(face_a2abSize);
   auto face_rc_ids = (mesh.ask_revClass(2)).ab2b;
   auto nbface = face_rc_ids.size();
   auto reg_rc_ids = (mesh.ask_revClass(3)).ab2b;

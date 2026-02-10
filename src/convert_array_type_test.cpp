@@ -11,8 +11,8 @@
 using namespace Omega_h;
 
 void check_SymmetricSquareMatrix_tag(const Tag<Real>* tag) {
-  OMEGA_H_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
-  OMEGA_H_CHECK(tag->ncomps() == 3);
+  OMEGA_H_ALWAYS_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
+  OMEGA_H_ALWAYS_CHECK(tag->ncomps() == 3);
 }
 
 void check_vtk(CommPtr world, const std::string& tag_name) {

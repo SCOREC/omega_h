@@ -181,7 +181,7 @@ void read(Mesh* mesh, std::string const& filepath) {
     Omega_h_fail(
         "could not open Meshb file %s for reading\n", filepath.c_str());
   }
-  OMEGA_H_CHECK(dim == 2 || dim == 3);
+  OMEGA_H_ALWAYS_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
       read_meshb_version<1>(mesh, file, dim);
@@ -288,7 +288,7 @@ void read_sol(
     Omega_h_fail("could not open Meshb solution file %s for reading\n",
         filepath.c_str());
   }
-  OMEGA_H_CHECK(dim == 2 || dim == 3);
+  OMEGA_H_ALWAYS_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
       read_sol_version<1>(mesh, file, dim, filepath, sol_name);
@@ -354,7 +354,7 @@ void write_sol(Mesh* mesh, std::string const& filepath,
     Omega_h_fail("could not open Meshb solution file %s for writing\n",
         filepath.c_str());
   }
-  OMEGA_H_CHECK(dim == 2 || dim == 3);
+  OMEGA_H_ALWAYS_CHECK(dim == 2 || dim == 3);
   switch (version) {
     case 1:
       write_sol_version<1>(mesh, file, sol_name);

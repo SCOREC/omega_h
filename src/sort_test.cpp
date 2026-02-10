@@ -24,22 +24,22 @@ int main(int argc, char** argv) {
     for(int j=0; j<perm_hr.size(); j++) {
       fprintf(stderr, "%d %d %d\n", j, perm_hr[j], gold_hr[j]);
     }
-    OMEGA_H_CHECK(perm == gold);
+    OMEGA_H_ALWAYS_CHECK(perm == gold);
   }
   {
     LOs a({0, 2, 0, 1});
     LOs perm = sort_by_keys(a, 2);
-    OMEGA_H_CHECK(perm == LOs({1, 0}));
+    OMEGA_H_ALWAYS_CHECK(perm == LOs({1, 0}));
   }
   {
     LOs a({0, 2, 1, 1});
     LOs perm = sort_by_keys(a, 2);
-    OMEGA_H_CHECK(perm == LOs({0, 1}));
+    OMEGA_H_ALWAYS_CHECK(perm == LOs({0, 1}));
   }
   {
     LOs a({1, 2, 3, 1, 2, 2, 3, 0, 0});
     LOs perm = sort_by_keys(a, 3);
-    OMEGA_H_CHECK(perm == LOs({1, 0, 2}));
+    OMEGA_H_ALWAYS_CHECK(perm == LOs({1, 0, 2}));
   }
   {
       Read<LO> keys, gold;
@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
       fprintf(stderr, "device matches %s\n", (cnt_hr[0] == 0) ? "yes" : "no");
       auto permMatch = (perm == gold);
       fprintf(stderr, "perm matches (==) %s\n", (permMatch) ? "yes" : "no");
-      OMEGA_H_CHECK(permMatch);
+      OMEGA_H_ALWAYS_CHECK(permMatch);
   }
   return 0;
 }

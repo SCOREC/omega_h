@@ -819,7 +819,7 @@ void write_vtu(filesystem::path const& filename, MixedMesh* mesh, Topo_type max_
   auto tags = get_all_vtk_tags_mix(mesh, mesh->dim());
   OMEGA_H_TIME_FUNCTION;
   std::ofstream stream(filename.c_str());
-  OMEGA_H_CHECK(stream.is_open());
+  OMEGA_H_ALWAYS_CHECK(stream.is_open());
   auto cell_dim = mesh->ent_dim(max_type);
   default_dim(mesh->dim(), &cell_dim);
   write_vtkfile_vtu_start_tag(stream, compress);
@@ -848,7 +848,7 @@ void write_vtu(filesystem::path const& filename, MixedMesh* mesh, Topo_type max_
   }
   stream << "</PointData>\n";
   stream << "<CellData>\n";
-  OMEGA_H_CHECK(cell_dim <= 3);
+  OMEGA_H_ALWAYS_CHECK(cell_dim <= 3);
   if (cell_dim == 3) {
     for (Int i = 0; i < mesh->ntags(Topo_type::tetrahedron); ++i) {
       auto tag = mesh->get_tag(Topo_type::tetrahedron, i);
@@ -923,11 +923,11 @@ void read_vtu_ents(std::istream& stream, Mesh* mesh) {
   bool needs_swapping, is_compressed;
   read_vtkfile_vtu_start_tag(stream, &needs_swapping, &is_compressed);
   auto tag1 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag1.elem_name == "UnstructuredGrid");
+  OMEGA_H_ALWAYS_CHECK(tag1.elem_name == "UnstructuredGrid");
   LO nverts, ncells;
   read_piece_start_tag(stream, &nverts, &ncells);
   auto tag2 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag2.elem_name == "Cells");
+  OMEGA_H_ALWAYS_CHECK(tag2.elem_name == "Cells");
   auto comm = mesh->comm();
   Omega_h_Family family;
   Int dim;
@@ -937,16 +937,16 @@ void read_vtu_ents(std::istream& stream, Mesh* mesh) {
   mesh->set_family(family);
   mesh->set_dim(dim);
   auto tag3 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag3.elem_name == "Cells");
+  OMEGA_H_ALWAYS_CHECK(tag3.elem_name == "Cells");
   auto tag4 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag4.elem_name == "Points");
+  OMEGA_H_ALWAYS_CHECK(tag4.elem_name == "Points");
   auto coords = read_known_array<Real>(
       stream, "coordinates", nverts, 3, needs_swapping, is_compressed);
   if (dim < 3) coords = resize_vectors(coords, 3, dim);
   auto tag5 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag5.elem_name == "Points");
+  OMEGA_H_ALWAYS_CHECK(tag5.elem_name == "Points");
   auto tag6 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag6.elem_name == "PointData");
+  OMEGA_H_ALWAYS_CHECK(tag6.elem_name == "PointData");
   GOs vert_globals;
   if (mesh->could_be_shared(VERT)) {
     vert_globals = read_known_array<GO>(
@@ -961,7 +961,7 @@ void read_vtu_ents(std::istream& stream, Mesh* mesh) {
   mesh->remove_tag(VERT, "local");
   mesh->remove_tag(VERT, "owner");
   auto tag7 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag7.elem_name == "CellData");
+  OMEGA_H_ALWAYS_CHECK(tag7.elem_name == "CellData");
   GOs elem_globals;
   if (mesh->could_be_shared(dim)) {
     elem_globals = read_known_array<GO>(
@@ -975,17 +975,17 @@ void read_vtu_ents(std::istream& stream, Mesh* mesh) {
   mesh->remove_tag(dim, "local");
   mesh->remove_tag(dim, "owner");
   auto tag8 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag8.elem_name == "Piece");
+  OMEGA_H_ALWAYS_CHECK(tag8.elem_name == "Piece");
   auto tag9 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag9.elem_name == "UnstructuredGrid");
+  OMEGA_H_ALWAYS_CHECK(tag9.elem_name == "UnstructuredGrid");
   auto tag10 = xml_lite::read_tag(stream);
-  OMEGA_H_CHECK(tag10.elem_name == "VTKFile");
+  OMEGA_H_ALWAYS_CHECK(tag10.elem_name == "VTKFile");
 }
 
 void write_vtu(filesystem::path const& filename, Mesh* mesh, Int cell_dim,
     TagSet const& tags, bool compress) {
   std::ofstream file(filename.c_str());
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   ask_for_mesh_tags(mesh, tags);
   write_vtu(file, mesh, cell_dim, tags, compress);
 }
@@ -1071,7 +1071,7 @@ void write_pvtu(std::ostream& stream, Mesh* mesh, Int cell_dim,
 void write_pvtu(filesystem::path const& filename, Mesh* mesh, Int cell_dim,
     filesystem::path const& piecepath, TagSet const& tags) {
   std::ofstream file(filename.c_str());
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   write_pvtu(file, mesh, cell_dim, piecepath, tags);
 }
 
@@ -1096,8 +1096,8 @@ void read_pvtu(std::istream& stream, CommPtr comm, I32* npieces_out,
       }
     }
   }
-  OMEGA_H_CHECK(npieces >= 1);
-  OMEGA_H_CHECK(npieces <= comm->size());
+  OMEGA_H_ALWAYS_CHECK(npieces >= 1);
+  OMEGA_H_ALWAYS_CHECK(npieces <= comm->size());
   *npieces_out = npieces;
   *vtupath_out = vtupath;
   *nghost_layers_out = nghost_layers;
@@ -1160,7 +1160,7 @@ void read_parallel(filesystem::path const& pvtupath, CommPtr comm, Mesh* mesh) {
   auto subcomm = comm->split(I32(!in_subcomm), 0);
   if (in_subcomm) {
     std::ifstream vtustream(vtupath.c_str());
-    OMEGA_H_CHECK(vtustream.is_open());
+    OMEGA_H_ALWAYS_CHECK(vtustream.is_open());
     mesh->set_comm(subcomm);
     if (nghost_layers == 0) {
       mesh->set_parting(OMEGA_H_ELEM_BASED, 0, false);
@@ -1207,7 +1207,7 @@ std::streampos write_initial_pvd(
   auto const pvdpath = get_pvd_path(root_path);
   auto content = read_existing_pvd(pvdpath, restart_time);
   std::ofstream file(pvdpath.c_str());
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   file << content;
   auto pos = file.tellp();
   file << pvd_epilogue;
@@ -1219,7 +1219,7 @@ void update_pvd(filesystem::path const& root_path, std::streampos* pos_inout,
   auto const pvdpath = get_pvd_path(root_path);
   std::fstream file;
   file.open(pvdpath.c_str(), std::ios::out | std::ios::in);
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   file.seekp(*pos_inout);
   file << std::scientific << std::setprecision(18);
   file << "<DataSet timestep=\"" << time << "\" part=\"0\" ";

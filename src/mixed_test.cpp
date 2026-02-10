@@ -9,12 +9,12 @@
 using namespace Omega_h;
 
 void test_degree() {
-  OMEGA_H_CHECK(element_degree(Topo_type::edge, Topo_type::vertex) == 2);
-  OMEGA_H_CHECK(element_degree(Topo_type::tetrahedron, Topo_type::vertex) == 4);
-  OMEGA_H_CHECK(element_degree(Topo_type::hexahedron, Topo_type::quadrilateral) == 6);
-  OMEGA_H_CHECK(element_degree(Topo_type::wedge, Topo_type::triangle) == 2);
-  OMEGA_H_CHECK(element_degree(Topo_type::pyramid, Topo_type::edge) == 8);
-  OMEGA_H_CHECK(element_degree(Topo_type::pyramid, Topo_type::quadrilateral) == 1);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::edge, Topo_type::vertex) == 2);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::tetrahedron, Topo_type::vertex) == 4);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::hexahedron, Topo_type::quadrilateral) == 6);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::wedge, Topo_type::triangle) == 2);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::pyramid, Topo_type::edge) == 8);
+  OMEGA_H_ALWAYS_CHECK(element_degree(Topo_type::pyramid, Topo_type::quadrilateral) == 1);
 }
 
 void test_tags(MixedMesh* mesh) {
@@ -22,13 +22,13 @@ void test_tags(MixedMesh* mesh) {
   mesh->add_tag<LO>(Topo_type::wedge, "gravity", 1);
   mesh->set_tag<LO>(Topo_type::wedge, "gravity", LOs(num_wedge,10));
   auto test_tag1 = mesh->get_array<LO>(Topo_type::wedge, "gravity");
-  OMEGA_H_CHECK(test_tag1 == LOs(num_wedge, 10));
+  OMEGA_H_ALWAYS_CHECK(test_tag1 == LOs(num_wedge, 10));
   mesh->remove_tag(Topo_type::wedge, "gravity");
 
   auto num_pyram = mesh->npyrams();
   mesh->add_tag<Real>(Topo_type::pyramid, "density", 1, Reals(num_pyram, 0.0005));
   auto test_tag2 = mesh->get_array<Real>(Topo_type::pyramid, "density");
-  OMEGA_H_CHECK(test_tag2 == Reals(num_pyram, 0.0005));
+  OMEGA_H_ALWAYS_CHECK(test_tag2 == Reals(num_pyram, 0.0005));
   mesh->remove_tag(Topo_type::pyramid, "density");
 }
 
@@ -67,24 +67,24 @@ void test_adjs(MixedMesh* mesh) {
   auto quad2pyramid = mesh->ask_up(Topo_type::quadrilateral, Topo_type::pyramid);
 
   //1-lvl inversion assertions
-  OMEGA_H_CHECK(vert2edge.ab2b.size() == 2*num_edge);
-  OMEGA_H_CHECK(vert2edge.a2ab.size() == num_vertex+1);
-  OMEGA_H_CHECK(edge2tri.ab2b.size() == 3*num_tri);
-  OMEGA_H_CHECK(edge2tri.a2ab.size() == num_edge+1);
-  OMEGA_H_CHECK(edge2quad.ab2b.size() == 4*num_quad);
-  OMEGA_H_CHECK(edge2quad.a2ab.size() == num_edge+1);
-  OMEGA_H_CHECK(tri2tet.ab2b.size() == 4*num_tet);
-  OMEGA_H_CHECK(tri2tet.a2ab.size() == num_tri+1);
-  OMEGA_H_CHECK(quad2hex.ab2b.size() == num_hex*6);
-  OMEGA_H_CHECK(quad2hex.a2ab.size() == num_quad+1);
-  OMEGA_H_CHECK(tri2wedge.ab2b.size() == 2*num_wedge);
-  OMEGA_H_CHECK(tri2wedge.a2ab.size() == num_tri+1);
-  OMEGA_H_CHECK(quad2wedge.ab2b.size() == num_wedge*3);
-  OMEGA_H_CHECK(quad2wedge.a2ab.size() == num_quad+1);
-  OMEGA_H_CHECK(tri2pyramid.ab2b.size() == 4*num_pyramid);
-  OMEGA_H_CHECK(tri2pyramid.a2ab.size() == num_tri+1);
-  OMEGA_H_CHECK(quad2pyramid.ab2b.size() == num_pyramid);
-  OMEGA_H_CHECK(quad2pyramid.a2ab.size() == num_quad+1);
+  OMEGA_H_ALWAYS_CHECK(vert2edge.ab2b.size() == 2*num_edge);
+  OMEGA_H_ALWAYS_CHECK(vert2edge.a2ab.size() == num_vertex+1);
+  OMEGA_H_ALWAYS_CHECK(edge2tri.ab2b.size() == 3*num_tri);
+  OMEGA_H_ALWAYS_CHECK(edge2tri.a2ab.size() == num_edge+1);
+  OMEGA_H_ALWAYS_CHECK(edge2quad.ab2b.size() == 4*num_quad);
+  OMEGA_H_ALWAYS_CHECK(edge2quad.a2ab.size() == num_edge+1);
+  OMEGA_H_ALWAYS_CHECK(tri2tet.ab2b.size() == 4*num_tet);
+  OMEGA_H_ALWAYS_CHECK(tri2tet.a2ab.size() == num_tri+1);
+  OMEGA_H_ALWAYS_CHECK(quad2hex.ab2b.size() == num_hex*6);
+  OMEGA_H_ALWAYS_CHECK(quad2hex.a2ab.size() == num_quad+1);
+  OMEGA_H_ALWAYS_CHECK(tri2wedge.ab2b.size() == 2*num_wedge);
+  OMEGA_H_ALWAYS_CHECK(tri2wedge.a2ab.size() == num_tri+1);
+  OMEGA_H_ALWAYS_CHECK(quad2wedge.ab2b.size() == num_wedge*3);
+  OMEGA_H_ALWAYS_CHECK(quad2wedge.a2ab.size() == num_quad+1);
+  OMEGA_H_ALWAYS_CHECK(tri2pyramid.ab2b.size() == 4*num_pyramid);
+  OMEGA_H_ALWAYS_CHECK(tri2pyramid.a2ab.size() == num_tri+1);
+  OMEGA_H_ALWAYS_CHECK(quad2pyramid.ab2b.size() == num_pyramid);
+  OMEGA_H_ALWAYS_CHECK(quad2pyramid.a2ab.size() == num_quad+1);
 
   //transit tests
   auto tri2vert = mesh->ask_down(Topo_type::triangle, Topo_type::vertex);
@@ -111,16 +111,16 @@ void test_adjs(MixedMesh* mesh) {
   auto edge2pyramid = mesh->ask_up(Topo_type::edge, Topo_type::pyramid);
 
   //transit assertions
-  OMEGA_H_CHECK(tri2vert.ab2b.size() == num_tri*3);
-  OMEGA_H_CHECK(quad2vert.ab2b.size() == num_quad*4);
-  OMEGA_H_CHECK(tet2edge.ab2b.size() == num_tet*6);
-  OMEGA_H_CHECK(tet2vtx.ab2b.size() == num_tet*4);
-  OMEGA_H_CHECK(hex2edge.ab2b.size() == num_hex*12);
-  OMEGA_H_CHECK(hex2vtx.ab2b.size() == num_hex*8);
-  OMEGA_H_CHECK(wedge2edge.ab2b.size() == num_wedge*9);
-  OMEGA_H_CHECK(wedge2vtx.ab2b.size() == num_wedge*6);
-  OMEGA_H_CHECK(pyram2edge.ab2b.size() == num_pyramid*8);
-  OMEGA_H_CHECK(pyram2vtx.ab2b.size() == num_pyramid*5);
+  OMEGA_H_ALWAYS_CHECK(tri2vert.ab2b.size() == num_tri*3);
+  OMEGA_H_ALWAYS_CHECK(quad2vert.ab2b.size() == num_quad*4);
+  OMEGA_H_ALWAYS_CHECK(tet2edge.ab2b.size() == num_tet*6);
+  OMEGA_H_ALWAYS_CHECK(tet2vtx.ab2b.size() == num_tet*4);
+  OMEGA_H_ALWAYS_CHECK(hex2edge.ab2b.size() == num_hex*12);
+  OMEGA_H_ALWAYS_CHECK(hex2vtx.ab2b.size() == num_hex*8);
+  OMEGA_H_ALWAYS_CHECK(wedge2edge.ab2b.size() == num_wedge*9);
+  OMEGA_H_ALWAYS_CHECK(wedge2vtx.ab2b.size() == num_wedge*6);
+  OMEGA_H_ALWAYS_CHECK(pyram2edge.ab2b.size() == num_pyramid*8);
+  OMEGA_H_ALWAYS_CHECK(pyram2vtx.ab2b.size() == num_pyramid*5);
 
   //check values for example meshes
   //TODO: define a new OMEGA_H_VERIFY in Omega_h_fail.hpp which calls 
@@ -129,28 +129,28 @@ void test_adjs(MixedMesh* mesh) {
   //      different than those defined here.
   if (num_vertex == 12) {
     //4 elem mesh
-    OMEGA_H_CHECK(tet2vtx.ab2b == LOs({0, 1, 8, 2}));
-    OMEGA_H_CHECK(hex2vtx.ab2b == LOs({4, 5, 9, 11, 7, 6, 1, 0}));
-    OMEGA_H_CHECK(wedge2vtx.ab2b == LOs({11, 9, 10, 0, 1, 8}));
-    OMEGA_H_CHECK(pyram2vtx.ab2b == LOs({8, 1, 9, 10, 3}));
-    OMEGA_H_CHECK(tet2edge.ab2b == LOs({0, 22, 20, 1, 3, 6}));
-    OMEGA_H_CHECK(hex2edge.ab2b == LOs({13, 9, 18, 12, 14, 15, 23, 19, 16, 5, 0, 2}));
-    OMEGA_H_CHECK(wedge2edge.ab2b == LOs({18, 17, 11, 19, 23, 21, 0, 22, 20}));
-    OMEGA_H_CHECK(pyram2edge.ab2b == LOs({22, 23, 17, 21, 7, 4, 8, 10}));
+    OMEGA_H_ALWAYS_CHECK(tet2vtx.ab2b == LOs({0, 1, 8, 2}));
+    OMEGA_H_ALWAYS_CHECK(hex2vtx.ab2b == LOs({4, 5, 9, 11, 7, 6, 1, 0}));
+    OMEGA_H_ALWAYS_CHECK(wedge2vtx.ab2b == LOs({11, 9, 10, 0, 1, 8}));
+    OMEGA_H_ALWAYS_CHECK(pyram2vtx.ab2b == LOs({8, 1, 9, 10, 3}));
+    OMEGA_H_ALWAYS_CHECK(tet2edge.ab2b == LOs({0, 22, 20, 1, 3, 6}));
+    OMEGA_H_ALWAYS_CHECK(hex2edge.ab2b == LOs({13, 9, 18, 12, 14, 15, 23, 19, 16, 5, 0, 2}));
+    OMEGA_H_ALWAYS_CHECK(wedge2edge.ab2b == LOs({18, 17, 11, 19, 23, 21, 0, 22, 20}));
+    OMEGA_H_ALWAYS_CHECK(pyram2edge.ab2b == LOs({22, 23, 17, 21, 7, 4, 8, 10}));
   }
   else if (num_vertex == 9) {
     //pyram on hex
-    OMEGA_H_CHECK(hex2edge.ab2b == LOs({1, 7, 4, 0, 2, 10, 8, 5, 12, 13, 14, 15}));
-    OMEGA_H_CHECK(hex2vtx.ab2b == LOs({0, 3, 2, 1, 5, 8, 7, 6}));
-    OMEGA_H_CHECK(pyram2edge.ab2b == LOs({12, 13, 14, 15, 3, 11, 9, 6}));
-    OMEGA_H_CHECK(pyram2vtx.ab2b == LOs({5, 8, 7, 6, 4}));
+    OMEGA_H_ALWAYS_CHECK(hex2edge.ab2b == LOs({1, 7, 4, 0, 2, 10, 8, 5, 12, 13, 14, 15}));
+    OMEGA_H_ALWAYS_CHECK(hex2vtx.ab2b == LOs({0, 3, 2, 1, 5, 8, 7, 6}));
+    OMEGA_H_ALWAYS_CHECK(pyram2edge.ab2b == LOs({12, 13, 14, 15, 3, 11, 9, 6}));
+    OMEGA_H_ALWAYS_CHECK(pyram2vtx.ab2b == LOs({5, 8, 7, 6, 4}));
   }
   else if (num_vertex == 7) {
     //tet on wedge
-    OMEGA_H_CHECK(tet2edge.ab2b == LOs({9, 10, 11, 3, 8, 6})); 
-    OMEGA_H_CHECK(tet2vtx.ab2b == LOs({4, 6, 5, 3})); 
-    OMEGA_H_CHECK(wedge2edge.ab2b == LOs({1, 4, 0, 2, 7, 5, 9, 10, 11}));
-    OMEGA_H_CHECK(wedge2vtx.ab2b == LOs({0, 2, 1, 4, 6, 5})); 
+    OMEGA_H_ALWAYS_CHECK(tet2edge.ab2b == LOs({9, 10, 11, 3, 8, 6})); 
+    OMEGA_H_ALWAYS_CHECK(tet2vtx.ab2b == LOs({4, 6, 5, 3})); 
+    OMEGA_H_ALWAYS_CHECK(wedge2edge.ab2b == LOs({1, 4, 0, 2, 7, 5, 9, 10, 11}));
+    OMEGA_H_ALWAYS_CHECK(wedge2vtx.ab2b == LOs({0, 2, 1, 4, 6, 5})); 
   }
 }
 
