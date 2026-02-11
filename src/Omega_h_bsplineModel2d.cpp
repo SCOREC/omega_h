@@ -151,6 +151,7 @@ namespace Omega_h {
     read(omegahGeomFile);
   }
 
+#if defined(OMEGA_H_USE_SIMMODSUITE)
   BsplineModel2D::BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& splineFile) :
      Model2D( Omega_h::Model2D::SimModel2D_load(geomSimModelFile.string()) ) //need model topology
   {
@@ -187,6 +188,13 @@ namespace Omega_h {
     OMEGA_H_CHECK(knotsX.size() == knotsY.size());
     OMEGA_H_CHECK(areKnotsIncreasing(splineToKnots, knotsX, knotsY));
   }
+#else
+  BsplineModel2D::BsplineModel2D(filesystem::path const&, filesystem::path const&)
+  {
+    std::cerr << "Error: BsplineModel2D requires building Omega_h with SimModSuite enabled... exiting\n";
+    exit(EXIT_FAILURE);
+  }
+#endif
 
 
   Reals BsplineModel2D::eval(LOs edgeIds, LOs edgeToLocalCoords, Reals localCoords) {
