@@ -27,7 +27,7 @@ namespace {
       work(j++) = sCtrlPts(i);
     }
 
-    const auto localKnots = Kokkos::subview(sKnots, std::make_pair(leftKnot - sOrder + 2, leftKnot + sOrder));
+    const auto localKnots = Kokkos::subview(sKnots, Kokkos::make_pair(leftKnot - sOrder + 2, leftKnot + sOrder));
 
     for (int r = 1; r <= sOrder; r++) {
       // from bottom to top to save a buff
@@ -234,8 +234,8 @@ namespace Omega_h {
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
         const auto spline = edgeIds[i];
         const auto sOrder = ord[i];
-        const auto knotRange = std::make_pair(s2k[spline], s2k[spline+1]);
-        const auto ctrlPtRange = std::make_pair(s2cp[spline], s2cp[spline+1]);
+        const auto knotRange = Kokkos::make_pair(s2k[spline], s2k[spline+1]);
+        const auto ctrlPtRange = Kokkos::make_pair(s2cp[spline], s2cp[spline+1]);
 
         auto xKnots = Kokkos::subview(kx, knotRange);
         auto xCtrlPts = Kokkos::subview(cx, ctrlPtRange);
@@ -243,7 +243,7 @@ namespace Omega_h {
         auto yKnots = Kokkos::subview(ky, knotRange);
         auto yCtrlPts = Kokkos::subview(cy, ctrlPtRange);
 
-        const auto orderRange = std::make_pair(edgePolyOrderOffset[i], edgePolyOrderOffset[i+1]);
+        const auto orderRange = Kokkos::make_pair(edgePolyOrderOffset[i], edgePolyOrderOffset[i+1]);
         auto work = Kokkos::subview(workArray, orderRange);
 
         for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
