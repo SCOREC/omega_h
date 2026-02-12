@@ -18,7 +18,10 @@ class BsplineModel2D : public Model2D {
 
     LOs order; //polynomial order of each spline
 
+    Write<LO> edgeIdToSplineIdx; //maps model edge ID -> dense spline array index
+
     void read(filesystem::path const& omegahGeomFile);
+    Write<LO> buildEdgeIdMapping();
 
   public:
     /**

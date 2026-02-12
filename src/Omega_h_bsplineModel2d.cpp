@@ -3,6 +3,7 @@
 #include "Omega_h_array_ops.hpp" //get_max
 #include "Omega_h_int_scan.hpp" //offset_scan
 #include "Omega_h_atomics.hpp" //atomic_[add|increment]
+#include "Omega_h_map.hpp" //collect_marked, unmap
 #include <Kokkos_Core.hpp>
 #include <fstream>
 
@@ -45,6 +46,21 @@ namespace {
 };
 
 namespace Omega_h {
+
+  Write<LO> BsplineModel2D::buildEdgeIdMapping() {
+    auto edgeIds = getEdgeIds();  // Model entity IDs from parent class
+    if (edgeIds.size() == 0) return Write<LO>();
+
+    auto maxId = get_max(edgeIds);
+    Write<LO> mapping(maxId + 1, -1);  // Initialize with -1 (invalid)
+
+    // Map each model edge ID to its dense spline array index
+    parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
+      mapping[edgeIds[i]] = i;
+    });
+
+    return mapping;
+  }
 
   Reals bspline_get_snap_warp(Mesh* mesh, BsplineModel2D* mdl, bool verbose) {
     OMEGA_H_CHECK(mesh->dim() == 2);
@@ -114,7 +130,9 @@ namespace Omega_h {
     Omega_h::parallel_for(numSides, setSamplePts, "setSamplePts");
 
     OMEGA_H_CHECK(sideDim==1); //no support for 1d or 3d models yet
-    auto sideIds = mdl->getEdgeIds();
+    auto allEdgeIds = mdl->getEdgeIds();  // All model edge IDs
+    auto filteredIndices = collect_marked(LOs(keep_node));  // Indices of non-zero degree entries
+    auto sideIds = unmap(filteredIndices, allEdgeIds, 1);  // Gather corresponding edge IDs
     const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
 
     //compute warp vector for mesh vertices classified on the model boundary (sides)
@@ -187,6 +205,8 @@ namespace Omega_h {
     OMEGA_H_CHECK(splineToKnots.last() == knotsX.size()); //last entry should be numKnots
     OMEGA_H_CHECK(knotsX.size() == knotsY.size());
     OMEGA_H_CHECK(areKnotsIncreasing(splineToKnots, knotsX, knotsY));
+
+    edgeIdToSplineIdx = buildEdgeIdMapping();
   }
 #else
   BsplineModel2D::BsplineModel2D(filesystem::path const&, filesystem::path const&)
@@ -201,6 +221,18 @@ namespace Omega_h {
     assert(edgeIds.size()+1 == edgeToLocalCoords.size());
     assert(edgeToLocalCoords.last() == localCoords.size());
     Write<Real> coords(localCoords.size()*2);  //x and y for each coordinate
+
+    // Convert model entity IDs to dense spline array indices
+    Write<LO> splineIndices(edgeIds.size());
+    auto idToIdx = edgeIdToSplineIdx;  // Capture for lambda
+    parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
+      LO modelId = edgeIds[i];
+      OMEGA_H_CHECK(modelId < idToIdx.size());
+      LO splineIdx = idToIdx[modelId];
+      OMEGA_H_CHECK(splineIdx >= 0);  // Verify valid mapping
+      splineIndices[i] = splineIdx;
+    });
+    auto sIdx = LOs(splineIndices);
 
     //localize class members for use in lambda
     const auto s2k = splineToKnots;
@@ -222,9 +254,9 @@ namespace Omega_h {
     // given spline; this is done inside splineEval(...).
     Write<LO> edgePolynomialOrder(edgeIds.size());
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
-        const auto sIdx = edgeIds[i];
-        assert(sIdx <= ord.size());
-        edgePolynomialOrder[i] = ord[sIdx];
+        const auto spline = sIdx[i];  // Use dense spline index
+        assert(spline < ord.size());
+        edgePolynomialOrder[i] = ord[spline];
     });
     auto edgePolyOrderOffset = offset_scan(Omega_h::read(edgePolynomialOrder));
     Kokkos::View<Real*> workArray("workArray", edgePolyOrderOffset.last()); //storage for intermediate values
@@ -232,8 +264,8 @@ namespace Omega_h {
     //TODO use team based loop or expand index range by 2x to run eval
     //on X and Y separately
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
-        const auto spline = edgeIds[i];
-        const auto sOrder = ord[i];
+        const auto spline = sIdx[i];  // Use dense spline index, not model ID
+        const auto sOrder = ord[spline];  // FIX: was ord[i]
         const auto knotRange = Kokkos::make_pair(s2k[spline], s2k[spline+1]);
         const auto ctrlPtRange = Kokkos::make_pair(s2cp[spline], s2cp[spline+1]);
 
