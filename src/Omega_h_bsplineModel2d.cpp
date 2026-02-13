@@ -43,24 +43,25 @@ namespace {
     }
     return work(sOrder - 1);
   }
-};
 
-namespace Omega_h {
-
-  Write<LO> BsplineModel2D::buildEdgeIdMapping() {
-    auto edgeIds = getEdgeIds();  // Model entity IDs from parent class
-    if (edgeIds.size() == 0) return Write<LO>();
+  Omega_h::Write<Omega_h::LO> buildEdgeIdMapping(Omega_h::BsplineModel2D& mdl) {
+    auto edgeIds = mdl.getEdgeIds();  // Model entity IDs from parent class
+    if (edgeIds.size() == 0) return Omega_h::Write<Omega_h::LO>();
 
     auto maxId = get_max(edgeIds);
-    Write<LO> mapping(maxId + 1, -1);  // Initialize with -1 (invalid)
+    Omega_h::Write<Omega_h::LO> mapping(maxId + 1, -1);  // Initialize with -1 (invalid)
 
     // Map each model edge ID to its dense spline array index
-    parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
+    Omega_h::parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(Omega_h::LO i) {
       mapping[edgeIds[i]] = i;
     });
 
     return mapping;
   }
+};
+
+namespace Omega_h {
+
 
   Reals bspline_get_snap_warp(Mesh* mesh, BsplineModel2D* mdl, bool verbose) {
     OMEGA_H_CHECK(mesh->dim() == 2);
@@ -131,7 +132,7 @@ namespace Omega_h {
 
     OMEGA_H_CHECK(sideDim==1); //no support for 1d or 3d models yet
     auto allEdgeIds = mdl->getEdgeIds();  // All model edge IDs
-    auto filteredIndices = collect_marked(LOs(keep_node));  // Indices of non-zero degree entries
+    auto filteredIndices = collect_marked(Read<I8>(keep_node));  // Indices of non-zero degree entries
     auto sideIds = unmap(filteredIndices, allEdgeIds, 1);  // Gather corresponding edge IDs
     const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
 
@@ -206,7 +207,7 @@ namespace Omega_h {
     OMEGA_H_CHECK(knotsX.size() == knotsY.size());
     OMEGA_H_CHECK(areKnotsIncreasing(splineToKnots, knotsX, knotsY));
 
-    edgeIdToSplineIdx = buildEdgeIdMapping();
+    edgeIdToSplineIdx = buildEdgeIdMapping(*this);
   }
 #else
   BsplineModel2D::BsplineModel2D(filesystem::path const&, filesystem::path const&)
