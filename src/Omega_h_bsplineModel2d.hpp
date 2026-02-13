@@ -37,29 +37,45 @@ class BsplineModel2D : public Model2D {
       return splineToKnots;
     }
 
-    /** \brief given a parametric coordinate and the id of the corresponding
-    *        spline, return the corresponding cartesian coordinates of that point
+    /** \brief Evaluate B-splines at given parametric coordinates to compute cartesian positions
     *
-    * Not clear what the best API for this is:
-    *  a) CSR to group evaluation points by spline
-    *  b) two arrays of equal length: model edge ids and evaluation points
-    *  c) ...
-    * For now, taking approach (b).
+    * Evaluates the B-spline representation of geometric model edges at specified parametric
+    * coordinates and returns the corresponding cartesian (x,y) positions.
     *
     * This implementation was ported from BSpline.cc in
     * github.com/scorec/simLandIceMeshGen main @ 9f85d2e .
     *
-    * \param edgeIds (In) array of model edge ids for each pair of parametric coordinates
-    *                     specified in localCoords
-    * \param edgeToLocalCoords (In) offset array from edgeIds to the set of
-    *                               localCoordinates to evaluate for that edge
-    *                               e.g., edgeToLocalCoords[i] and
-    *                               edgeToLocalCoords[i+1] respectively define the
-    *                               starting and last (exclusive) indices into
-    *                               localCoords for edge i
-    * \param localCoords (In) array of parametric coordinates (x0,x1,x2,...,xN-1)
-    * \return the array of coordinates (x0,y0,x1,y1,...,xN-1,yN-1) in order
-    *         they were specified in the input arrays
+    * \param edgeIds (In) Array of model edge IDs (NOT dense spline indices) for which to
+    *                     evaluate B-splines. These IDs must match the edge IDs from the
+    *                     geometric model topology (obtained via getEdgeIds()). The function
+    *                     internally maps these model IDs to dense spline array indices.
+    *                     Size: number of edges to evaluate.
+    *
+    * \param edgeToLocalCoords (In) CSR-style offset array mapping each edge in edgeIds to
+    *                               its set of parametric coordinates in localCoords.
+    *                               For edge i, the parametric coordinates are stored in
+    *                               localCoords[edgeToLocalCoords[i]] through
+    *                               localCoords[edgeToLocalCoords[i+1]-1] (exclusive end).
+    *                               Size: edgeIds.size() + 1
+    *
+    * \param localCoords (In) Parametric coordinates in [0,1] at which to evaluate the splines.
+    *                         Each value represents a position along its corresponding edge's
+    *                         parametric domain. Grouped by edge according to edgeToLocalCoords.
+    *                         Size: edgeToLocalCoords.last()
+    *
+    * \return Reals array containing interleaved (x,y) cartesian coordinates for all evaluation
+    *         points, in the same order as specified in localCoords. Format:
+    *         (x0,y0, x1,y1, ..., xN-1,yN-1) where N = localCoords.size().
+    *         Size: localCoords.size() * 2
+    *
+    * \pre edgeIds.size() + 1 == edgeToLocalCoords.size()
+    * \pre edgeToLocalCoords.last() == localCoords.size()
+    * \pre All values in edgeIds must be valid model edge IDs present in the geometric model
+    * \pre All values in localCoords should be in range [0,1]
+    *
+    * \note Model edge IDs are arbitrary integers assigned by the CAD system and may be
+    *       non-continuous or start at values other than 0. This function handles the
+    *       mapping from model edge IDs to internal dense spline array indices.
     */
     Reals eval(Omega_h::LOs edgeIds, Omega_h::LOs edgeToLocalCoords, Omega_h::Reals localCoords);
 
