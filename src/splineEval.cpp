@@ -21,6 +21,9 @@ bool areSamplesClose(const Samples& ref, const Samples& test) {
   auto isSameIds = (ref.ids == test.ids);
   auto isSameE2S = (ref.edgeToSamples == test.edgeToSamples);
   auto isClosePts = Omega_h::are_close(ref.pts, test.pts);
+  if( !isSameIds ) std::cerr << "Error: models ids differ\n";
+  if( !isSameE2S ) std::cerr << "Error: edgeToSamples differ\n";
+  if( !isClosePts ) std::cerr << "Error: points differ\n";
   return (isSameIds && isSameE2S && isClosePts);
 }
 
@@ -48,10 +51,10 @@ Samples getSamples(Omega_h::BsplineModel2D& model) {
     }
   });
 
-  Omega_h::Write<Omega_h::LO> ids(numEdges, 0, 1, "splineIds"); //array from 0..numEdges-1
-  const auto pts = model.eval(ids,edgeToSamples,samplePts);
+  auto edgeIds = model.getEdgeIds();
+  const auto pts = model.eval(edgeIds,edgeToSamples,samplePts);
 
-  return {ids,edgeToSamples,pts};
+  return {edgeIds,edgeToSamples,pts};
 }
 
 void writeSamplesToBinary(const Samples& samples, std::string filename) {
