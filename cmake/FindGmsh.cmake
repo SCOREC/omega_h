@@ -48,8 +48,23 @@ if(Gmsh_EXECUTABLE)
   endif()
 endif()
 
-find_path(Gmsh_INCLUDE_DIRS NAMES gmsh.h)
-find_library(Gmsh_LIBRARIES NAMES gmsh)
+# Get hints from executable location
+if(Gmsh_EXECUTABLE)
+  get_filename_component(Gmsh_BINARY_DIR "${Gmsh_EXECUTABLE}" DIRECTORY)
+  get_filename_component(Gmsh_PREFIX_HINT "${Gmsh_BINARY_DIR}" DIRECTORY)
+endif()
+
+find_path(Gmsh_INCLUDE_DIRS
+  NAMES gmsh.h
+  HINTS ${Gmsh_PREFIX_HINT}
+  PATH_SUFFIXES include
+)
+
+find_library(Gmsh_LIBRARIES
+  NAMES gmsh
+  HINTS ${Gmsh_PREFIX_HINT}
+  PATH_SUFFIXES lib lib64
+)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
