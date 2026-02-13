@@ -21,7 +21,6 @@ class BsplineModel2D : public Model2D {
     Write<LO> edgeIdToSplineIdx; //maps model edge ID -> dense spline array index
 
     void read(filesystem::path const& omegahGeomFile);
-    Write<LO> buildEdgeIdMapping();
 
   public:
     /**
