@@ -530,7 +530,7 @@ Mesh read(std::istream& stream, CommPtr comm) {
   return mesh;
 }
 
-Mesh read(filesystem::path const& filename, CommPtr comm) {
+Mesh read(std::filesystem::path const& filename, CommPtr comm) {
   std::ifstream file(filename.c_str());
   if (!file.is_open()) {
     Omega_h_fail("couldn't open \"%s\"\n", filename.c_str());
@@ -773,7 +773,7 @@ void write(std::ostream& stream, Mesh* mesh) {
   stream << "$EndElements\n";
 }
 
-void write(filesystem::path const& filepath, Mesh* mesh) {
+void write(std::filesystem::path const& filepath, Mesh* mesh) {
   std::ofstream stream(filepath.c_str());
   gmsh::write(stream, mesh);
 }

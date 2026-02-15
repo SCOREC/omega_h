@@ -35,10 +35,10 @@ int main(int argc, char** argv) {
   auto const pvdpatha = vtk::get_pvd_path(patha);
   auto const pvdpathb = vtk::get_pvd_path(pathb);
   std::vector<Real> timesa;
-  std::vector<filesystem::path> pvtupathsa;
+  std::vector<std::filesystem::path> pvtupathsa;
   vtk::read_pvd(pvdpatha, &timesa, &pvtupathsa);
   std::vector<Real> timesb;
-  std::vector<filesystem::path> pvtupathsb;
+  std::vector<std::filesystem::path> pvtupathsb;
   vtk::read_pvd(pvdpathb, &timesb, &pvtupathsb);
   if (timesa.size() != timesb.size()) {
     std::cout << "different number of time steps (" << timesa.size() << " vs "

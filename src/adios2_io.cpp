@@ -44,9 +44,9 @@ int main(int argc, char *argv[])
   cmdline.add_arg<std::string>("input2.osh");
   cmdline.add_arg<std::string>("output.bp");
   if (!cmdline.parse_final(world, &argc, argv)) return -1;
-  Omega_h::filesystem::path inpath1 = cmdline.get<std::string>("input1.osh");
-  Omega_h::filesystem::path inpath2 = cmdline.get<std::string>("input2.osh");
-  Omega_h::filesystem::path outpath=cmdline.get<std::string>("output.bp");
+  std::filesystem::path inpath1 = cmdline.get<std::string>("input1.osh");
+  std::filesystem::path inpath2 = cmdline.get<std::string>("input2.osh");
+  std::filesystem::path outpath=cmdline.get<std::string>("output.bp");
 
   Omega_h::Mesh mesh1(&lib);
   Omega_h::binary::read(inpath1, world, &mesh1);
