@@ -402,9 +402,69 @@ void ask_for_mesh_tags(Mesh* mesh, TagSet const& tags);
 void reorder_by_hilbert(Mesh* mesh);
 void reorder_by_globals(Mesh* mesh);
 
+/** @brief Returns local indices of mesh entities of a given dimension that
+ *         are classified on the closure of a named set of model entities.
+ *
+ * Resolves each name in @p class_names to the associated
+ * `(model_dim, model_id)` pairs stored in `Mesh::class_sets`, then marks
+ * every mesh entity of dimension @p ent_dim whose geometric classification
+ * falls within the topological closure of any of those model entities
+ * (i.e., the entity itself or any of its boundary model entities).
+ *
+ * @param[in] mesh        The mesh to query.
+ * @param[in] class_names Subset of named geometric model entities from
+ *                        `Mesh::class_sets`.  Each name must be present in
+ *                        `Mesh::class_sets`; an absent name triggers a fatal error.
+ * @param[in] ent_dim     Dimension of the mesh entities to collect
+ *                        (0 = vertices, 1 = edges, 2 = faces, 3 = regions).
+ * @return                A packed `LOs` array of local entity indices
+ *                        (not a boolean mask).  Entities are listed in
+ *                        ascending local-index order.
+ * @see nodes_on_closure, Mesh::class_sets, mark_class_closures
+ */
 LOs ents_on_closure(
     Mesh* mesh, std::set<std::string> const& class_names, Int ent_dim);
 
+/** @brief Returns local indices of nodes that lie on the closure of a
+ *         named set of model entities.
+ *
+ * Identical in purpose to `ents_on_closure` but operates on an
+ * application-defined node numbering rather than the mesh entity numbering.
+ * A node is marked if it maps (via @p nodes2ents) to at least one mesh
+ * entity whose geometric classification falls within the closure of any
+ * model entity named by @p class_names.
+ *
+ * Each `Graph` in @p nodes2ents is a bipartite map from node indices to
+ * mesh entity local indices, stored as an offset array `a2ab` and a values
+ * array `ab2b`:
+ *
+ * - `nodes2ents[d].a2ab` — length `nnodes + 1`; `a2ab[n]`…`a2ab[n+1]` is the
+ *   half-open range of entries in `ab2b` for node `n`.
+ * - `nodes2ents[d].ab2b` — length equal to the total number of (node, entity)
+ *   pairs; each entry is a local mesh entity index in dimension `d`.
+ *
+ * `nodes2ents[mesh->dim()]` must be fully initialised — its `a2ab` is also
+ * used to determine `nnodes` (the common node count shared by all graphs).
+ * Graphs for lower dimensions (`d < mesh->dim()`) are used only when the
+ * named class_sets contain model entities of dimension `d`; they may be left
+ * default-constructed (empty) otherwise.
+ *
+ * @param[in]  mesh        The mesh to query.
+ * @param[in] class_names  Subset of named geometric model entities from
+ *                         `Mesh::class_sets`.  Each name must be present in
+ *                         `Mesh::class_sets`; an absent name triggers a fatal error.
+ * @param[in]  nodes2ents  Array of four `Graph` objects indexed by entity
+ *                         dimension (0–3), each mapping node indices to mesh
+ *                         entity local indices of that dimension.
+ *                         `nodes2ents[mesh->dim()]` must be initialised.
+ *                         Lower-dimensional entries are required if
+ *                         @p class_names includes model entities of those
+ *                         dimensions.
+ * @return                 A packed `LOs` array of local node indices
+ *                         (not a boolean mask).  Nodes are listed in
+ *                         ascending index order.
+ * @see ents_on_closure, Mesh::class_sets, mark_class_closures
+ */
 LOs nodes_on_closure(
     Mesh* mesh, std::set<std::string> const& class_names, Graph nodes2ents[4]);
 
