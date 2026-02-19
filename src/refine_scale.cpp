@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
 #ifdef OMEGA_H_USE_KOKKOS //FIXME should not be a kokkos flag...
       opts.bspline_model = &model;
 #endif
+      opts.min_quality_allowed = 0.010;
       auto nelems = mesh.nglobal_ents(mesh.dim());
       if (world_rank == 0)
         std::cout << "mesh has " << nelems << " total elements\n";
