@@ -2,8 +2,6 @@
 #include "Omega_h_for.hpp" //parallel_for
 #include "Omega_h_array_ops.hpp" //get_max
 #include "Omega_h_int_scan.hpp" //offset_scan
-#include "Omega_h_atomics.hpp" //atomic_[add|increment]
-#include "Omega_h_map.hpp" //collect_marked, unmap
 #include <Kokkos_Core.hpp>
 #include <fstream>
 
@@ -73,53 +71,25 @@ namespace Omega_h {
     const auto sideDim = mesh->dim()-1;
 
     //////////////////////////////////////////////////////////////////////////
-    //ask_revClass_downAdj(...) will return a CSR/graph (offset & value arrays)
-    //that may have 'a' nodes that have no connection to 'b' nodes (i.e., their
-    //degree is 0).  For the use here, these entries have to be ignored/skipped.
-    //The following code creates a CSR/graph without those entries.
+    // ask_revClass_downAdj returns a CSR where the offset array is indexed by
+    // model entity ID (from derive_revClass: n_gents = get_max(class_ids)+1).
+    // When model entity IDs are non-contiguous (e.g., start at 1 or have gaps),
+    // this CSR has degree-zero entries for the missing IDs. These entries produce
+    // empty inner loops and are harmless — no filtering is needed.
     //////////////////////////////////////////////////////////////////////////
     auto sidesToMeshVerts_revClass = mesh->ask_revClass_downAdj(sideDim, VERT);
-    const auto offsets_revClass = sidesToMeshVerts_revClass.a2ab;
+    const auto sidesToSamples = sidesToMeshVerts_revClass.a2ab;
+    // Sparse size: sidesToSamples.size()-1 = max_model_id + 1
+    const int numSidesSparse = sidesToSamples.size()-1;
 
-
-    auto keep_node = Write<I8>(offsets_revClass.size()-1);
-
-    auto numDegreeZeroEntries = Write<LO>(1, 0, "lazyWayToCount");
-    Omega_h::parallel_for(offsets_revClass.size()-1, OMEGA_H_LAMBDA(Omega_h::LO side) {
-      //The following will count model entities with no associated mesh
-      //entities. For the current implementation of ask_revClass_downAdj, this
-      //is required to avoid 'gaps' in the model entity ids.
-      keep_node[side] = 1;
-      if(offsets_revClass[side] == offsets_revClass[side+1]) {
-        atomic_increment( &(numDegreeZeroEntries[0]) );
-        keep_node[side] = 0;
-      } 
-    });
-
-    const auto numMdlEnts = (offsets_revClass.size()-1)-numDegreeZeroEntries.get(0);
-    OMEGA_H_CHECK(mdl->getNumEnts(sideDim) == numMdlEnts);
-
-    //auto degree = Write<LO>(numMdlEnts);
-    //auto values = Write<LO>(offsets_revClass.last());
-    //auto offsets = offset_scan(read(degree));
-    //auto sidesToMeshVerts = Graph(offsets, values);
-    auto sidesToMeshVerts = filter_graph_nodes(sidesToMeshVerts_revClass,keep_node);
-    OMEGA_H_CHECK(mdl->getNumEnts(sideDim) == sidesToMeshVerts.a2ab.size()-1);
-    //////////////////////////////////////////////////////////////////////////
-    
     //get the location of mesh vertices along the geometric model entity they
     //are classified on using their parametric coordinates along that model
     //entity
-    const auto sidesToSamples = sidesToMeshVerts.a2ab;
-    const auto meshEntIds = sidesToMeshVerts.ab2b;
+    const auto meshEntIds = sidesToMeshVerts_revClass.ab2b;
     const int numSamples = sidesToSamples.last();
-    const int numSides = mdl->getNumEnts(sideDim);
 
     auto samplePts = Omega_h::Write<Omega_h::Real>(numSamples, "splineSamplePoints");
     auto setSamplePts = OMEGA_H_LAMBDA(Omega_h::LO side) {
-      //The following loop will skip model entities with no associated mesh
-      //entities. For the current implementation of ask_revClass_downAdj, this
-      //is required to avoid 'gaps' in the model entity ids.
       for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
          const auto meshEnt = meshEntIds[ab];
          //class_parametric is a tag with two components per ent
@@ -128,12 +98,13 @@ namespace Omega_h {
          samplePts[ab] = pos;
       }
     };
-    Omega_h::parallel_for(numSides, setSamplePts, "setSamplePts");
+    Omega_h::parallel_for(numSidesSparse, setSamplePts, "setSamplePts");
 
     OMEGA_H_CHECK(sideDim==1); //no support for 1d or 3d models yet
-    auto allEdgeIds = mdl->getEdgeIds();  // All model edge IDs
-    auto filteredIndices = collect_marked(Read<I8>(keep_node));  // Indices of non-zero degree entries
-    auto sideIds = unmap(filteredIndices, allEdgeIds, 1);  // Gather corresponding edge IDs
+    // Position i in the sparse CSR equals model entity ID i (derive_revClass indexes
+    // by class_id directly).  Pass [0..numSidesSparse-1] as model IDs; eval() skips
+    // zero-degree entries (gaps) so no spline lookup is attempted for them.
+    LOs sideIds(numSidesSparse, 0, 1);  // [0, 1, 2, ..., numSidesSparse-1]
     const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
 
     //compute warp vector for mesh vertices classified on the model boundary (sides)
@@ -144,13 +115,13 @@ namespace Omega_h {
       for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
          const auto meshEnt = meshEntIds[ab];
          const auto currentPt = get_vector<2>(coords, meshEnt);
-         const auto targetPt = get_vector<2>(pts, meshEnt);
+         const auto targetPt = get_vector<2>(pts, ab);
          auto d = vector_2(0, 0);
          d = targetPt - currentPt;
          set_vector(warp, meshEnt, d);
       }
     };
-    Omega_h::parallel_for(sidesToSamples.size(), setWarpVectors, "setWarpVectors");
+    Omega_h::parallel_for(numSidesSparse, setWarpVectors, "setWarpVectors");
     return warp;
   }
 
@@ -223,15 +194,13 @@ namespace Omega_h {
     assert(edgeToLocalCoords.last() == localCoords.size());
     Write<Real> coords(localCoords.size()*2);  //x and y for each coordinate
 
-    // Convert model entity IDs to dense spline array indices
+    // Convert model entity IDs to spline indices
     Write<LO> splineIndices(edgeIds.size());
     auto idToIdx = edgeIdToSplineIdx;  // Capture for lambda
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
       LO modelId = edgeIds[i];
       OMEGA_H_CHECK(modelId < idToIdx.size());
-      LO splineIdx = idToIdx[modelId];
-      OMEGA_H_CHECK(splineIdx >= 0);  // Verify valid mapping
-      splineIndices[i] = splineIdx;
+      splineIndices[i] = idToIdx[modelId];
     });
     auto sIdx = LOs(splineIndices);
 
@@ -253,11 +222,16 @@ namespace Omega_h {
     // for use in splineEval(...).
     // The work array needs to be initialized with the control points for the
     // given spline; this is done inside splineEval(...).
-    Write<LO> edgePolynomialOrder(edgeIds.size());
+    // Zero-degree entries (gaps in sparse model entity ID space) contribute order=0
+    // so their work array sub-range is empty and the inner eval loop does not execute.
+    // FIXME - replace the following with reduction over ord
+    Write<LO> edgePolynomialOrder(edgeIds.size(), 0);
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
-        const auto spline = sIdx[i];  // Use dense spline index
-        assert(spline < ord.size());
-        edgePolynomialOrder[i] = ord[spline];
+        if (edgeToLocalCoords[i] < edgeToLocalCoords[i+1]) {  // non-zero degree
+          const auto spline = sIdx[i];
+          assert(spline < ord.size());
+          edgePolynomialOrder[i] = ord[spline];
+        }
     });
     auto edgePolyOrderOffset = offset_scan(Omega_h::read(edgePolynomialOrder));
     Kokkos::View<Real*> workArray("workArray", edgePolyOrderOffset.last()); //storage for intermediate values
@@ -265,24 +239,26 @@ namespace Omega_h {
     //TODO use team based loop or expand index range by 2x to run eval
     //on X and Y separately
     parallel_for(edgeIds.size(), OMEGA_H_LAMBDA(LO i) {
-        const auto spline = sIdx[i];  // Use dense spline index, not model ID
-        const auto sOrder = ord[spline];  // FIX: was ord[i]
-        const auto knotRange = Kokkos::make_pair(s2k[spline], s2k[spline+1]);
-        const auto ctrlPtRange = Kokkos::make_pair(s2cp[spline], s2cp[spline+1]);
+        if (edgeToLocalCoords[i] < edgeToLocalCoords[i+1]) {  // non-zero degree (skip gaps)
+          const auto spline = sIdx[i];
+          const auto sOrder = ord[spline];
+          const auto knotRange = Kokkos::make_pair(s2k[spline], s2k[spline+1]);
+          const auto ctrlPtRange = Kokkos::make_pair(s2cp[spline], s2cp[spline+1]);
 
-        auto xKnots = Kokkos::subview(kx, knotRange);
-        auto xCtrlPts = Kokkos::subview(cx, ctrlPtRange);
+          auto xKnots = Kokkos::subview(kx, knotRange);
+          auto xCtrlPts = Kokkos::subview(cx, ctrlPtRange);
 
-        auto yKnots = Kokkos::subview(ky, knotRange);
-        auto yCtrlPts = Kokkos::subview(cy, ctrlPtRange);
+          auto yKnots = Kokkos::subview(ky, knotRange);
+          auto yCtrlPts = Kokkos::subview(cy, ctrlPtRange);
 
-        const auto orderRange = Kokkos::make_pair(edgePolyOrderOffset[i], edgePolyOrderOffset[i+1]);
-        auto work = Kokkos::subview(workArray, orderRange);
+          const auto orderRange = Kokkos::make_pair(edgePolyOrderOffset[i], edgePolyOrderOffset[i+1]);
+          auto work = Kokkos::subview(workArray, orderRange);
 
-        for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
-          coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]);
-          coords[j*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
-        }
+          for(int j = edgeToLocalCoords[i]; j < edgeToLocalCoords[i+1]; j++) {
+            coords[j*2] = splineEval(sOrder, xKnots, xCtrlPts, work, localCoords[j]);
+            coords[j*2+1] = splineEval(sOrder, yKnots, yCtrlPts, work, localCoords[j]);
+          }
+        }  // end non-zero degree
     });
 
     return coords;
