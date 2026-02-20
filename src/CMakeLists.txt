@@ -672,12 +672,16 @@ if(BUILD_TESTING)
   test_func(amr_test2 1 ./amr_test2)
   osh_add_exe(refine_scale)
   if(Omega_h_USE_Kokkos AND Omega_h_USE_SimModSuite)
-    test_func(refine_scale_gis 1 ./refine_scale
+    osh_add_exe(gis_warp_test)
+    test_func(gis_warp_test 1 ./gis_warp_test
       ${CMAKE_SOURCE_DIR}/meshes/gis-15k.osh
       30000
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb
-      refined.vtk)
+      refined30k.vtk
+      1 #enableSnap
+      1 #enableSmoothing
+      )
   endif()
   osh_add_exe(amr_mpi_test)
   osh_add_exe(reverse_class_test)
