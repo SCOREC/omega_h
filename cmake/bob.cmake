@@ -610,13 +610,28 @@ endmacro(latest_find_dependency)"
   set(FIND_DEPS_CONTENT)
   foreach(dep IN LISTS ${PROJECT_NAME}_DEPS)
     string(REPLACE ";" " " FIND_DEP_ARGS "${${dep}_find_package_args}")
+    # Enable C language before finding MPI if MPI requires C component
+    if(dep STREQUAL "MPI" AND FIND_DEP_ARGS MATCHES "C")
+      set(FIND_DEPS_CONTENT
+"${FIND_DEPS_CONTENT}
+enable_language(C)"
+         )
+    endif()
     set(FIND_DEPS_CONTENT
 "${FIND_DEPS_CONTENT}
 latest_find_dependency(${dep} ${FIND_DEP_ARGS})"
        )
   endforeach()
+  foreach(dep IN LISTS ${PROJECT_NAME}_DEPS)
+    if(EXISTS "${PROJECT_SOURCE_DIR}/cmake/Find${dep}.cmake")
+      install(FILES
+        "${PROJECT_SOURCE_DIR}/cmake/Find${dep}.cmake"
+        DESTINATION ${BOB_LIB_DESTINATION}/cmake/${PROJECT_NAME})
+    endif()
+  endforeach()
   set(CONFIG_CONTENT
 "set(${PROJECT_NAME}_VERSION ${${PROJECT_NAME}_VERSION})
+list(APPEND CMAKE_MODULE_PATH \"\${CMAKE_CURRENT_LIST_DIR}\")
 ${LATEST_FIND_DEPENDENCY}
 ${FIND_DEPS_CONTENT}
 set(${PROJECT_NAME}_EXPORTED_TARGETS \"${${PROJECT_NAME}_EXPORTED_TARGETS}\")
