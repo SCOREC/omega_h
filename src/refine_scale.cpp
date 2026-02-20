@@ -11,8 +11,6 @@ int main(int argc, char** argv) {
   Omega_h::CmdLine cmdline;
   cmdline.add_arg<std::string>("input.osh");
   cmdline.add_arg<double>("desired-num-elements");
-  cmdline.add_arg<std::string>("geomSimModel.smd");
-  cmdline.add_arg<std::string>("inputSplines.oshb");
   cmdline.add_arg<std::string>("output.vtk");
   auto const world = lib.world();
   if (!cmdline.parse_final(world, &argc, argv)) {
@@ -23,11 +21,8 @@ int main(int argc, char** argv) {
   auto const world_rank = world->rank();
   auto const inpath = cmdline.get<std::string>("input.osh");
   auto const desired_nelems = cmdline.get<double>("desired-num-elements");
-  auto const smdPath = cmdline.get<std::string>("geomSimModel.smd");
-  auto const splinesPath = cmdline.get<std::string>("inputSplines.oshb");
   auto const outpath = cmdline.get<std::string>("output.vtk");
   auto const desired_nelems_per_rank = desired_nelems / world_size;
-  auto model = Omega_h::BsplineModel2D(smdPath, splinesPath);
   Omega_h::Mesh mesh(&lib);
   for (int shift = 0; (1 << shift) <= world_size; ++shift) {
     int const group_size = (1 << shift);
@@ -47,10 +42,6 @@ int main(int argc, char** argv) {
         mesh.balance();
       }
       Omega_h::AdaptOpts opts(&mesh);
-#ifdef OMEGA_H_USE_KOKKOS //FIXME should not be a kokkos flag...
-      opts.bspline_model = &model;
-#endif
-      opts.min_quality_allowed = 0.010;
       auto nelems = mesh.nglobal_ents(mesh.dim());
       if (world_rank == 0)
         std::cout << "mesh has " << nelems << " total elements\n";
