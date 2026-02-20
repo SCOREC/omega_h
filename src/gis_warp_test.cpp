@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   cmdline.add_arg<double>("desired-num-elements");
   cmdline.add_arg<std::string>("geomSimModel.smd");
   cmdline.add_arg<std::string>("inputSplines.oshb");
-  cmdline.add_arg<std::string>("output.vtk");
+  cmdline.add_arg<std::string>("outputVtkPrefix");
   cmdline.add_arg<int>("enableSnap");
   cmdline.add_arg<int>("enableSmoothing");
   auto const world = lib.world();
