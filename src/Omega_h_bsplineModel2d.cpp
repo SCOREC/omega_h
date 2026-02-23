@@ -2,6 +2,7 @@
 #include "Omega_h_for.hpp" //parallel_for
 #include "Omega_h_array_ops.hpp" //get_max
 #include "Omega_h_int_scan.hpp" //offset_scan
+#include "Omega_h_atomics.hpp" //atomic_increment
 #include <Kokkos_Core.hpp>
 #include <fstream>
 
@@ -64,7 +65,6 @@ namespace Omega_h {
   Reals bspline_get_snap_warp(Mesh* mesh, BsplineModel2D* mdl, bool verbose) {
     OMEGA_H_CHECK(mesh->dim() == 2);
     auto class_dims = mesh->get_array<I8>(VERT, "class_dim");
-    auto class_ids = mesh->get_array<ClassId>(VERT, "class_id");
     auto class_parametric = mesh->get_array<Real>(VERT, "class_parametric");
     OMEGA_H_CHECK(class_parametric.size() == mesh->nverts()*2);
 
@@ -76,16 +76,34 @@ namespace Omega_h {
     // When model entity IDs are non-contiguous (e.g., start at 1 or have gaps),
     // this CSR has degree-zero entries for the missing IDs. These entries produce
     // empty inner loops and are harmless — no filtering is needed.
+    // This returns mesh entities on the closure of model entities... bug?
     //////////////////////////////////////////////////////////////////////////
     auto sidesToMeshVerts_revClass = mesh->ask_revClass_downAdj(sideDim, VERT);
     const auto sidesToSamples = sidesToMeshVerts_revClass.a2ab;
     // Sparse size: sidesToSamples.size()-1 = max_model_id + 1
     const int numSidesSparse = sidesToSamples.size()-1;
 
-    //get the location of mesh vertices along the geometric model entity they
-    //are classified on using their parametric coordinates along that model
-    //entity
     const auto meshEntIds = sidesToMeshVerts_revClass.ab2b;
+
+    //filter out mesh entities that are classified on model vertices
+    //by definition, these vertices should not move/snap
+    //HERE - need to create new filtered CSR from the revClass CSR
+    // - count number of vertices to keep per model edge - classified on an model edge
+    // - offset_scan to build offset array from degree array
+    // - allocate value array with size = offset.last()
+    // - run the counting loop again to copy into new values array using 
+    //   atomic_increment to keep track of position to write for each model edge
+    auto numSamplesPerSide = Omega_h::Write<LO>(numSidesSparse, "numSamplesPerSide", 0);
+    auto countSamplesPerSide = OMEGA_H_LAMBDA(Omega_h::LO side) {
+      for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
+         const auto meshEnt = meshEntIds[ab];
+         if( class_dims[meshEnt] == 1 ) {
+           atomic_increment(&numSamplesPerSide[side]);
+         }
+      }
+    };
+    Omega_h::parallel_for(numSidesSparse, countSamplesPerSide, "countSamplesPerSide");
+
     const int numSamples = sidesToSamples.last();
 
     auto samplePts = Omega_h::Write<Omega_h::Real>(numSamples, "splineSamplePoints");
@@ -105,6 +123,27 @@ namespace Omega_h {
     // by class_id directly).  Pass [0..numSidesSparse-1] as model IDs; eval() skips
     // zero-degree entries (gaps) so no spline lookup is attempted for them.
     LOs sideIds(numSidesSparse, 0, 1);  // [0, 1, 2, ..., numSidesSparse-1]
+
+    { //debug
+      auto sideIds_h = HostRead<LO>(sideIds);
+      auto s2s_h = HostRead<LO>(sidesToSamples);
+      auto sPts_h = HostRead<Real>(samplePts);
+      auto coords_h = HostRead<Real>(mesh->coords());
+      auto meshEntIds_h = HostRead<LO>(meshEntIds);
+      std::cerr << "side, ab, meshEntIdx, x, y, sPts_h[ab]\n";
+      for(int side = 0; side < sideIds_h.size(); side++) {
+        for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
+           const auto meshEntIdx = meshEntIds_h[ab];
+           std::cerr << side << ", " 
+                     << ab << ", " 
+                     << meshEntIdx << ", " 
+                     << coords_h[meshEntIdx*2] << ", " 
+                     << coords_h[meshEntIdx*2+1] << ", " 
+                     << sPts_h[ab] << "\n";
+        }
+      }
+    } //end debug
+
     const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
 
     //compute warp vector for mesh vertices classified on the model boundary (sides)
