@@ -77,6 +77,7 @@ namespace Omega_h {
     // this CSR has degree-zero entries for the missing IDs. These entries produce
     // empty inner loops and are harmless — no filtering is needed.
     // This returns mesh entities on the closure of model entities... bug?
+    // The returned array does not remove duplicate downward adjacent entities
     //////////////////////////////////////////////////////////////////////////
     auto sidesToMeshVerts_revClass = mesh->ask_revClass_downAdj(sideDim, VERT);
     const auto sidesToSamples = sidesToMeshVerts_revClass.a2ab;
@@ -85,15 +86,29 @@ namespace Omega_h {
 
     const auto meshEntIds = sidesToMeshVerts_revClass.ab2b;
 
+    { //debug
+      auto s2s_h = HostRead<LO>(sidesToSamples);
+      auto meshEntIds_h = HostRead<LO>(meshEntIds);
+      std::cerr << "side, ab, meshEntIdx\n";
+      for(int side = 0; side < numSidesSparse; side++) {
+        for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
+           const auto meshEntIdx = meshEntIds_h[ab];
+           std::cerr << side << ", " 
+                     << ab << ", " 
+                     << meshEntIdx << "\n";
+        }
+      }
+    } //end debug
+
     //filter out mesh entities that are classified on model vertices
     //by definition, these vertices should not move/snap
-    //HERE - need to create new filtered CSR from the revClass CSR
-    // - count number of vertices to keep per model edge - classified on an model edge
-    // - offset_scan to build offset array from degree array
-    // - allocate value array with size = offset.last()
-    // - run the counting loop again to copy into new values array using 
-    //   atomic_increment to keep track of position to write for each model edge
-    auto numSamplesPerSide = Omega_h::Write<LO>(numSidesSparse, "numSamplesPerSide", 0);
+    //need to create new filtered CSR from the revClass CSR
+    // - X count number of vertices to keep per model edge - classified on an model edge
+    // - X offset_scan to build offset array from degree array
+    // - X allocate value array with size = offset.last()
+    // - X run the counting loop again to copy into new values array using 
+    //     atomic_increment to keep track of position to write for each model edge
+    auto numSamplesPerSide = Omega_h::Write<LO>(numSidesSparse, 0, "numSamplesPerSide");
     auto countSamplesPerSide = OMEGA_H_LAMBDA(Omega_h::LO side) {
       for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
          const auto meshEnt = meshEntIds[ab];
@@ -103,17 +118,24 @@ namespace Omega_h {
       }
     };
     Omega_h::parallel_for(numSidesSparse, countSamplesPerSide, "countSamplesPerSide");
-
-    const int numSamples = sidesToSamples.last();
-
-    auto samplePts = Omega_h::Write<Omega_h::Real>(numSamples, "splineSamplePoints");
+    const auto samplesPerMdlEdge = offset_scan(read(numSamplesPerSide));
+    //clear the degree array to reuse for recording position
+    fill(numSamplesPerSide,0);
+    auto samplePts = Write<Real>(samplesPerMdlEdge.last());
+    auto meshVerts = Write<LO>(samplesPerMdlEdge.last());
     auto setSamplePts = OMEGA_H_LAMBDA(Omega_h::LO side) {
       for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
+         const auto startIdx = samplesPerMdlEdge[side];
          const auto meshEnt = meshEntIds[ab];
-         //class_parametric is a tag with two components per ent
-         //only need first component for parametric coord along a spline
-         const auto pos = class_parametric[meshEnt*2];
-         samplePts[ab] = pos;
+         if( class_dims[meshEnt] == 1 ) {
+           const auto inc = atomic_fetch_add(&numSamplesPerSide[side],1);
+           const auto idx = startIdx + inc;
+           //class_parametric is a tag with two components per ent
+           //only need first component for parametric coord along a spline
+           const auto pos = class_parametric[meshEnt*2];
+           samplePts[idx] = pos;
+           meshVerts[idx] = meshEnt;
+         }
       }
     };
     Omega_h::parallel_for(numSidesSparse, setSamplePts, "setSamplePts");
@@ -126,10 +148,10 @@ namespace Omega_h {
 
     { //debug
       auto sideIds_h = HostRead<LO>(sideIds);
-      auto s2s_h = HostRead<LO>(sidesToSamples);
+      auto s2s_h = HostRead<LO>(samplesPerMdlEdge);
       auto sPts_h = HostRead<Real>(samplePts);
       auto coords_h = HostRead<Real>(mesh->coords());
-      auto meshEntIds_h = HostRead<LO>(meshEntIds);
+      auto meshEntIds_h = HostRead<LO>(meshVerts);
       std::cerr << "side, ab, meshEntIdx, x, y, sPts_h[ab]\n";
       for(int side = 0; side < sideIds_h.size(); side++) {
         for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
@@ -144,15 +166,14 @@ namespace Omega_h {
       }
     } //end debug
 
-    const auto pts = mdl->eval(sideIds,sidesToSamples,samplePts);
+    const auto pts = mdl->eval(sideIds,samplesPerMdlEdge,samplePts);
 
     //compute warp vector for mesh vertices classified on the model boundary (sides)
     auto coords = mesh->coords();
     auto warp = Write<Real>(mesh->nverts() * 2, 0);
     auto setWarpVectors = OMEGA_H_LAMBDA(Omega_h::LO side) {
-      //see note in setSamplePts lambda
-      for( auto ab = sidesToSamples[side]; ab < sidesToSamples[side+1]; ab++ ) {
-         const auto meshEnt = meshEntIds[ab];
+      for( auto ab = samplesPerMdlEdge[side]; ab < samplesPerMdlEdge[side+1]; ab++ ) {
+         const auto meshEnt = meshVerts[ab];
          const auto currentPt = get_vector<2>(coords, meshEnt);
          const auto targetPt = get_vector<2>(pts, ab);
          auto d = vector_2(0, 0);
