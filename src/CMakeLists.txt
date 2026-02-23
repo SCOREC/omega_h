@@ -682,6 +682,15 @@ if(BUILD_TESTING)
       1 #enableSnap
       1 #enableSmoothing
       )
+    test_func(oval_warp_test 1 ./gis_warp_test
+      ${CMAKE_SOURCE_DIR}/meshes/oval.osh
+      30
+      ${CMAKE_SOURCE_DIR}/meshes/oval.smd
+      ${CMAKE_SOURCE_DIR}/meshes/oval_splines.oshb
+      ovalAdapt
+      1 #enableSnap
+      0 #enableSmoothing
+      )
   endif()
   osh_add_exe(amr_mpi_test)
   osh_add_exe(reverse_class_test)
