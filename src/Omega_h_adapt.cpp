@@ -218,6 +218,7 @@ static bool satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
+  static int callCount = 0;
 #if defined(OMEGA_H_USE_EGADS) || defined(OMEGA_H_USE_KOKKOS) //FIXME don't use kokkos flag for bspline
   #ifdef OMEGA_H_USE_EGADS
   if (opts.egads_model) {
@@ -240,6 +241,7 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
     #ifdef OMEGA_H_USE_KOKKOS //FIXME don't use kokkos flag for bspline
     auto warp = bspline_get_snap_warp(
         mesh, opts.bspline_model, opts.verbosity >= EACH_REBUILD);
+    mesh->add_tag(VERT, "bspline_warp", mesh->dim(), warp);
     #endif
 
     if (opts.should_smooth_snap) {
@@ -256,12 +258,16 @@ static void snap_and_satisfy_quality(Mesh* mesh, AdaptOpts const& opts) {
       }
     }
     mesh->add_tag(VERT, "warp", mesh->dim(), warp);
+    std::string fname = "before_warpToLimit_" + std::to_string(callCount);
+    vtk::write_parallel(fname + ".vtk", mesh, mesh->dim());
+    vtk::write_parallel(fname + "_sides.vtk", mesh, mesh->dim()-1);
     while (warp_to_limit(mesh, opts, opts.allow_snap_failure)) {
       if (!satisfy_quality(mesh, opts)) {
         mesh->remove_tag(VERT, "warp");
         break;
       }
     }
+    callCount++;
   } else
 #endif //EGADS or Kokkos
     satisfy_quality(mesh, opts);

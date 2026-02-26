@@ -145,29 +145,7 @@ namespace Omega_h {
     // by class_id directly).  Pass [0..numSidesSparse-1] as model IDs; eval() skips
     // zero-degree entries (gaps) so no spline lookup is attempted for them.
     LOs sideIds(numSidesSparse, 0, 1);  // [0, 1, 2, ..., numSidesSparse-1]
-
-    { //debug
-      auto sideIds_h = HostRead<LO>(sideIds);
-      auto s2s_h = HostRead<LO>(samplesPerMdlEdge);
-      auto sPts_h = HostRead<Real>(samplePts);
-      auto coords_h = HostRead<Real>(mesh->coords());
-      auto meshEntIds_h = HostRead<LO>(meshVerts);
-      std::cerr << "side, ab, meshEntIdx, x, y, sPts_h[ab]\n";
-      for(int side = 0; side < sideIds_h.size(); side++) {
-        for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
-           const auto meshEntIdx = meshEntIds_h[ab];
-           std::cerr << side << ", " 
-                     << ab << ", " 
-                     << meshEntIdx << ", " 
-                     << coords_h[meshEntIdx*2] << ", " 
-                     << coords_h[meshEntIdx*2+1] << ", " 
-                     << sPts_h[ab] << "\n";
-        }
-      }
-    } //end debug
-
     const auto pts = mdl->eval(sideIds,samplesPerMdlEdge,samplePts);
-
     //compute warp vector for mesh vertices classified on the model boundary (sides)
     auto coords = mesh->coords();
     auto warp = Write<Real>(mesh->nverts() * 2, 0);
@@ -182,6 +160,34 @@ namespace Omega_h {
       }
     };
     Omega_h::parallel_for(numSidesSparse, setWarpVectors, "setWarpVectors");
+
+    { //debug
+      auto sideIds_h = HostRead<LO>(sideIds);
+      auto s2s_h = HostRead<LO>(samplesPerMdlEdge);
+      auto sPts_h = HostRead<Real>(samplePts);
+      auto pts_h = HostRead<Real>(pts);
+      auto warp_h = HostRead<Real>(warp);
+      auto coords_h = HostRead<Real>(mesh->coords());
+      auto meshEntIds_h = HostRead<LO>(meshVerts);
+      std::cerr << "side, ab, meshEntIdx, x, y, sPts_h[ab], evalPt_x, evalPt_y, warpVec_x, warpVec_y\n";
+      for(int side = 0; side < sideIds_h.size(); side++) {
+        for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
+           const auto meshEntIdx = meshEntIds_h[ab];
+           const auto warpVec = get_vector<2>(warp, meshEntIdx);
+           std::cerr << side << ", "
+                     << ab << ", "
+                     << meshEntIdx << ", "
+                     << coords_h[meshEntIdx*2] << ", "
+                     << coords_h[meshEntIdx*2+1] << ", "
+                     << sPts_h[ab] << ", "
+                     << pts_h[ab*2] << ", "
+                     << pts_h[ab*2+1] << ", "
+                     << warpVec[0] << ", "
+                     << warpVec[1] << "\n";
+        }
+      }
+    } //end debug
+
     return warp;
   }
 
