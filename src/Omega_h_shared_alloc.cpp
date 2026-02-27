@@ -22,7 +22,7 @@ OMEGA_H_DLL bool entering_parallel = false;
 Allocs* global_allocs = nullptr;
 
 void start_tracking_allocations() {
-  OMEGA_H_CHECK(global_allocs == nullptr);
+  OMEGA_H_ALWAYS_CHECK(global_allocs == nullptr);
   global_allocs = new Allocs();
   global_allocs->first = nullptr;
   global_allocs->last = nullptr;
@@ -31,7 +31,7 @@ void start_tracking_allocations() {
 }
 
 void stop_tracking_allocations(Library* lib) {
-  OMEGA_H_CHECK(global_allocs != nullptr);
+  OMEGA_H_ALWAYS_CHECK(global_allocs != nullptr);
   auto comm = lib->world();
   auto mpi_high_water_bytes =
       comm->allreduce(I64(global_allocs->high_water_bytes), OMEGA_H_MAX);

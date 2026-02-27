@@ -39,7 +39,7 @@ void attach_basis_vectors(
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  OMEGA_H_CHECK(argc == 3);
+  OMEGA_H_ALWAYS_CHECK(argc == 3);
   std::string path = argv[1];
   std::string name = argv[2];
   auto world = lib.world();
