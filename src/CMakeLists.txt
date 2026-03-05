@@ -694,6 +694,8 @@ if(BUILD_TESTING)
       1 #enableSnap
       0 #enableSmoothing
       )
+    osh_add_exe(class_parametric_unit_test)
+    test_func(class_parametric_unit_test 1 ./class_parametric_unit_test)
   endif()
   osh_add_exe(amr_mpi_test)
   osh_add_exe(reverse_class_test)
