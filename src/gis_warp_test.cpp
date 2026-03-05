@@ -1,5 +1,6 @@
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_array_ops.hpp>
+#include <Omega_h_class_parametric_transfer.hpp>
 #include <Omega_h_cmdline.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_metric.hpp>
@@ -34,6 +35,8 @@ int main(int argc, char** argv) {
   mesh = Omega_h::binary::read(inpath, world, true);
   mesh.balance();
   Omega_h::AdaptOpts opts(&mesh);
+  // Set up ClassParametricTransfer for class_parametric tag handling
+  opts.xfer_opts.user_xfer = std::make_shared<Omega_h::ClassParametricTransfer>(&model);
 #ifdef OMEGA_H_USE_KOKKOS //FIXME should not be a kokkos flag...
   if(enableSnap) {
     opts.bspline_model = &model;

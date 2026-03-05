@@ -188,8 +188,11 @@ endif()
 if(Omega_h_USE_Kokkos)
   list(APPEND Omega_h_SOURCES
        Omega_h_pool_kokkos.cpp
-       Omega_h_bsplineModel2d.cpp)
-  list(APPEND Omega_h_HEADERS Omega_h_bsplineModel2d.hpp)
+       Omega_h_bsplineModel2d.cpp
+       Omega_h_class_parametric_transfer.cpp)
+  list(APPEND Omega_h_HEADERS
+       Omega_h_bsplineModel2d.hpp
+       Omega_h_class_parametric_transfer.hpp)
 endif()
 
 add_library(omega_h ${Omega_h_SOURCES})
