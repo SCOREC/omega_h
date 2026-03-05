@@ -40,6 +40,7 @@ private:
   Real vtxTol, edgeTol;
   Reals vtxCoords;
 
+protected:
   //Model load helper functions
   void setAdjInfo(Graph edgeToEdgeUse, LOs edgeUseToVtx, LOs loopUseToFace, LOs edgeUseToLoopUse);
 

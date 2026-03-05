@@ -254,6 +254,78 @@ namespace Omega_h {
   }
 #endif
 
+  BsplineModel2D::BsplineModel2D(BsplineModel2DTestModel testModel)
+  {
+    switch(testModel) {
+      case BsplineModel2DTestModel::ModelWithOneEdge:
+      {
+        // Create a single edge from (0,0,0) to (1,0,0)
+
+        // 1. Set up Model2D topology
+        // Vertices
+        LOs vtxIds({0, 1});
+        Reals vtxCoords({0.0, 0.0, 0.0,   // vertex 0: (0,0,0)
+                         1.0, 0.0, 0.0}); // vertex 1: (1,0,0)
+        setVertexInfo(vtxIds, vtxCoords);
+
+        // Edges and edge uses
+        LOs edgeIds({0});  // one edge with ID 0
+        LOs edgeUseIds({0, 1});  // two edge uses (forward and backward)
+        LOs edgeUseOrientation({1, 0});  // use 0: same direction, use 1: opposite
+        setEdgeInfo(edgeIds, edgeUseIds, edgeUseOrientation);
+
+        // Faces (empty - no faces for a single edge)
+        LOs faceIds({});
+        setFaceIds(faceIds);
+
+        // Loop uses (empty - no loops without faces)
+        LOs loopUseIds({});
+        LOs loopUseOrientation({});
+        setLoopUseIdsAndDir(loopUseIds, loopUseOrientation);
+
+        // Adjacencies
+        // Edge 0 has two uses: 0 and 1
+        Graph edgeToEdgeUse({0, 2}, {0, 1});
+
+        // Each edge use connects to its two vertices
+        // Edge use 0 (forward): vertex 0 -> vertex 1
+        // Edge use 1 (backward): vertex 1 -> vertex 0
+        LOs edgeUseToVtx({0, 1,   // edge use 0: vertices 0->1
+                          1, 0}); // edge use 1: vertices 1->0
+
+        // Empty adjacencies (no loops/faces)
+        LOs edgeUseToLoopUse({});
+        LOs loopUseToFace({});
+
+        setAdjInfo(edgeToEdgeUse, edgeUseToVtx, loopUseToFace, edgeUseToLoopUse);
+
+        // 2. Set up B-spline geometry
+        // Linear B-spline (order 2) from (0,0) to (1,0)
+
+        // One spline corresponding to edge 0
+        splineToCtrlPts = LOs({0, 2});  // Spline 0 has 2 control points (indices 0-1)
+        ctrlPtsX = Reals({0.0, 1.0});   // X coordinates of control points
+        ctrlPtsY = Reals({0.0, 0.0});   // Y coordinates of control points
+
+        // Clamped knot vector for linear spline (order 2)
+        splineToKnots = LOs({0, 4});    // Spline 0 has 4 knots (indices 0-3)
+        knotsX = Reals({0.0, 0.0, 1.0, 1.0});  // Clamped knot vector [0,0,1,1]
+        knotsY = Reals({0.0, 0.0, 1.0, 1.0});  // Same for Y
+
+        order = LOs({2});  // Linear spline has order 2
+
+        // Mapping from model edge ID to dense spline array index
+        // Edge ID 0 -> spline index 0
+        edgeIdToSplineIdx = buildEdgeIdMapping(*this);
+
+        break;
+      }
+      default:
+        std::cerr << "Error: Unknown test model type\n";
+        exit(EXIT_FAILURE);
+    }
+  }
+
 
   Reals BsplineModel2D::eval(LOs edgeIds, LOs edgeToLocalCoords, Reals localCoords) {
     assert(edgeIds.size()+1 == edgeToLocalCoords.size());

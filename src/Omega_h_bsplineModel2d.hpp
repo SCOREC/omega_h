@@ -6,6 +6,10 @@
 
 namespace Omega_h {
 
+enum class BsplineModel2DTestModel {
+  ModelWithOneEdge
+};
+
 class BsplineModel2D : public Model2D {
   private:
     LOs splineToCtrlPts; //offset array mapping splines to control points
@@ -32,6 +36,11 @@ class BsplineModel2D : public Model2D {
      * create the omegah model from a Simmetrix GeomSim model file and a file of omegah binary arrays with spline info
      */
     BsplineModel2D(filesystem::path const& geomSimModelFile, filesystem::path const& spline);
+
+    /**
+     * create a test model based on the specified enum option
+     */
+    BsplineModel2D(BsplineModel2DTestModel testModel);
 
     const LOs& getSplineToKnots() const {
       return splineToKnots;
