@@ -1,10 +1,13 @@
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_bsplineModel2d.hpp>
+#include <Omega_h_build.hpp>
 #include <Omega_h_class_parametric_transfer.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_library.hpp>
+#include <Omega_h_matrix.hpp>
 #include <Omega_h_mesh.hpp>
+#include <Omega_h_metric.hpp>
 #include <iostream>
 #include <cmath>
 
@@ -18,19 +21,42 @@ int main(int argc, char** argv) {
   std::cout << "=== ClassParametricTransfer Unit Test ===\n";
   std::cout << "Testing parametric coordinate interpolation during edge refinement\n\n";
 
-  // 1. Load the mesh from file
-  auto mesh_path = "meshes/test_single_edge.osh";
-  auto model_path = "meshes/test_single_edge.smd";
-  auto spline_path = "meshes/test_single_edge_spline.oshb";
-
-  std::cout << "Loading mesh from: " << mesh_path << "\n";
-  std::cout << "Loading model from: " << model_path << " and " << spline_path << "\n";
-
+  // 1. Create a simple mesh with one edge from (0,0,0) to (1,0,0)
+  std::cout << "Creating mesh programmatically\n";
   Omega_h::Mesh mesh(&lib);
-  Omega_h::binary::read(mesh_path, world, &mesh);
 
-  // 2. Load the BsplineModel2D
-  auto model = Omega_h::BsplineModel2D(model_path, spline_path);
+  // Build mesh: 1D edge (dimension 1) with 2 vertices
+  // Edge connects vertex 0 to vertex 1
+  Omega_h::LOs ev2v({0, 1});  // Edge-to-vertex connectivity
+  Omega_h::Reals coords({0.0, 1.0});
+  Omega_h::build_from_elems_and_coords(&mesh, OMEGA_H_SIMPLEX, Omega_h::EDGE, ev2v, coords);
+
+  OMEGA_H_CHECK_OP(mesh.nverts(),==,2);
+  OMEGA_H_CHECK_OP(mesh.nedges(),==,1);
+
+  // Add classification tags
+  // Both vertices are classified on model vertices (dim=0)
+  // Vertex 0 on model vertex 0, vertex 1 on model vertex 1
+  mesh.add_tag<Omega_h::I8>(Omega_h::VERT, "class_dim", 1,
+      Omega_h::Read<Omega_h::I8>({0, 0}));
+  mesh.add_tag<Omega_h::ClassId>(Omega_h::VERT, "class_id", 1,
+      Omega_h::Read<Omega_h::ClassId>({0, 1}));
+
+  // Parametric coordinates: vertex 0 at t=0.0, vertex 1 at t=1.0
+  // class_parametric has 2 components per vertex (u,v), but for edges we only use u
+  mesh.add_tag<Omega_h::Real>(Omega_h::VERT, "class_parametric", 2,
+      Omega_h::Read<Omega_h::Real>({0.0, 0.0,   // vertex 0: (u=0.0, v=0.0)
+                                      1.0, 0.0})); // vertex 1: (u=1.0, v=0.0)
+
+  // The single edge is classified on model edge 0 (dim=1)
+  mesh.add_tag<Omega_h::I8>(Omega_h::EDGE, "class_dim", 1,
+      Omega_h::Read<Omega_h::I8>({1}));
+  mesh.add_tag<Omega_h::ClassId>(Omega_h::EDGE, "class_id", 1,
+      Omega_h::Read<Omega_h::ClassId>({0}));
+
+  // 2. Create the BsplineModel2D with test model
+  std::cout << "Creating BsplineModel2D with test model\n";
+  auto model = Omega_h::BsplineModel2D(Omega_h::BsplineModel2DTestModel::ModelWithOneEdge);
 
   // 3. Verify initial mesh state
   std::cout << "\nInitial mesh state:\n";
@@ -79,7 +105,12 @@ int main(int argc, char** argv) {
 
   std::cout << "\nInitial state verification: PASSED\n";
 
-  // 4. Set up adaptation with ClassParametricTransfer
+  // 4. Compute and add metric tag from current edge lengths
+  std::cout << "\nComputing implied metrics from edge lengths\n";
+  auto metrics = Omega_h::get_implied_metrics(&mesh);
+  mesh.add_tag(Omega_h::VERT, "metric", Omega_h::symm_ncomps(mesh.dim()), metrics);
+
+  // 5. Set up adaptation with ClassParametricTransfer
   auto xfer = std::make_shared<Omega_h::ClassParametricTransfer>(&model);
 
   Omega_h::AdaptOpts opts(&mesh);
@@ -88,22 +119,23 @@ int main(int argc, char** argv) {
 
   // Force edge refinement by setting a very small max_length
   auto current_max_length = mesh.max_length();
+  opts.max_length_desired = current_max_length * 0.5;
   opts.max_length_allowed = current_max_length * 0.5;
 
   std::cout << "\nRunning adaptation:\n";
   std::cout << "  Current max edge length: " << current_max_length << "\n";
   std::cout << "  Target max edge length: " << opts.max_length_allowed << "\n";
 
-  // 5. Run adaptation
+  // 6. Run adaptation
   Omega_h::adapt(&mesh, opts);
 
-  // 6. Verify results
+  // 7. Verify results
   std::cout << "\nFinal mesh state:\n";
   std::cout << "  Vertices: " << mesh.nverts() << "\n";
   std::cout << "  Edges: " << mesh.nedges() << "\n";
 
-  OMEGA_H_CHECK(mesh.nverts() == 3);
-  OMEGA_H_CHECK(mesh.nedges() == 2);
+  OMEGA_H_CHECK_OP(mesh.nverts(),==,3);
+  OMEGA_H_CHECK_OP(mesh.nedges(),==,2);
 
   // Verify parametric coordinates after refinement (copy to host)
   auto final_params_host = Omega_h::HostRead<Omega_h::Real>(
@@ -123,16 +155,12 @@ int main(int argc, char** argv) {
 
   // Find the new midpoint vertex
   bool found_midpoint = false;
-  Omega_h::LO midpoint_idx = -1;
-  Omega_h::Real midpoint_param = -1.0;
 
   for (Omega_h::LO i = 0; i < mesh.nverts(); ++i) {
     Omega_h::Real p = final_params_host[i * 2 + 0];
     // Look for vertex with param close to 0.5
     if (std::abs(p - 0.5) < 1e-6) {
       found_midpoint = true;
-      midpoint_idx = i;
-      midpoint_param = p;
 
       // Verify it's classified on the model edge (dim=1)
       OMEGA_H_CHECK(final_class_dim_host[i] == 1);
