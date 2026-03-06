@@ -25,8 +25,7 @@ ClassParametricTransfer::ClassParametricTransfer(BsplineModel2D* model)
   }
 
   // Create lookup table: edge_vtx_lookup[edge_id * 2 + {0,1}] = vertex_id
-  Write<LO> edge_vtx_lookup_w((max_edge_id + 1) * 2, -1);
-  auto edge_vtx_lookup_host = HostWrite<LO>(edge_vtx_lookup_w);
+  auto edge_vtx_lookup_host = HostWrite<LO>((max_edge_id + 1) * 2, "modelEdge_to_modelVtx");
 
   for (LO i = 0; i < nedges; ++i) {
     LO model_edge_id = edge_ids_host[i];
@@ -45,7 +44,7 @@ ClassParametricTransfer::ClassParametricTransfer(BsplineModel2D* model)
   }
 
   // Store as device-accessible array
-  edge_vtx_lookup_ = LOs(edge_vtx_lookup_w);
+  edge_vtx_lookup_ = LOs(edge_vtx_lookup_host);
 }
 
 void ClassParametricTransfer::out_of_line_virtual_method() {}
