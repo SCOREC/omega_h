@@ -12,18 +12,106 @@ namespace Omega_h {
 
 class Mesh;
 
+/** \brief Application hook for custom field transfer during mesh adaptation.
+ *
+ * UserTransfer provides callbacks invoked during refinement, coarsening, and
+ * swapping operations to customize how application-specific fields are
+ * transferred from the old mesh to the new mesh. Each adaptation operation
+ * loops over entity dimensions (0=VERT to mesh->dim()), calling the
+ * corresponding method after default field transfers (should_inherit,
+ * should_interpolate, conserve, etc.) complete for that dimension.
+ *
+ * See \ref user_transfer_guide for more info.
+ */
 struct UserTransfer {
   virtual ~UserTransfer() = default;
   virtual void out_of_line_virtual_method();
+
+  /** \brief Transfer fields during edge refinement.
+   *
+   * Called once per dimension (0 to mesh->dim()) after default transfers
+   * (inherit, interpolate, metric, conserve) complete for dimension prod_dim.
+   *
+   * \param old_mesh [in] Mesh before refinement (read-only)
+   * \param new_mesh [in/out] Mesh after refinement (modify tags here)
+   * \param keys2edges [in] Maps key indices to refined edge IDs in old_mesh
+   * \param keys2midverts [in] Maps key indices to new midpoint vertex IDs in new_mesh
+   * \param prod_dim [in] Current entity dimension being processed (0=VERT, 1=EDGE, ...)
+   * \param keys2prods [in] CSR offset array: keys2prods[k] to keys2prods[k+1]
+   *                   gives product entity range for key k
+   * \param prods2new_ents [in] Maps product indices to new entity IDs in new_mesh
+   * \param same_ents2old_ents [in] Maps unchanged entity indices to old entity IDs
+   * \param same_ents2new_ents [in] Maps unchanged entity indices to new entity IDs
+   *
+   * \note For VERT dimension: new midpoint vertices are in prods2new_ents
+   *       (equivalently keys2midverts). For higher dimensions: products are
+   *       new entities created by splitting parent entities.
+   */
   virtual void refine(Mesh& old_mesh, Mesh& new_mesh, LOs keys2edges,
       LOs keys2midverts, Int prod_dim, LOs keys2prods, LOs prods2new_ents,
       LOs same_ents2old_ents, LOs same_ents2new_ents) = 0;
+
+  /** \brief Transfer fields during edge collapse/coarsening.
+   *
+   * Called once per dimension (0 to mesh->dim()) after default transfers
+   * complete for dimension prod_dim.
+   *
+   * \param old_mesh [in] Mesh before coarsening (read-only)
+   * \param new_mesh [in/out] Mesh after coarsening (modify tags here)
+   * \param keys2verts [in] Maps key indices to collapsing vertex IDs in old_mesh
+   * \param keys2doms [in] CSR graph (a2ab offsets, ab2b values) mapping keys to
+   *                  collapsing domain entity IDs
+   * \param prod_dim [in] Current entity dimension being processed
+   * \param prods2new_ents [in] Maps product indices to new entity IDs
+   *                       (empty for VERT dimension - no product vertices)
+   * \param same_ents2old_ents [in] Maps unchanged entity indices to old entity IDs
+   * \param same_ents2new_ents [in] Maps unchanged entity indices to new entity IDs
+   *
+   * \note For VERT dimension: No products exist (collapsed vertices removed).
+   *       All surviving vertices are "same" entities. For higher dimensions:
+   *       products represent entities in cavities created by collapse.
+   */
   virtual void coarsen(Mesh& old_mesh, Mesh& new_mesh, LOs keys2verts,
       Adj keys2doms, Int prod_dim, LOs prods2new_ents, LOs same_ents2old_ents,
       LOs same_ents2new_ents) = 0;
+
+  /** \brief Transfer fields during edge/face swaps.
+   *
+   * Called once per dimension (EDGE to mesh->dim()) after default transfers
+   * complete for dimension prod_dim. **Not called for VERT dimension**
+   * (use swap_copy_verts instead).
+   *
+   * \param old_mesh [in] Mesh before swap (read-only)
+   * \param new_mesh [in/out] Mesh after swap (modify tags here)
+   * \param prod_dim [in] Current entity dimension being processed (1=EDGE or higher)
+   * \param keys2edges [in] Maps key indices to swapped edge IDs in old_mesh
+   * \param keys2prods [in] CSR offset array for product entities
+   * \param prods2new_ents [in] Maps product indices to new entity IDs
+   * \param same_ents2old_ents [in] Maps unchanged entity indices to old entity IDs
+   * \param same_ents2new_ents [in] Maps unchanged entity indices to new entity IDs
+   *
+   * \note During swaps, vertices are completely unchanged (same IDs, same
+   *       coordinates). Only edge/face/element connectivity is modified.
+   */
   virtual void swap(Mesh& old_mesh, Mesh& new_mesh, Int prod_dim,
       LOs keys2edges, LOs keys2prods, LOs prods2new_ents,
       LOs same_ents2old_ents, LOs same_ents2new_ents) = 0;
+
+  /** \brief Transfer vertex fields during swaps when custom processing needed.
+   *
+   * Called **once per swap operation** (not per dimension) at the end of
+   * transfer_copy(), after all vertex tags matching should_transfer_copy()
+   * are copied and before the dimensional loop begins.
+   *
+   * \param old_mesh [in] Mesh before swap (read-only)
+   * \param new_mesh [in/out] Mesh after swap (modify VERT tags here)
+   *
+   * \note Swap operations preserve the vertex set exactly: same count, same
+   *       IDs, same coordinates, same ownership. Implement custom logic only
+   *       if vertex fields depend on surrounding element connectivity (e.g.,
+   *       gradient estimates, cached neighborhood data). Most vertex fields
+   *       are automatically copied and require no custom handling.
+   */
   virtual void swap_copy_verts(Mesh& old_mesh, Mesh& new_mesh) = 0;
 };
 

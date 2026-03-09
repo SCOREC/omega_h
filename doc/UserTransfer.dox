@@ -1,0 +1,558 @@
+/**
+\page user_transfer_guide UserTransfer Interface Guide
+
+\tableofcontents
+
+\section ut_overview Overview
+
+The UserTransfer interface provides application-level hooks to customize field
+transfer behavior during mesh adaptation operations. These callbacks enable
+applications to:
+
+- Implement custom interpolation schemes for application-specific fields
+- Handle fields requiring special treatment (e.g., parametric coordinates,
+  material interfaces, state variables with physical constraints)
+- Override or augment default transfer strategies
+- Maintain consistency across coupled physics fields
+
+\section ut_timing Call Timing and Sequence
+
+\subsection ut_adapt_sequence Adaptation Operation Sequence
+
+The adapt() function in Omega_h_adapt.cpp executes the following iterative
+sequence:
+
+1. **Size constraint satisfaction** (iterative until converged):
+   - refine_by_size() - Split edges exceeding max_length_desired
+   - coarsen_by_size() - Collapse edges below min_length_desired
+
+2. **Geometry snapping** (optional, if EGADS or bspline model present):
+   - Project vertices to CAD/geometric model surfaces
+
+3. **Quality constraint satisfaction** (iterative):
+   - swap_edges() - Edge/face swaps to improve element quality
+   - coarsen_slivers() - Remove degenerate elements
+
+Each operation (refine, coarsen, swap) internally rebuilds the mesh and
+transfers all fields from the old mesh to the new mesh.
+
+\subsection ut_dimensional_loop Dimensional Loop Structure
+
+All three adaptation operations iterate over mesh dimensions and call their
+respective UserTransfer method at **each dimension**:
+
+\subsubsection ut_refine_loop Refinement Loop
+\code{.cpp}
+// In refine_element_based() - Omega_h_refine.cpp:56-81
+for (Int ent_dim = 0; ent_dim <= mesh->dim(); ++ent_dim) {
+  // 1. Compute topology changes
+  modify_ents_adapt(mesh, &new_mesh, ent_dim, ...);
+
+  // 2. Transfer all fields at this dimension
+  transfer_refine(mesh, opts.xfer_opts, &new_mesh, keys2edges, keys2midverts,
+                  ent_dim, keys2prods, prods2new_ents,
+                  same_ents2old_ents, same_ents2new_ents);
+  // -> This calls user_xfer->refine() at line 423-426
+}
+\endcode
+
+\subsubsection ut_coarsen_loop Coarsening Loop
+\code{.cpp}
+// In coarsen_element_based2() - Omega_h_coarsen.cpp:128-154
+for (Int ent_dim = 0; ent_dim <= mesh->dim(); ++ent_dim) {
+  // 1. Compute topology changes
+  modify_ents_adapt(mesh, &new_mesh, ent_dim, ...);
+
+  // 2. Transfer all fields at this dimension
+  transfer_coarsen(mesh, opts.xfer_opts, &new_mesh, keys2verts, keys2doms,
+                   ent_dim, prods2new_ents,
+                   same_ents2old_ents, same_ents2new_ents);
+  // -> This calls user_xfer->coarsen() at line 615-618
+}
+\endcode
+
+\subsubsection ut_swap_loop Swapping Loop
+\code{.cpp}
+// In swap2d_element_based() - Omega_h_swap2d.cpp:47-69
+// and swap3d_element_based() - Omega_h_swap3d.cpp:53-75
+// 1. FIRST: Copy vertex data (vertices unchanged during swap)
+transfer_copy(mesh, opts.xfer_opts, &new_mesh, VERT);
+// -> This calls user_xfer->swap_copy_verts() at line 653
+
+// 2. THEN: Loop over edges/faces/elements (topology changed)
+for (Int ent_dim = EDGE; ent_dim <= mesh->dim(); ++ent_dim) {
+  // Compute topology changes
+  modify_ents_adapt(mesh, &new_mesh, ent_dim, ...);
+
+  // Transfer all fields at this dimension
+  transfer_swap(mesh, opts.xfer_opts, &new_mesh, ent_dim, keys2edges,
+                keys2prods, prods2new_ents,
+                same_ents2old_ents, same_ents2new_ents);
+  // -> This calls user_xfer->swap() at line 726-728
+}
+\endcode
+
+\section ut_keys_concept Understanding Keys
+
+The term "keys" appears throughout the UserTransfer interface and refers to the
+**independent set of entities** selected for modification during each adaptation
+operation. Understanding keys is essential for implementing custom field transfers.
+
+\subsection ut_keys_definition What Are Keys?
+
+Keys are mesh entities (vertices, edges, faces, or elements) that:
+
+1. **Form an independent set** - No two keys share adjacency relationships
+   (e.g., two key edges never share a common vertex). This property enables
+   conflict-free parallel modification of the mesh.
+
+2. **Are selected for modification** - Keys identify which entities will be:
+   - **Split** during refinement (key edges → new vertices at midpoints)
+   - **Collapsed** during coarsening (key vertices → removed via edge collapse)
+   - **Swapped** during swapping (key edges → new edge/face configurations)
+
+3. **Generate product entities** - Each key produces one or more new entities:
+   - Refinement: A key edge generates 2 child edges and 1 new midpoint vertex
+   - Coarsening: A key vertex collapses, generating new entities in the cavity
+   - Swapping: A key edge generates new edges/faces after topological reconnection
+
+\subsection ut_keys_selection Key Selection Algorithm
+
+Keys are computed via the `find_indset()` function (Omega_h_indset.cpp:17-33):
+
+\subsection ut_keys_parameters Key-Related Parameters
+
+UserTransfer methods receive several key-related arrays:
+
+**keys2edges / keys2verts**:
+- Array of entity IDs in the old mesh corresponding to keys
+- Length: `nkeys` (number of keys selected)
+- Example: `keys2edges[k]` gives the old_mesh edge ID for key `k`
+
+**keys2prods** (CSR offset array):
+- Maps each key to a range of product entities it generates
+- Length: `nkeys + 1`
+- Range for key `k`: `[keys2prods[k], keys2prods[k+1])`
+- Used to iterate over products: `for (prod = keys2prods[k]; prod < keys2prods[k+1]; ++prod)`
+
+**keys2midverts** (refinement only):
+- Maps each key to the new midpoint vertex ID in new_mesh
+- Length: `nkeys`
+- Equivalent to `prods2new_ents` when `prod_dim == VERT`
+- Example: `keys2midverts[k]` gives the new_mesh vertex ID created at the midpoint of key edge `k`
+
+**keys2doms** (coarsening only):
+- Adjacency structure (CSR graph) mapping keys to collapsing domain entity IDs
+- Structure: `keys2doms.a2ab` (offsets, same as keys2prods), `keys2doms.ab2b` (domain entity IDs)
+- Domains are old_mesh entities that will be removed or modified due to key collapse
+
+\section ut_default_transfers Default Field Transfer
+
+Before each UserTransfer callback executes, Omega_h applies built-in transfer
+strategies based on field names and TransferOpts configuration:
+
+\subsection ut_inherit Inherited Fields (should_inherit)
+
+Fields transferred **unchanged** from parent entities during refinement/
+coarsening. Applied to:
+- **Automatic**: "class_id", "class_dim", "momentum_velocity_fixed"
+- **User-specified**: Fields marked with OMEGA_H_INHERIT in TransferOpts.type_map
+
+**Requirements**: Field must exist at **all dimensions** with same type/ncomps.
+
+**Behavior**:
+- Refinement: New entities inherit from adjacent higher-dimensional entities
+- Coarsening: Product entities inherit from collapsing domains
+- Swapping: Product entities inherit from key edges
+
+\subsection ut_interpolate Interpolated Fields (should_interpolate)
+
+Fields transferred via **linear interpolation** for new vertices during
+refinement. Applied to:
+- **Automatic**: "coordinates", "warp"
+- **User-specified**: Fields marked with OMEGA_H_LINEAR_INTERP or
+  OMEGA_H_MOMENTUM_VELOCITY in TransferOpts.type_map
+
+**Requirements**: VERT dimension only, OMEGA_H_REAL type.
+
+**Behavior**:
+- Refinement (VERT only): New midpoint vertices average parent edge endpoint values
+- Coarsening (VERT only): No products created; same vertices copied
+- Swapping: Not applicable (vertices unchanged)
+
+\subsection ut_other_transfers Other Automatic Transfers
+
+- **Metric fields** (should_interpolate + is_metric): "metric", "target_metric" -
+  uses metric-space interpolation (M^{-1/2} or log-Euclidean)
+- **Density fields** (is_density): Element dimension, used for conservation
+- **Conserved fields** (should_conserve): Element dimension, integral preserved
+- **Pointwise fields** (should_fit): Element dimension, least-squares fitting
+- **Derived fields**: "size", "quality", "length" automatically recomputed
+
+\section ut_callback_order Callback Execution Order Within transfer_* Functions
+
+Each `transfer_refine()`, `transfer_coarsen()`, and `transfer_swap()` function
+executes in the following order for dimension `prod_dim`:
+
+\subsection ut_refine_order transfer_refine Execution (Omega_h_transfer.cpp:392-428)
+
+\code
+1. transfer_inherit_refine()       [All dimensions]
+   - Transfers fields matching should_inherit()
+
+2. IF prod_dim == VERT:
+   a. transfer_linear_interp()      [VERT only]
+      - Transfers fields matching should_interpolate()
+   b. transfer_metric()             [VERT only]
+      - Transfers fields matching is_metric()
+
+3. IF prod_dim == EDGE:
+   - transfer_length()              [Recomputes edge lengths]
+
+4. IF prod_dim == FACE:
+   - transfer_face_flux()           [Transfers face flux if present]
+
+5. IF prod_dim == mesh->dim():
+   a. transfer_size()               [Recomputes element sizes]
+   b. transfer_quality()            [Recomputes element quality]
+   c. transfer_density_refine()     [Transfers density fields]
+   d. transfer_conserve_refine()    [Transfers conserved fields]
+   e. transfer_pointwise_refine()   [Transfers pointwise/fitted fields]
+
+6. IF opts.user_xfer exists:
+   -> user_xfer->refine(old_mesh, new_mesh, keys2edges, keys2midverts,
+                        prod_dim, keys2prods, prods2new_ents,
+                        same_ents2old_ents, same_ents2new_ents)
+\endcode
+
+**Key Point**: UserTransfer::refine() is called **AFTER** all default transfers
+for the current dimension, including should_interpolate() fields. To override 
+default interpolation, remove the field name from should_interpolate() and
+handle it entirely in the user callback.
+
+\subsection ut_coarsen_order transfer_coarsen Execution (Omega_h_transfer.cpp:586-619)
+
+\code
+1. IF prod_dim == VERT:
+   - transfer_no_products()         [Copies same vertices, no interpolation]
+   ELSE:
+   - transfer_inherit_coarsen()     [Transfers inherited fields]
+
+2. IF prod_dim == EDGE:
+   - transfer_length()
+
+3. IF prod_dim == FACE:
+   - transfer_face_flux()
+
+4. IF prod_dim == mesh->dim():
+   a. transfer_size()
+   b. transfer_quality()
+   c. transfer_pointwise()          [For coarsen: uses vertex-based keys]
+   d. transfer_densities_and_conserve_coarsen()
+
+5. IF opts.user_xfer exists:
+   -> user_xfer->coarsen(old_mesh, new_mesh, keys2verts, keys2doms,
+                         prod_dim, prods2new_ents,
+                         same_ents2old_ents, same_ents2new_ents)
+\endcode
+
+\subsection ut_swap_order transfer_swap Execution (Omega_h_transfer.cpp:702-730)
+
+\code
+1. transfer_inherit_swap()          [All dimensions except VERT]
+   - Transfers fields matching should_inherit()
+
+2. IF prod_dim == EDGE:
+   - transfer_length()
+
+3. IF prod_dim == FACE:
+   - transfer_face_flux()
+
+4. IF prod_dim == mesh->dim():
+   a. transfer_size()
+   b. transfer_quality()
+   c. transfer_pointwise()
+   d. transfer_densities_and_conserve_swap()
+
+5. IF opts.user_xfer exists:
+   -> user_xfer->swap(old_mesh, new_mesh, prod_dim, keys2edges, keys2prods,
+                      prods2new_ents, same_ents2old_ents, same_ents2new_ents)
+\endcode
+
+**Note**: For VERT dimension during swaps, transfer_copy() is called instead
+(before the dimensional loop), which invokes user_xfer->swap_copy_verts().
+
+\subsection ut_swap_copy_verts_order transfer_copy Execution (Omega_h_transfer.cpp:632-654)
+
+\code
+1. FOR each tag at dimension prod_dim:
+   IF should_transfer_copy(tag):
+     - Copy tag data unchanged from old_mesh to new_mesh
+
+2. IF opts.user_xfer exists:
+   -> user_xfer->swap_copy_verts(old_mesh, new_mesh)
+\endcode
+
+Called **only during swap operations** for VERT dimension before the main
+dimensional loop.
+
+\section ut_method_reference Method Reference
+
+\subsection ut_refine_method UserTransfer::refine()
+
+\code{.cpp}
+virtual void refine(Mesh& old_mesh, Mesh& new_mesh,
+                    LOs keys2edges, LOs keys2midverts,
+                    Int prod_dim, LOs keys2prods, LOs prods2new_ents,
+                    LOs same_ents2old_ents, LOs same_ents2new_ents) = 0;
+\endcode
+
+**Purpose**: Transfer application-specific fields during edge refinement.
+
+**When Called**:
+- Once per dimension (0 to mesh->dim()) during refine_element_based()
+- After all default transfers for dimension prod_dim
+
+**Parameters**:
+- \p old_mesh - Mesh before refinement (read-only access)
+- \p new_mesh - Mesh after refinement (add/modify tags here)
+- \p keys2edges - LOs mapping key indices to refined edge IDs in old_mesh
+- \p keys2midverts - LOs mapping key indices to new midpoint vertex IDs in new_mesh
+- \p prod_dim - Current entity dimension being processed (0=VERT, 1=EDGE, etc.)
+- \p keys2prods - LOs(nkeys+1) CSR offset array: keys2prods[k] to keys2prods[k+1]
+                  gives product entity range for key k
+- \p prods2new_ents - LOs mapping product indices to new entity IDs in new_mesh
+- \p same_ents2old_ents - LOs mapping unchanged entity indices to old entity IDs
+- \p same_ents2new_ents - LOs mapping unchanged entity indices to new entity IDs
+
+**Typical Usage**:
+\code{.cpp}
+void MyTransfer::refine(Mesh& old_mesh, Mesh& new_mesh,
+                        LOs keys2edges, LOs keys2midverts,
+                        Int prod_dim, LOs keys2prods, LOs prods2new_ents,
+                        LOs same_ents2old_ents, LOs same_ents2new_ents) {
+  if (prod_dim == VERT) {
+    // Handle vertex field transfer (e.g., parametric coordinates)
+    auto old_data = old_mesh.get_array<Real>(VERT, "my_field");
+    auto ncomps = old_mesh.get_tagbase(VERT, "my_field")->ncomps();
+    Write<Real> new_data(new_mesh.nverts() * ncomps);
+
+    // Copy unchanged vertices
+    map_into(read(unmap(same_ents2old_ents, old_data, ncomps)),
+             same_ents2new_ents, new_data, ncomps);
+
+    // Compute values for new midpoint vertices
+    auto nkeys = keys2edges.size();
+    auto edges2verts = old_mesh.ask_verts_of(EDGE);
+    auto f = OMEGA_H_LAMBDA(LO k) {
+      auto edge = keys2edges[k];
+      auto v0 = edges2verts[edge * 2 + 0];
+      auto v1 = edges2verts[edge * 2 + 1];
+      auto midv = keys2midverts[k];
+      // Custom interpolation logic here
+      new_data[midv] = custom_interp(old_data[v0], old_data[v1]);
+    };
+    parallel_for(nkeys, f);
+
+    new_mesh.add_tag<Real>(VERT, "my_field", ncomps, Read<Real>(new_data));
+  }
+}
+\endcode
+
+\subsection ut_coarsen_method UserTransfer::coarsen()
+
+\code{.cpp}
+virtual void coarsen(Mesh& old_mesh, Mesh& new_mesh,
+                     LOs keys2verts, Adj keys2doms,
+                     Int prod_dim, LOs prods2new_ents,
+                     LOs same_ents2old_ents, LOs same_ents2new_ents) = 0;
+\endcode
+
+**Purpose**: Transfer application-specific fields during edge collapse/coarsening.
+
+**When Called**:
+- Once per dimension (0 to mesh->dim()) during coarsen_element_based2()
+- After all default transfers for dimension prod_dim
+
+**Parameters**:
+- \p old_mesh - Mesh before coarsening (read-only access)
+- \p new_mesh - Mesh after coarsening (add/modify tags here)
+- \p keys2verts - LOs mapping key indices to collapsing vertex IDs in old_mesh
+- \p keys2doms - Adj (CSR graph) mapping keys to collapsing domain entity IDs
+                 Structure: keys2doms.a2ab (offsets), keys2doms.ab2b (domain IDs)
+- \p prod_dim - Current entity dimension being processed
+- \p prods2new_ents - LOs mapping product indices to new entity IDs
+                      (Only non-empty for prod_dim > VERT)
+- \p same_ents2old_ents - LOs mapping unchanged entity indices to old entity IDs
+- \p same_ents2new_ents - LOs mapping unchanged entity indices to new entity IDs
+
+**Key Difference from Refine**:
+- For VERT dimension, there are **no product vertices** (no prods2new_ents)
+- All surviving vertices are "same" entities; collapsed vertices are removed
+- For higher dimensions, products represent entities in cavities created by collapse
+
+**Typical Usage**:
+\code{.cpp}
+void MyTransfer::coarsen(Mesh& old_mesh, Mesh& new_mesh,
+                         LOs keys2verts, Adj keys2doms,
+                         Int prod_dim, LOs prods2new_ents,
+                         LOs same_ents2old_ents, LOs same_ents2new_ents) {
+  if (prod_dim == VERT) {
+    // Only copy unchanged vertices (no products for VERT in coarsen)
+    auto old_data = old_mesh.get_array<Real>(VERT, "my_field");
+    auto ncomps = old_mesh.get_tagbase(VERT, "my_field")->ncomps();
+    auto new_data = read(unmap(same_ents2old_ents, old_data, ncomps));
+    new_mesh.add_tag<Real>(VERT, "my_field", ncomps, new_data);
+  }
+}
+\endcode
+
+\subsection ut_swap_method UserTransfer::swap()
+
+\code{.cpp}
+virtual void swap(Mesh& old_mesh, Mesh& new_mesh,
+                  Int prod_dim, LOs keys2edges, LOs keys2prods,
+                  LOs prods2new_ents,
+                  LOs same_ents2old_ents, LOs same_ents2new_ents) = 0;
+\endcode
+
+**Purpose**: Transfer application-specific fields during edge/face swaps.
+
+**When Called**:
+- Once per dimension (EDGE to mesh->dim()) during swap operations
+- After all default transfers for dimension prod_dim
+- **NOT called for VERT dimension** (use swap_copy_verts instead)
+
+**Parameters**:
+- \p old_mesh - Mesh before swap (read-only access)
+- \p new_mesh - Mesh after swap (add/modify tags here)
+- \p prod_dim - Current entity dimension being processed (1=EDGE or higher)
+- \p keys2edges - LOs mapping key indices to swapped edge IDs in old_mesh
+- \p keys2prods - LOs(nkeys+1) CSR offset array for product entities
+- \p prods2new_ents - LOs mapping product indices to new entity IDs
+- \p same_ents2old_ents - LOs mapping unchanged entity indices to old entity IDs
+- \p same_ents2new_ents - LOs mapping unchanged entity indices to new entity IDs
+
+**Key Point**: During swaps, the vertex set is **completely unchanged** (same IDs,
+same coordinates). Only edge/face/element connectivity is modified. Therefore,
+swap() is only called for dimensions >= EDGE.
+
+**Typical Usage**:
+\code{.cpp}
+void MyTransfer::swap(Mesh& old_mesh, Mesh& new_mesh,
+                      Int prod_dim, LOs keys2edges, LOs keys2prods,
+                      LOs prods2new_ents,
+                      LOs same_ents2old_ents, LOs same_ents2new_ents) {
+  if (prod_dim == EDGE) {
+    // Handle edge field transfer during swap
+    // New edges created, some old edges removed
+    auto old_data = old_mesh.get_array<Real>(EDGE, "my_edge_field");
+    auto ncomps = old_mesh.get_tagbase(EDGE, "my_edge_field")->ncomps();
+    Write<Real> new_data(new_mesh.nedges() * ncomps);
+
+    // Copy unchanged edges
+    map_into(read(unmap(same_ents2old_ents, old_data, ncomps)),
+             same_ents2new_ents, new_data, ncomps);
+
+    // Compute values for new product edges
+    // (typically inherit from key edges or adjacent entities)
+
+    new_mesh.add_tag<Real>(EDGE, "my_edge_field", ncomps, Read<Real>(new_data));
+  }
+}
+\endcode
+
+\subsection ut_swap_copy_verts_method UserTransfer::swap_copy_verts()
+
+\code{.cpp}
+virtual void swap_copy_verts(Mesh& old_mesh, Mesh& new_mesh) = 0;
+\endcode
+
+**Purpose**: Transfer vertex fields during swap operations when vertices are
+unchanged but custom processing is needed.
+
+**When Called**:
+- **Once per swap operation** (not per dimension)
+- At the end of transfer_copy() before the dimensional loop begins
+- After all vertex tags matching should_transfer_copy() are copied
+
+**Parameters**:
+- \p old_mesh - Mesh before swap (read-only access)
+- \p new_mesh - Mesh after swap (add/modify VERT tags here)
+
+**Rationale**: Swap operations preserve the vertex set exactly:
+- Number of vertices: unchanged
+- Vertex IDs: unchanged (1-to-1 mapping)
+- Vertex coordinates: unchanged
+- Vertex ownership: unchanged
+
+However, applications may need custom vertex field updates when:
+- Fields depend on surrounding element connectivity (e.g., gradient estimates)
+- Fields cache neighborhood information
+- Boundary condition data depends on incident element types
+
+
+**When to Leave Empty**: If your application has no vertex fields requiring
+special treatment during swaps, this method can have an empty implementation.
+
+\section ut_implementation Implementation Guidelines
+
+\subsection ut_guidelines Best Practices
+
+1. **Check dimension**: Most implementations specialize behavior based on prod_dim:
+   \code{.cpp}
+   if (prod_dim == VERT) { /* vertex-specific logic */ }
+   else if (prod_dim == mesh->dim()) { /* element-specific logic */ }
+   \endcode
+
+2. **Use provided mapping arrays**: Always map through same_ents2old_ents to copy
+   unchanged entities rather than reimplementing the mapping logic.
+
+3. **Parallel execution**: Use parallel_for() with OMEGA_H_LAMBDA for field
+   computations to enable GPU execution when Kokkos is enabled.
+
+4. **Tag management**:
+   - Use new_mesh.add_tag() to create new tags, or new_mesh.set_tag() to update existing tags
+   - Note: set_tag() requires the tag to already exist (use add_tag() first if needed)
+   - Check old_mesh.has_tag() before accessing tags that might not exist
+
+5. **Avoid duplication**: If Omega_h's default transfer (should_interpolate,
+   should_inherit, etc.) is sufficient, **do not reimplement** it in UserTransfer.
+   Only override when necessary.
+
+6. **Conservation**: If implementing custom transfers for conserved quantities,
+   ensure integral preservation or document deviations.
+
+\subsection ut_avoid_default_conflicts Avoiding Conflicts with Default Transfers
+
+**Problem**: If a field name appears in should_interpolate() and you also handle
+it in UserTransfer::refine(), the field will be transferred **twice**:
+1. First by transfer_linear_interp() (default)
+2. Then by your custom code
+
+**Solutions**:
+1. **Remove from default transfer** (preferred for complete control):
+   \code{.cpp}
+   // In Omega_h_transfer.cpp:37-46, remove field from should_interpolate()
+   // Then handle entirely in UserTransfer::refine()
+   \endcode
+
+2. **Overwrite after default transfer** (acceptable but wasteful):
+   \code{.cpp}
+   new_mesh.set_tag(VERT, "my_field", custom_data);  // Overwrites default
+   \endcode
+
+3. **Use different field names** (cleanest):
+   \code{.cpp}
+   // Don't reuse "coordinates", use "my_coordinates" instead
+   \endcode
+
+\section ut_related Related Documentation
+
+- TransferOpts (Omega_h_adapt.hpp) - Configure default transfer strategies
+- should_inherit() (Omega_h_transfer.cpp:21) - Automatic inheritance logic
+- should_interpolate() (Omega_h_transfer.cpp:37) - Automatic interpolation logic
+- adapt() (Omega_h_adapt.cpp) - Main adaptation driver
+- Omega_h_transfer.cpp - Implementation of all transfer functions
+
+*/
