@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 
+const bool DEBUG = false;
+
 // Simple test case defined by number of initial edges
 struct TestCase {
   std::string name;
@@ -84,10 +86,7 @@ void buildTestMesh(Omega_h::Mesh* mesh, const int numEdges) {
 
 // Run a test case: build mesh, adapt it, verify results
 bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
-  std::cout << "\n========================================\n";
-  std::cout << "Running test: " << test.name << "\n";
-  std::cout << "Initial edges: " << test.numEdges << "\n";
-  std::cout << "========================================\n";
+  std::cout << "Running test: " << test.name << " Initial edges: " << test.numEdges << "\n";
 
   // Build the test mesh
   Omega_h::Mesh mesh(lib);
@@ -96,32 +95,28 @@ bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
   int initialNumVerts = mesh.nverts();
   int initialNumEdges = mesh.nedges();
 
-  std::cout << "\nInitial mesh state:\n";
-  std::cout << "  Vertices: " << initialNumVerts << "\n";
-  std::cout << "  Edges: " << initialNumEdges << "\n";
-
   // Print initial state
-  auto initial_params = Omega_h::HostRead<Omega_h::Real>(
-      mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric"));
-  auto initial_class_dim = Omega_h::HostRead<Omega_h::I8>(
-      mesh.get_array<Omega_h::I8>(Omega_h::VERT, "class_dim"));
-  auto initial_class_id = Omega_h::HostRead<Omega_h::LO>(
-      mesh.get_array<Omega_h::LO>(Omega_h::VERT, "class_id"));
+  if(DEBUG) {
+    auto initial_params = Omega_h::HostRead<Omega_h::Real>(
+        mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric"));
+    auto initial_class_dim = Omega_h::HostRead<Omega_h::I8>(
+        mesh.get_array<Omega_h::I8>(Omega_h::VERT, "class_dim"));
+    auto initial_class_id = Omega_h::HostRead<Omega_h::LO>(
+        mesh.get_array<Omega_h::LO>(Omega_h::VERT, "class_id"));
 
-  std::cout << "\nInitial vertex classification and parametric coords:\n";
-  for (Omega_h::LO i = 0; i < mesh.nverts(); ++i) {
-    std::cout << "  v" << i << ": class_dim=" << (int)initial_class_dim[i]
-              << ", class_id=" << initial_class_id[i]
-              << ", param=(" << initial_params[i * 2 + 0] << ", "
-              << initial_params[i * 2 + 1] << ")\n";
+    std::cout << "\nInitial vertex classification and parametric coords:\n";
+    for (Omega_h::LO i = 0; i < mesh.nverts(); ++i) {
+      std::cout << "  v" << i << ": class_dim=" << (int)initial_class_dim[i]
+        << ", class_id=" << initial_class_id[i]
+        << ", param=(" << initial_params[i * 2 + 0] << ", "
+        << initial_params[i * 2 + 1] << ")\n";
+    }
   }
 
   // Create BsplineModel2D
-  std::cout << "\nCreating BsplineModel2D with test model\n";
   auto model = Omega_h::BsplineModel2D(Omega_h::BsplineModel2DTestModel::ModelWithOneEdge);
 
   // Compute metrics and set up adaptation
-  std::cout << "Computing implied metrics from edge lengths\n";
   auto metrics = Omega_h::get_implied_metrics(&mesh);
   mesh.add_tag(Omega_h::VERT, "metric", Omega_h::symm_ncomps(mesh.dim()), metrics);
 
@@ -129,16 +124,16 @@ bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
 
   Omega_h::AdaptOpts opts(&mesh);
   opts.xfer_opts.user_xfer = xfer;
-  opts.verbosity = Omega_h::EXTRA_STATS;
+  if(DEBUG) {
+    opts.verbosity = Omega_h::EXTRA_STATS;
+  } else {
+    opts.verbosity = Omega_h::SILENT;
+  }
 
   // Force edge refinement - each edge should split once
   auto current_max_length = mesh.max_length();
   opts.max_length_desired = current_max_length * 0.5;
   opts.max_length_allowed = current_max_length * 0.5;
-
-  std::cout << "\nRunning adaptation:\n";
-  std::cout << "  Current max edge length: " << current_max_length << "\n";
-  std::cout << "  Target max edge length: " << opts.max_length_allowed << "\n";
 
   // Run adaptation
   Omega_h::adapt(&mesh, opts);
@@ -147,27 +142,25 @@ bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
   int expectedNumVerts = 2 * test.numEdges + 1;
   int expectedNumEdges = 2 * test.numEdges;
 
-  std::cout << "\nFinal mesh state:\n";
-  std::cout << "  Vertices: " << mesh.nverts() << " (expected: " << expectedNumVerts << ")\n";
-  std::cout << "  Edges: " << mesh.nedges() << " (expected: " << expectedNumEdges << ")\n";
-
   OMEGA_H_CHECK_OP(mesh.nverts(), ==, expectedNumVerts);
   OMEGA_H_CHECK_OP(mesh.nedges(), ==, expectedNumEdges);
 
   // Print final state
-  auto final_params = Omega_h::HostRead<Omega_h::Real>(
-      mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric"));
-  auto final_class_dim = Omega_h::HostRead<Omega_h::I8>(
-      mesh.get_array<Omega_h::I8>(Omega_h::VERT, "class_dim"));
-  auto final_class_id = Omega_h::HostRead<Omega_h::LO>(
-      mesh.get_array<Omega_h::LO>(Omega_h::VERT, "class_id"));
+  if(DEBUG) {
+    auto final_params = Omega_h::HostRead<Omega_h::Real>(
+        mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric"));
+    auto final_class_dim = Omega_h::HostRead<Omega_h::I8>(
+        mesh.get_array<Omega_h::I8>(Omega_h::VERT, "class_dim"));
+    auto final_class_id = Omega_h::HostRead<Omega_h::LO>(
+        mesh.get_array<Omega_h::LO>(Omega_h::VERT, "class_id"));
 
-  std::cout << "\nFinal vertex classification and parametric coords:\n";
-  for (Omega_h::LO i = 0; i < mesh.nverts(); ++i) {
-    std::cout << "  v" << i << ": class_dim=" << (int)final_class_dim[i]
-              << ", class_id=" << final_class_id[i]
-              << ", param=(" << final_params[i * 2 + 0] << ", "
-              << final_params[i * 2 + 1] << ")\n";
+    std::cout << "\nFinal vertex classification and parametric coords:\n";
+    for (Omega_h::LO i = 0; i < mesh.nverts(); ++i) {
+      std::cout << "  v" << i << ": class_dim=" << (int)final_class_dim[i]
+        << ", class_id=" << final_class_id[i]
+        << ", param=(" << final_params[i * 2 + 0] << ", "
+        << final_params[i * 2 + 1] << ")\n";
+    }
   }
 
   const auto parametric = mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric");
@@ -175,7 +168,7 @@ bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
   const auto passed = Omega_h::are_close(parametric_0, mesh.coords());
 
   const auto resString = passed ? "PASSED" : "FAILED";
-  std::cout << "\nTest '" << test.name << "' " << std::string(resString) << "\n";
+  std::cout << "Test '" << test.name << "' " << std::string(resString) << "\n";
   return true;
 }
 
@@ -185,9 +178,6 @@ int main(int argc, char** argv) {
 
   // This is a serial-only unit test
   OMEGA_H_CHECK(world->size() == 1);
-
-  std::cout << "=== ClassParametricTransfer Unit Test ===\n";
-  std::cout << "Testing parametric coordinate interpolation during edge refinement\n\n";
 
   // Define test cases
   std::vector<TestCase> tests = {
