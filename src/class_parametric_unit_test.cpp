@@ -170,9 +170,12 @@ bool runTestCase(const TestCase& test, Omega_h::Library* lib) {
               << final_params[i * 2 + 1] << ")\n";
   }
 
-  // TODO: Add verification of parametric coordinates
+  const auto parametric = mesh.get_array<Omega_h::Real>(Omega_h::VERT, "class_parametric");
+  const auto parametric_0 = Omega_h::get_component(parametric, 2, 0);
+  const auto passed = Omega_h::are_close(parametric_0, mesh.coords());
 
-  std::cout << "\nTest '" << test.name << "' PASSED\n";
+  const auto resString = passed ? "PASSED" : "FAILED";
+  std::cout << "\nTest '" << test.name << "' " << std::string(resString) << "\n";
   return true;
 }
 
@@ -189,7 +192,8 @@ int main(int argc, char** argv) {
   // Define test cases
   std::vector<TestCase> tests = {
     {"Single edge splits into two", 1},
-    {"Two edges both split (4 edges total)", 2}
+    {"Two edges both split (4 edges total)", 2},
+    {"8 edges, all split (16 edges total)", 8}
   };
 
   // Run all test cases
