@@ -26,7 +26,7 @@ sequence:
    - refine_by_size() - Split edges exceeding max_length_desired
    - coarsen_by_size() - Collapse edges below min_length_desired
 
-2. **Geometry snapping** (optional, if EGADS or bspline model present):
+2. **Geometry snapping** (optional, if EGADS model present):
    - Project vertices to CAD/geometric model surfaces
 
 3. **Quality constraint satisfaction** (iterative):
