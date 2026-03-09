@@ -498,7 +498,7 @@ Future<T> Comm::ialltoallv(Read<T> sendbuf_dev, Read<LO> sdispls_dev,
       nonnull(sendbuf.data()), nonnull(sdispls.data()),
       MpiTraits<T>::datatype(), nonnull(recvbuf.data()),
       nonnull(rdispls.data()), MpiTraits<T>::datatype(), impl_);
-  auto callback = [=, this](HostWrite<T> buf) -> Read<T> {
+  auto callback = [this, self_data, rdispls_dev, width](HostWrite<T> buf) -> Read<T> {
     auto recvbuf_dev = Read<T>(buf.write());
     self_send_part2(self_data, self_src_, &recvbuf_dev, rdispls_dev, width);
     return recvbuf_dev;

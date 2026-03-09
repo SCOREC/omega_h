@@ -353,6 +353,13 @@ protected:
 
   virtual ~Mesh() = default;
 
+  /** Stores the association of strings with classification info (id+dim) to
+   * support the Omega_h::ents_on_closure and Omega_h::nodes_on_closure APIs.
+   * 
+   * ClassSets are also used during conversion from and back to other data structures
+   * and files such as ADIOS2 and Exodus II to preserve the names of mesh entity
+   * sets.
+   */
   ClassSets class_sets;
   [[nodiscard]] const TagVector& get_rc_tags(Int dim) const {
     return rc_field_tags_[dim];

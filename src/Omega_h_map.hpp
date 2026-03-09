@@ -55,6 +55,17 @@ LOs invert_permutation(LOs a2b);
 
 Read<I8> invert_marks(Read<I8> marks);
 
+/**
+ * \brief collect the indices of all marked entries into a compact array
+ * \param marks (in) array of marks where marks[i] != 0 indicates entry i is marked
+ * \return array of indices where marks[i] != 0, in ascending order
+ *
+ * \details Converts a sparse marking array into a dense array of marked indices.
+ * The returned array has size equal to the number of marked entries (sum of marks).
+ * For example, if marks = [0, 1, 1, 0, 1], the result is [1, 2, 4].
+ * This is commonly used after filtering operations to map from kept entities
+ * to their original indices.
+ */
 LOs collect_marked(Read<I8> marks);
 
 Read<I8> mark_image(LOs a2b, LO nb);

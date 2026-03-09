@@ -1,5 +1,5 @@
-#ifndef INERTIA_HPP
-#define INERTIA_HPP
+#ifndef OMEGA_H_INERTIA_HPP
+#define OMEGA_H_INERTIA_HPP
 
 #include <vector>
 

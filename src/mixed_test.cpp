@@ -192,10 +192,11 @@ void test_finer_meshes(CommPtr comm, std::string mesh_dir) {
 int main(int argc, char** argv) {
   test_degree();
 
-  if (argc != 2) {
-    Omega_h_fail("Usage: a.out <path to meshes directory>\n");
+  if (argc != 3) {
+    Omega_h_fail("Usage: a.out <path to meshes directory> <path to output directory>\n");
   }
-  auto const mesh_dir = argv[1];
+  auto const in_mesh_dir = argv[1];
+  auto const mesh_dir = argv[2];
   auto lib = Library(&argc, &argv);
   auto comm = lib.world();
 
@@ -237,7 +238,7 @@ int main(int argc, char** argv) {
   test_adjs(&mesh);
   test_tags(&mesh);
 
-  test_finer_meshes(comm, mesh_dir);
+  test_finer_meshes(comm, in_mesh_dir);
 
   return 0;
 }

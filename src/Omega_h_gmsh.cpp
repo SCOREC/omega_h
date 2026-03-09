@@ -100,6 +100,11 @@ void seek_line(std::istream& stream, std::string const& want) {
   OMEGA_H_CHECK(stream);
   std::string line;
   while (std::getline(stream, line)) {
+    // Strip Windows CR
+    if (!line.empty() && line.back() == '\r') {
+      line.pop_back();
+    }
+
     if (line == want) {
       break;
     }

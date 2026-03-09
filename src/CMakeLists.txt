@@ -340,6 +340,11 @@ osh_add_util(ascii_vtk2osh)
 set(ENABLE_CTEST_MEMPOOL OFF CACHE BOOL "Run tests with the Kokkos mempool enabled")
 
 if(BUILD_TESTING)
+  # Create test output directory in build tree to avoid polluting source tree
+  set(TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/test_output)
+  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
+  file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR}/d3d)
+
   if(Omega_h_USE_MPI)
     if(NOT MPIEXEC_EXECUTABLE)
       get_filename_component(COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
@@ -427,39 +432,39 @@ if(BUILD_TESTING)
     test_func(run_tri_convert_gold 1 ./meshsim2osh
       ${d3dMesh}/d3d-coreMesh.sms
       ${d3dMesh}/d3d.smd
-      ${d3dMesh}/d3d-coreMesh-gold.osh)
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-gold.osh)
     test_func(run_tri_convert 1 ./meshsim2osh
       ${d3dMesh}/d3d-coreMesh.sms
       ${d3dMesh}/d3d.smd
-      ${d3dMesh}/d3d-coreMesh.osh)
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh.osh)
     #ensure determinism (with same build) of meshsim2osh
     test_func(diff_tri_convert 1 ./oshdiff
-      ${d3dMesh}/d3d-coreMesh-gold.osh
-      ${d3dMesh}/d3d-coreMesh.osh)
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-gold.osh
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh.osh)
     test_func(run_tri_convert_numbering_gold 1 ./meshsim2osh
       ${d3dMesh}/d3d-coreMesh.sms
       ${d3dMesh}/d3d.smd
-      ${d3dMesh}/d3d-coreMesh-numbered-gold.osh
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-numbered-gold.osh
       -numbering ${d3dMesh}/d3d-coreMesh.nex)
     test_func(run_tri_convert_numbering 1 ./meshsim2osh
       ${d3dMesh}/d3d-coreMesh.sms
       ${d3dMesh}/d3d.smd
-      ${d3dMesh}/d3d-coreMesh-numbered.osh
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-numbered.osh
       -numbering ${d3dMesh}/d3d-coreMesh.nex)
     test_func(diff_tri_convert_numbering 1 ./oshdiff
-      ${d3dMesh}/d3d-coreMesh-numbered-gold.osh
-      ${d3dMesh}/d3d-coreMesh-numbered.osh)
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-numbered-gold.osh
+      ${TEST_OUTPUT_DIR}/d3d/d3d-coreMesh-numbered.osh)
 
     if(Omega_h_USE_SimDiscrete)
       osh_add_exe(mixed_writeMesh)
       list(APPEND TEST_EXES mixed_writeMesh)
       test_func(run_mixed_writeMesh 1 ./mixed_writeMesh
-                ${CMAKE_SOURCE_DIR}/meshes)
+                ${TEST_OUTPUT_DIR})
 
       osh_add_exe(mixed_test)
       list(APPEND TEST_EXES mixed_test)
       test_func(run_mixed_test 1 ./mixed_test
-        ${CMAKE_SOURCE_DIR}/meshes)
+        ${CMAKE_SOURCE_DIR}/meshes ${TEST_OUTPUT_DIR})
     endif()
 
     osh_add_exe(periodic_test)
@@ -707,9 +712,9 @@ if(BUILD_TESTING)
   test_func(rc_field_test 1 ./rc_field_test
     ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.osh
     ${CMAKE_SOURCE_DIR}/meshes/box_3d.osh
-    ${CMAKE_SOURCE_DIR}/meshes/box3d_adapt.vtk
-    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem.vtu
-    ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_bField.osh)
+    ${TEST_OUTPUT_DIR}/box3d_adapt.vtk
+    ${TEST_OUTPUT_DIR}/plate_6elem.vtu
+    ${TEST_OUTPUT_DIR}/plate_6elem_bField.osh)
   if(Omega_h_USE_MPI)
     osh_add_exe(reverse_class_testp)
     list(APPEND TEST_EXES reverse_class_testp)
@@ -720,10 +725,10 @@ if(BUILD_TESTING)
     list(APPEND TEST_EXES rc_field_testp)
     test_func(rc_field_testp 2 ./rc_field_testp
       ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p.osh
-      ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p.vtk
-      ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p_sync.vtk
-      ${CMAKE_SOURCE_DIR}/meshes/box_3d_2p_reduce.vtk
-      ${CMAKE_SOURCE_DIR}/meshes/box3d_2p_adapt.vtk)
+      ${TEST_OUTPUT_DIR}/box_3d_2p.vtk
+      ${TEST_OUTPUT_DIR}/box_3d_2p_sync.vtk
+      ${TEST_OUTPUT_DIR}/box_3d_2p_reduce.vtk
+      ${TEST_OUTPUT_DIR}/box3d_2p_adapt.vtk)
   endif()
 
   osh_add_exe(shape_test)
@@ -811,6 +816,7 @@ set(Omega_h_HEADERS
   Omega_h_hypercube.hpp
   Omega_h_indset.hpp
   Omega_h_indset_inline.hpp
+  Omega_h_inertia.hpp
   Omega_h_input.hpp
   Omega_h_int128.hpp
   Omega_h_int_iterator.hpp

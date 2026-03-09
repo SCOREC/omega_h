@@ -364,6 +364,62 @@ static void test_array_from_kokkos() {
 #endif
 }
 
+static void test_filter_marked() {
+  // Test case 1: Filter scalar data
+  {
+    Read<I8> marks({1, 0, 1, 0, 1, 0, 1, 1});
+    Reals data({0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0});
+
+    auto kept_indices = collect_marked(marks);
+    auto filtered_data = unmap(kept_indices, data, 1);
+
+    // Should extract data at indices [0, 2, 4, 6, 7] where marks[i] != 0
+    Reals expected({0.0, 20.0, 40.0, 60.0, 70.0});
+    OMEGA_H_CHECK(read(filtered_data) == expected);
+    OMEGA_H_CHECK(filtered_data.size() == 5);
+  }
+
+  // Test case 2: Filter vector data (width = 3)
+  {
+    Read<I8> marks({1, 0, 1, 0});
+    Reals data({1.0, 2.0, 3.0,    // entry 0 (marked)
+                4.0, 5.0, 6.0,    // entry 1 (not marked)
+                7.0, 8.0, 9.0,    // entry 2 (marked)
+                10.0, 11.0, 12.0}); // entry 3 (not marked)
+
+    auto kept_indices = collect_marked(marks);
+    auto filtered_data = unmap(kept_indices, data, 3);
+
+    // Should extract entries 0 and 2
+    Reals expected({1.0, 2.0, 3.0, 7.0, 8.0, 9.0});
+    OMEGA_H_CHECK(read(filtered_data) == expected);
+    OMEGA_H_CHECK(filtered_data.size() == 6);  // 2 entries * 3 components
+  }
+
+  // Test case 3: All marked
+  {
+    Read<I8> marks({1, 1, 1});
+    Reals data({100.0, 200.0, 300.0});
+
+    auto filtered_data = unmap(collect_marked(marks), data, 1);
+
+    // Should be identical to original data
+    OMEGA_H_CHECK(read(filtered_data) == data);
+  }
+
+  // Test case 4: None marked
+  {
+    Read<I8> marks({0, 0, 0, 0});
+    Reals data({1.0, 2.0, 3.0, 4.0});
+
+    auto filtered_data = unmap(collect_marked(marks), data, 1);
+
+    // Should return empty array
+    OMEGA_H_CHECK(read(filtered_data) == Reals({}));
+    OMEGA_H_CHECK(filtered_data.size() == 0);
+  }
+}
+
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
   OMEGA_H_CHECK(std::string(lib.version()) == OMEGA_H_SEMVER);
@@ -390,6 +446,7 @@ int main(int argc, char** argv) {
   test_expr();
   test_expr2();
   test_array_from_kokkos();
+  test_filter_marked();
   fprintf(stderr, "done\n");
   return 0;
 }
