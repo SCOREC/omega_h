@@ -692,7 +692,7 @@ if(BUILD_TESTING)
       )
     test_func(oval_warp_test 1 ./gis_warp_test
       ${CMAKE_SOURCE_DIR}/meshes/oval.osh
-      30
+      1000
       ${CMAKE_SOURCE_DIR}/meshes/oval.smd
       ${CMAKE_SOURCE_DIR}/meshes/oval_splines.oshb
       ovalAdapt
