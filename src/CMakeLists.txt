@@ -683,12 +683,12 @@ if(BUILD_TESTING)
     osh_add_exe(gis_warp_test)
     test_func(gis_warp_test 1 ./gis_warp_test
       ${CMAKE_SOURCE_DIR}/meshes/gis-15k.osh
-      30000
+      150000
       ${CMAKE_SOURCE_DIR}/meshes/gis.smd
       ${CMAKE_SOURCE_DIR}/meshes/gis_splines.oshb
-      refined30k.vtk
+      gis_adapted_150k
       1 #enableSnap
-      1 #enableSmoothing
+      0 #enableSmoothing
       )
     test_func(oval_warp_test 1 ./gis_warp_test
       ${CMAKE_SOURCE_DIR}/meshes/oval.osh
