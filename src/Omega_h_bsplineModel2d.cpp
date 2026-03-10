@@ -86,7 +86,7 @@ namespace Omega_h {
 
     const auto meshEntIds = sidesToMeshVerts_revClass.ab2b;
 
-    { //debug
+    if(false) { //debug
       auto s2s_h = HostRead<LO>(sidesToSamples);
       auto meshEntIds_h = HostRead<LO>(meshEntIds);
       std::cerr << "side, ab, meshEntIdx\n";
@@ -161,7 +161,7 @@ namespace Omega_h {
     };
     Omega_h::parallel_for(numSidesSparse, setWarpVectors, "setWarpVectors");
 
-    { //debug
+    if(false) { //debug
       auto sideIds_h = HostRead<LO>(sideIds);
       auto s2s_h = HostRead<LO>(samplesPerMdlEdge);
       auto sPts_h = HostRead<Real>(samplePts);
@@ -173,7 +173,8 @@ namespace Omega_h {
       for(int side = 0; side < sideIds_h.size(); side++) {
         for(auto ab = s2s_h[side]; ab < s2s_h[side+1]; ab++) {
            const auto meshEntIdx = meshEntIds_h[ab];
-           const auto warpVec = get_vector<2>(warp, meshEntIdx);
+           const auto warpVec_0 = warp_h[meshEntIdx*2];
+           const auto warpVec_1 = warp_h[meshEntIdx*2+1];
            std::cerr << side << ", "
                      << ab << ", "
                      << meshEntIdx << ", "
@@ -182,8 +183,8 @@ namespace Omega_h {
                      << sPts_h[ab] << ", "
                      << pts_h[ab*2] << ", "
                      << pts_h[ab*2+1] << ", "
-                     << warpVec[0] << ", "
-                     << warpVec[1] << "\n";
+                     << warpVec_0 << ", "
+                     << warpVec_1 << "\n";
         }
       }
     } //end debug
