@@ -15,6 +15,7 @@ ClassParametricTransfer::ClassParametricTransfer(BsplineModel2D* model)
   auto edge2edgeUse_ab_host = HostRead<LO>(edge2edgeUse.a2ab);
   auto edge2edgeUse_b_host = HostRead<LO>(edge2edgeUse.ab2b);
   auto edgeUse2vtx_host = HostRead<LO>(model_->getEdgeUseToVtx());
+  auto vtxIds_host = HostRead<LO>(model_->getVtxIds());
 
   auto nedges = edge_ids_host.size();
 
@@ -38,8 +39,8 @@ ClassParametricTransfer::ClassParametricTransfer(BsplineModel2D* model)
       LO vtx0 = edgeUse2vtx_host[first_edge_use_idx * 2 + 0];
       LO vtx1 = edgeUse2vtx_host[first_edge_use_idx * 2 + 1];
 
-      edge_vtx_lookup_host[model_edge_id * 2 + 0] = vtx0;
-      edge_vtx_lookup_host[model_edge_id * 2 + 1] = vtx1;
+      edge_vtx_lookup_host[model_edge_id * 2 + 0] = vtxIds_host[vtx0];
+      edge_vtx_lookup_host[model_edge_id * 2 + 1] = vtxIds_host[vtx1];
     }
   }
 
