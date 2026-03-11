@@ -489,6 +489,27 @@ void read_internal(std::istream& stream, Mesh* mesh) {
   } else {
     Omega_h_fail("There were no Elements of dimension higher than zero!\n");
   }
+
+  // Check mesh on XY plane for 2D mesh
+  if (max_dim == 2) {
+    // sum of absolute values of z coordinates should be zero
+    double coord_sums[3] = {0.0, 0.0, 0.0};
+    for (const auto& coords : node_coords) {
+      coord_sums[0] += std::abs(coords[0]);
+      coord_sums[1] += std::abs(coords[1]);
+      coord_sums[2] += std::abs(coords[2]);
+    }
+
+    double tol = 1e-12 * (coord_sums[0] + coord_sums[1]);
+    if (coord_sums[2] > tol) {
+      Omega_h_fail(
+          "2D meshes can only have nodes on the XY plane, but z coordinates "
+          "are not zero: [sum(abs(z-coords))=%f]\n", coord_sums[2]);
+    }
+    OMEGA_H_CHECK_PRINTF(coord_sums[0] > tol, "Coordinates are zero in X : [sum(abs(x-coords))=%e]\n", coord_sums[0]);
+    OMEGA_H_CHECK_PRINTF(coord_sums[1] > tol, "Coordinates are zero in Y : [sum(abs(y-coords))=%e]\n", coord_sums[1]);
+  }
+
   HostWrite<Real> host_coords(nnodes * max_dim);
   for (LO i = 0; i < nnodes; ++i) {
     for (Int j = 0; j < max_dim; ++j) {
