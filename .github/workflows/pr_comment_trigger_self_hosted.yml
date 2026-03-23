@@ -101,7 +101,6 @@ jobs:
             -DKokkos_ENABLE_SERIAL=ON \
             -DKokkos_ENABLE_OPENMP=off \
             -DKokkos_ENABLE_CUDA=on \
-            -DKokkos_ENABLE_CUDA_LAMBDA=on \
             -DKokkos_ENABLE_DEBUG=off \
             -DCMAKE_INSTALL_PREFIX=$kkbdir/install
           cmake --build $kkbdir --target install -j 4
