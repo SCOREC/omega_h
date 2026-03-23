@@ -98,6 +98,12 @@ if(Omega_h_USE_Kokkos)
   if ("SYCL" IN_LIST Kokkos_DEVICES)
       bob_option(Omega_h_USE_SYCL "Whether to use SYCL" "ON")
   endif()
+  if (Kokkos_VERSION VERSION_LESS 4.1)
+    if (Kokkos_ENABLE_CUDA AND (NOT "CUDA_LAMBDA" IN_LIST Kokkos_OPTIONS))
+      message(FATAL_ERROR
+              "Please reconfigure Kokkos with -DKokkos_ENABLE_Cuda_Lambda:BOOL=ON")
+    endif()
+  endif()
 endif()
 
 bob_option(Omega_h_MEM_SPACE_SHARED "Whether to use shared memory space" OFF)
