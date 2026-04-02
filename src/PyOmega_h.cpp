@@ -6,6 +6,8 @@ PYBIND11_MODULE(PyOmega_h, module) {
   Omega_h::pybind11_array(module);
   Omega_h::pybind11_comm(module);
   Omega_h::pybind11_library(module);
+  Omega_h::pybind11_tag(module);
+  Omega_h::pybind11_graph(module);
   Omega_h::pybind11_mesh(module);
   Omega_h::pybind11_build(module);
   Omega_h::pybind11_adapt(module);

@@ -840,6 +840,8 @@ if (Omega_h_USE_pybind11)
       PyOmega_h_array.cpp
       PyOmega_h_comm.cpp
       PyOmega_h_library.cpp
+      PyOmega_h_tag.cpp
+      PyOmega_h_graph.cpp
       PyOmega_h_mesh.cpp
       PyOmega_h_build.cpp
       PyOmega_h_adapt.cpp
