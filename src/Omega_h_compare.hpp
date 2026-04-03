@@ -5,7 +5,7 @@
 
 #include <Omega_h_cmdline.hpp>
 #include <Omega_h_comm.hpp>
-#include <Omega_h_filesystem.hpp>
+#include <filesystem>
 
 namespace Omega_h {
 
@@ -39,7 +39,7 @@ Omega_h_Comparison compare_meshes(Mesh* a, Mesh* b, MeshCompareOpts const& opts,
 
 bool check_same(Mesh* a, Mesh* b);
 
-bool check_regression(filesystem::path const& prefix, Mesh* mesh);
+bool check_regression(std::filesystem::path const& prefix, Mesh* mesh);
 
 void get_diff_program_cmdline(
     std::string const& a_name, std::string const& b_name, CmdLine* p_cmdline);

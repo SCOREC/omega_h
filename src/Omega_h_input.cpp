@@ -876,7 +876,7 @@ class InputYamlReader : public Reader {
 InputYamlReader::~InputYamlReader() {}
 
 static InputMap read_input_without_includes(
-    Omega_h::filesystem::path const& path) {
+    std::filesystem::path const& path) {
   std::ifstream stream(path.c_str());
   if (!stream.is_open()) {
     Omega_h_fail("Couldn't open Input file \"%s\"\n", path.c_str());
@@ -920,7 +920,7 @@ static bool handle_one_include(InputList& list) {
   return false;
 }
 
-InputMap read_input(Omega_h::filesystem::path const& path) {
+InputMap read_input(std::filesystem::path const& path) {
   OMEGA_H_TIME_FUNCTION;
   InputMap map = read_input_without_includes(path);
   while (handle_one_include(map))

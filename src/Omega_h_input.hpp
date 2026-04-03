@@ -2,7 +2,7 @@
 #define OMEGA_H_INPUT_HPP
 
 #include <Omega_h_defines.hpp>
-#include <Omega_h_filesystem.hpp>
+#include <filesystem>
 #include <Omega_h_mesh.hpp>
 #include <iosfwd>
 #include <map>
@@ -121,7 +121,7 @@ struct InputList : public Input {
   virtual void out_of_line_virtual_method();
 };
 
-InputMap read_input(Omega_h::filesystem::path const& path);
+InputMap read_input(std::filesystem::path const& path);
 
 void update_class_sets(ClassSets* p_sets, InputMap& pl);
 

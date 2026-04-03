@@ -15,19 +15,19 @@ class Mesh;
 
 namespace vtk {
 
-filesystem::path get_pvtu_path(filesystem::path const& step_path);
+std::filesystem::path get_pvtu_path(std::filesystem::path const& step_path);
 
-filesystem::path get_pvd_path(filesystem::path const& root_path);
+std::filesystem::path get_pvd_path(std::filesystem::path const& root_path);
 
 void write_pvtu(std::ostream& stream, Mesh* mesh, Int cell_dim,
-    filesystem::path const& piecepath, TagSet const& tags);
+    std::filesystem::path const& piecepath, TagSet const& tags);
 
-void write_pvtu(filesystem::path const& filename, Mesh* mesh, Int cell_dim,
-    filesystem::path const& piecepath, TagSet const& tags);
+void write_pvtu(std::filesystem::path const& filename, Mesh* mesh, Int cell_dim,
+    std::filesystem::path const& piecepath, TagSet const& tags);
 
 std::streampos write_initial_pvd(
-    filesystem::path const& root_path, Real restart_time);
-void update_pvd(filesystem::path const& root_path, std::streampos* pos_inout,
+    std::filesystem::path const& root_path, Real restart_time);
+void update_pvd(std::filesystem::path const& root_path, std::streampos* pos_inout,
     I64 step, Real time);
 
 void read_vtu(std::istream& stream, CommPtr comm, Mesh* mesh);
@@ -36,14 +36,14 @@ void read_vtu_ents(std::istream& stream, Mesh* mesh);
 void read_pvtu(std::istream& stream, CommPtr comm, I32* npieces_out,
     std::string* vtupath_out, Int* nghost_layers_out);
 
-void read_pvtu(filesystem::path const& pvtupath, CommPtr comm, I32* npieces_out,
-    filesystem::path* vtupath_out, Int* nghost_layers_out);
+void read_pvtu(std::filesystem::path const& pvtupath, CommPtr comm, I32* npieces_out,
+    std::filesystem::path* vtupath_out, Int* nghost_layers_out);
 
 void read_pvd(std::istream& stream, std::vector<Real>* times_out,
-    std::vector<filesystem::path>* pvtupaths_out);
+    std::vector<std::filesystem::path>* pvtupaths_out);
 
-void read_pvd(filesystem::path const& pvdpath, std::vector<Real>* times_out,
-    std::vector<filesystem::path>* pvtupaths_out);
+void read_pvd(std::filesystem::path const& pvdpath, std::vector<Real>* times_out,
+    std::vector<std::filesystem::path>* pvtupaths_out);
 
 template <bool is_signed, std::size_t size>
 struct IntTraits;

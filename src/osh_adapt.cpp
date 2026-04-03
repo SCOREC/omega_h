@@ -43,11 +43,11 @@ int main(int argc, char** argv) {
     cmdline.show_help(argv);
     return -1;
   }
-  Omega_h::filesystem::path mesh_in =
+  std::filesystem::path mesh_in =
       cmdline.get<std::string>("--mesh-in", "mesh.msh");
-  Omega_h::filesystem::path mesh_out =
+  std::filesystem::path mesh_out =
       cmdline.get<std::string>("--mesh-out", "mesh.msh");
-  Omega_h::filesystem::path metric_in =
+  std::filesystem::path metric_in =
       cmdline.get<std::string>("--metric-in", metric_doc);
   std::cout << "Loading mesh from " << mesh_in << "\n";
   auto mesh = Omega_h::gmsh::read(mesh_in, comm);
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
   std::cout << "Storing mesh in " << mesh_out << '\n';
   Omega_h::gmsh::write(mesh_out, &mesh);
   if (cmdline.parsed("--metric-out")) {
-    Omega_h::filesystem::path metric_out =
+    std::filesystem::path metric_out =
         cmdline.get<std::string>("--metric-out", metric_doc);
     auto const metric_out_ext = metric_out.extension().string();
     std::cout << "Storing metric in " << metric_out << '\n';
