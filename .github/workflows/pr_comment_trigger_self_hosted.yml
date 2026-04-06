@@ -293,6 +293,45 @@ jobs:
           cmake --build $bdir -j 4
           ctest --test-dir $bdir --output-on-failure
 
+      - name: build with Kokkos CUDA backend python
+        id: build_kokkos_cuda_python
+        shell: bash
+        run: |
+          source $OMEGAH_WORK_DIR/envGcc13.sh
+          module load python py-pybind11 py-pytest py-numpy
+
+          workDir=$OMEGAH_WORK_DIR
+          gmsbdir=$GMSH_BUILD
+          adiosbdir=$ADIOS_CUDA_BUILD
+          export CMAKE_PREFIX_PATH="$adiosbdir/install:$gmsbdir/install:$CMAKE_PREFIX_PATH"
+          export LD_LIBRARY_PATH="$gmsbdir/install/lib64:$LD_LIBRARY_PATH"
+
+          # omegah
+          bdir=${workDir}/build-omegah
+          cmake -S omegah_${{ github.event.issue.number }} -B $bdir \
+            -DCMAKE_INSTALL_PREFIX=$bdir/install \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=on  \
+            -DOmega_h_USE_pybind11=on \
+            -DOmega_h_USE_MPI=on  \
+            -DOmega_h_USE_SimModSuite=on \
+            -DOmega_h_USE_SimDiscrete=on \
+            -DSKIP_SIMMETRIX_VERSION_CHECK=on \
+            -DSIM_MPI=mpich4.2.3 \
+            -DOmega_h_USE_Kokkos=on \
+            -DOmega_h_CUDA_ARCH="80" \
+            -DCMAKE_CUDA_ARCHITECTURES="80" \
+            -DKokkos_PREFIX=${KOKKOS_CUDA_BUILD}/install \
+            -DOmega_h_USE_ADIOS2=ON \
+            -DOmega_h_USE_Gmsh=ON \
+            -DGmsh_INCLUDE_DIRS=$gmsbdir/install/include \
+            -DGmsh_LIBRARIES=$gmsbdir/install/lib64/libgmsh.so.4.14.1 \
+            -DBUILD_SHARED_LIBS=on
+          cmake --build $bdir -j 4
+
+          export PYTHONPATH=/$bdir/src:$PYTHONPATH
+          pytest omegah_${{ github.event.issue.number }}/pytest
+
       - name: Save Result Link
         if: ${{ !cancelled() }} #prepare report unless the job was cancelled
         run: |
@@ -304,6 +343,7 @@ jobs:
           echo "- Kokkos Serial: ${{ steps.build_kokkos_serial.outcome }}" >> ./pr/message
           echo "- Kokkos OpenMP: ${{ steps.build_kokkos_openmp.outcome }}" >> ./pr/message
           echo "- Kokkos CUDA Warnings as Errors: ${{ steps.build_kokkos_cuda_wae.outcome }}" >> ./pr/message
+          echo "- Kokkos CUDA Python: ${{ steps.build_kokkos_cuda_python.outcome }}" >> ./pr/message
           echo "" >> ./pr/message
           echo "[(details)](https://github.com/${{github.repository}}/actions/runs/${{ github.run_id }})" >> ./pr/message
 
