@@ -1,7 +1,7 @@
 name: CMake test matrix
 on:
   push:
-    branches: [ master ]
+    branches: [ master, test_action ]
   pull_request:
     branches: [ master ]
 jobs:
@@ -16,6 +16,7 @@ jobs:
         kokkos_version: [develop]
         mempool: [on, off]
         cxx_standard: [17]
+        python: [off]
         exclude:
         - kokkos: off
           mempool: on
@@ -31,7 +32,8 @@ jobs:
              kokkos: on
              mempool: on
              mpi: on
-             cxx_standard: 20            
+             cxx_standard: 20
+             python: on
     env:
       CXX: ${{matrix.compiler}}
       MPICH_CXX: ${{matrix.compiler}}
@@ -53,6 +55,19 @@ jobs:
       run: |
            sudo apt update
            sudo apt install mpich
+
+    - name: setup python
+      if: ${{ matrix.python == 'on' }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11.9'
+
+    - name: install python deps
+      if: ${{ matrix.python == 'on' }}
+      run: |
+        sudo apt-get install -y python3-dev
+        python -m pip install --upgrade pip
+        python -m pip install numpy pytest pybind11==2.13.5
     
     - name: install gmsh
       working-directory: ${{runner.temp }}
@@ -91,6 +106,7 @@ jobs:
            -Bbuild
            -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
            -DCMAKE_INSTALL_PREFIX=build/install
+           -DBUILD_SHARED_LIBS=${{ matrix.python }}
 
     - name: Build Kokkos
       if: ${{ matrix.kokkos == 'on' }}
@@ -113,6 +129,7 @@ jobs:
            -DCMAKE_INSTALL_PREFIX=build/install
            -DADIOS2_USE_CUDA=OFF
            -DADIOS2_USE_ZFP=OFF
+           -DBUILD_SHARED_LIBS=${{ matrix.python }}
     
     - name: Build ADIOS2
       if: ${{ matrix.mpi == 'on' }}
@@ -126,6 +143,9 @@ jobs:
           export CMAKE_PREFIX_PATH="${{runner.temp }}/gmsh/install:$CMAKE_PREFIX_PATH"
           export LD_LIBRARY_PATH="${{runner.temp }}/gmsh/install/lib:$LD_LIBRARY_PATH"
           export CMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/ADIOS2/build/install:$CMAKE_PREFIX_PATH"
+          if [ "${{ matrix.python }}" == "on" ]; then
+            export CMAKE_PREFIX_PATH="$(python -m pybind11 --cmakedir):$CMAKE_PREFIX_PATH"
+          fi
           cmake . -Bbuild \
           -DCMAKE_CXX_COMPILER=$CXX \
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} \
@@ -133,12 +153,13 @@ jobs:
           -DOmega_h_USE_MPI=${{ matrix.mpi }} \
           -DOmega_h_USE_Kokkos=${{ matrix.kokkos }} \
           -DKokkos_PREFIX=$GITHUB_WORKSPACE/kokkos/build/install \
+          -DOmega_h_USE_pybind11=${{ matrix.python }} \
           -DOmega_h_USE_Gmsh=ON \
           -DGmsh_INCLUDE_DIRS=${{runner.temp }}/gmsh/install/include \
           -DGmsh_LIBRARIES=${{runner.temp }}/gmsh/install/lib/libgmsh.so.4.14.1 \
           -DOmega_h_USE_ADIOS2=${{ matrix.mpi }} \
           -DBUILD_TESTING=ON \
-          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_SHARED_LIBS=${{ matrix.python }} \
           -DENABLE_CTEST_MEMPOOL=${{ matrix.mempool }}
 
     - name: Build
@@ -150,6 +171,14 @@ jobs:
       working-directory: ${{github.workspace}}/omega_h/build
       shell: bash
       run: ctest
+
+    - name: Test Python
+      if: ${{ matrix.python == 'on' }}
+      working-directory: ${{github.workspace}}/omega_h/build
+      shell: bash
+      run: |
+          export PYTHONPATH=${{github.workspace}}/omega_h/build/src:$PYTHONPATH
+          pytest ${{github.workspace}}/omega_h/pytest
 
     - name: Print
       if: always()
