@@ -12,14 +12,19 @@ import numpy as np
 import PyOmega_h as omega_h
 
 
-# Create a global library instance to avoid Kokkos finalization issues
-# The library must outlive all mesh objects
+# Create a global library instance to avoid Kokkos/MPI finalization issues
+# The library must outlive all mesh objects and is intentionally NOT deleted
+# to avoid MPI finalization order issues (see PyOmega_h_library.cpp)
 _global_lib = None
 
 
 @pytest.fixture(scope="session")
 def lib():
-    """Session-scoped library instance shared across all tests."""
+    """Session-scoped library instance shared across all tests.
+    
+    Note: Cleanup is handled by conftest.py using os._exit() to avoid
+    MPI/Kokkos finalization order issues.
+    """
     global _global_lib
     if _global_lib is None:
         _global_lib = omega_h.OmegaHLibrary()

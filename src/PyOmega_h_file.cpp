@@ -2,6 +2,10 @@
 #include <Omega_h_filesystem.hpp>
 #include <PyOmega_h.hpp>
 
+#ifdef OMEGA_H_USE_ADIOS2
+#include <Omega_h_adios2.hpp>
+#endif
+
 namespace Omega_h {
 
 void pybind11_file(py::module& module) {
