@@ -1,7 +1,7 @@
 name: CMake test matrix
 on:
   push:
-    branches: [ master, test_action ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 jobs:
