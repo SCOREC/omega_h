@@ -4,11 +4,37 @@
 namespace Omega_h {
 
 void pybind11_defines(py::module& module) {
+  py::enum_<Omega_h_Type>(module, "Type")
+      .value("I8", OMEGA_H_I8)
+      .value("I32", OMEGA_H_I32)
+      .value("I64", OMEGA_H_I64)
+      .value("F64", OMEGA_H_F64)
+      .value("REAL", OMEGA_H_REAL)
+      .export_values();
   py::enum_<Omega_h_EntDim>(module, "EntDim", py::arithmetic())
       .value("VERT", OMEGA_H_VERT)
       .value("EDGE", OMEGA_H_EDGE)
       .value("FACE", OMEGA_H_FACE)
       .value("REGION", OMEGA_H_REGION)
+      .export_values();
+  py::enum_<Omega_h_Op>(module, "Op")
+      .value("MIN", OMEGA_H_MIN)
+      .value("MAX", OMEGA_H_MAX)
+      .value("SUM", OMEGA_H_SUM)
+      .export_values();
+  py::enum_<Omega_h_Comparison>(module, "Comparison")
+      .value("SAME", OMEGA_H_SAME)
+      .value("MORE", OMEGA_H_MORE)
+      .value("DIFF", OMEGA_H_DIFF)
+      .export_values();
+  py::enum_<Omega_h_Transfer>(module, "Transfer")
+      .value("INHERIT", OMEGA_H_INHERIT)
+      .value("LINEAR_INTERP", OMEGA_H_LINEAR_INTERP)
+      .value("METRIC", OMEGA_H_METRIC)
+      .value("DENSITY", OMEGA_H_DENSITY)
+      .value("CONSERVE", OMEGA_H_CONSERVE)
+      .value("MOMENTUM_VELOCITY", OMEGA_H_MOMENTUM_VELOCITY)
+      .value("POINTWISE", OMEGA_H_POINTWISE)
       .export_values();
   py::enum_<Omega_h_Parting>(module, "Parting")
       .value("ELEM_BASED", OMEGA_H_ELEM_BASED)
@@ -22,7 +48,6 @@ void pybind11_defines(py::module& module) {
       .value("DERIVATIVE", OMEGA_H_DERIVATIVE)
       .value("GIVEN", OMEGA_H_GIVEN)
       .value("IMPLIED", OMEGA_H_IMPLIED)
-      //.value("PROXIMITY", OMEGA_H_PROXIMITY)
       .value("CURVATURE", OMEGA_H_CURVATURE)
       .export_values();
   py::enum_<Omega_h_Isotropy>(module, "Isotropy",
@@ -37,9 +62,20 @@ void pybind11_defines(py::module& module) {
       .value("SCALES", OMEGA_H_SCALES)
       .export_values();
   py::enum_<Omega_h_Family>(
-      module, "Family", "Whether elements are simplices or hypercubes")
+      module, "Family", "Whether elements are simplices, hypercubes, or mixed")
       .value("SIMPLEX", OMEGA_H_SIMPLEX)
       .value("HYPERCUBE", OMEGA_H_HYPERCUBE)
+      .value("MIXED", OMEGA_H_MIXED)
+      .export_values();
+  py::enum_<Topo_type>(module, "TopoType")
+      .value("vertex", Topo_type::vertex)
+      .value("edge", Topo_type::edge)
+      .value("triangle", Topo_type::triangle)
+      .value("quadrilateral", Topo_type::quadrilateral)
+      .value("tetrahedron", Topo_type::tetrahedron)
+      .value("hexahedron", Topo_type::hexahedron)
+      .value("wedge", Topo_type::wedge)
+      .value("pyramid", Topo_type::pyramid)
       .export_values();
 }
 

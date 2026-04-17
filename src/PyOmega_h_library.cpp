@@ -12,17 +12,19 @@ namespace Omega_h {
    This is consistent with how mpi4py seems to work.
    I tried using the Python atexit mechanism, but that seems to execute prior
    to final garbage collection.
+   
+   Note: We use a raw pointer and intentionally leak it to avoid CUDA/Kokkos
+   finalization issues during Python shutdown. The OS will clean up the memory.
  */
 
-std::unique_ptr<Library> pybind11_global_library;
+Library* pybind11_global_library = nullptr;
 
 void pybind11_library(py::module& module) {
-  pybind11_global_library =
-      decltype(pybind11_global_library)(new Omega_h::Library());
-  module.def("world", []() { return pybind11_global_library->world(); },
-      "Returns the world communicator");
-  module.def("self", []() { return pybind11_global_library->self(); },
-      "Returns the self communicator");
+  // Bind Omega_h::Library
+  py::class_<Omega_h::Library>(
+    module, "OmegaHLibrary")
+    .def(py::init<>(), "Default constructor")
+    .def("world", &Omega_h::Library::world, "Get the world communicator");
 }
 
 }  // namespace Omega_h
