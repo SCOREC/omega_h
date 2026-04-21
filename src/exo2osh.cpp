@@ -12,6 +12,8 @@ int main(int argc, char** argv) {
   auto& cwflag = cmdline.add_flag(
       "--classify-with", "comma separated \"node_sets,side_sets\"");
   cwflag.add_arg<std::string>("set-types");
+  cmdline.add_flag("--merge-components",
+      "merge exodus fields with suffix _N into multi-component omega_h tags");
   if (!cmdline.parse(comm, &argc, argv) ||
       !Omega_h::CmdLine::check_empty(comm, argc, argv)) {
     cmdline.show_help(comm, argv);
@@ -20,6 +22,7 @@ int main(int argc, char** argv) {
   auto inpath = cmdline.get<std::string>("input.exo");
   auto outpath = cmdline.get<std::string>("output.osh");
   auto verbose = cmdline.parsed("-v");
+  auto merge_components = cmdline.parsed("--merge-components");
   int classify_with;
   if (cmdline.parsed("--classify-with")) {
     auto set_types = cmdline.get<std::string>("--classify-with", "set-types");
@@ -41,15 +44,15 @@ int main(int argc, char** argv) {
     auto ntime_steps = Omega_h::exodus::get_num_time_steps(exodus_file);
     if (ntime_steps > 0) {
       Omega_h::exodus::read_nodal_fields(
-          exodus_file, &mesh, ntime_steps - 1, "", "", verbose);
+          exodus_file, &mesh, ntime_steps - 1, "", "", verbose, merge_components);
       Omega_h::exodus::read_element_fields(
-          exodus_file, &mesh, ntime_steps - 1, "", "", verbose);
+          exodus_file, &mesh, ntime_steps - 1, "", "", verbose, merge_components);
     }
     Omega_h::exodus::close(exodus_file);
   } else {
     auto time_step = -1;
     mesh = Omega_h::exodus::read_sliced(
-        inpath, comm, verbose, classify_with, time_step);
+        inpath, comm, verbose, classify_with, time_step, merge_components);
   }
   Omega_h::binary::write(outpath, &mesh);
   return 0;
