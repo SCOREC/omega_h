@@ -244,25 +244,48 @@ static int validate_component_range(
 
 // Reads fields from an open Exodus file and adds them as mesh tags.
 // ent_dim: VERT for nodal fields, mesh->dim() for element fields.
+//
+// For distributed (sliced) reading, provide non-null slice_dist along with the
+// local slice offset (slice_offset) and local count (nslice). Each rank reads
+// its slice via ex_get_partial_var and then uses slice_dist->exch() to produce
+// the full distributed field. When slice_dist is null, ex_get_var reads all
+// entities and the tag is added directly.
 static void read_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix, std::string const& postfix, bool verbose,
-    bool merge_components, Int ent_dim) {
+    bool merge_components, Int ent_dim,
+    Dist* slice_dist = nullptr, GO slice_offset = 0, LO nslice = 0) {
   ex_entity_type ex_var_type;
   LO nents;
   int obj_id;
   char const* field_label;
   if (ent_dim == VERT) {
     ex_var_type = EX_NODAL;
-    nents = mesh->nverts();
+    nents = slice_dist ? nslice : mesh->nverts();
     obj_id = 0;
     field_label = "nodal";
   } else {
     OMEGA_H_CHECK(ent_dim == mesh->dim());
     ex_var_type = EX_ELEM_BLOCK;
-    nents = mesh->nelems();
+    nents = slice_dist ? nslice : mesh->nelems();
     obj_id = 1;
     field_label = "element";
   }
+
+  // Reads one Exodus variable (1-based var_idx) and returns a distributed
+  // device array, handling both sliced and non-sliced cases.
+  auto read_one_var = [&](int var_idx) -> Reals {
+    HostWrite<double> buf(nents);
+    if (slice_dist) {
+      CALL(ex_get_partial_var(exodus_file, time_step + 1, ex_var_type,
+          var_idx, obj_id, slice_offset + 1, nents, buf.data()));
+      return slice_dist->exch(Reals(buf.write()), 1);
+    } else {
+      CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type,
+          var_idx, obj_id, nents, buf.data()));
+      return Reals(buf.write());
+    }
+  };
+
   int num_vars;
   CALL(ex_get_variable_param(exodus_file, ex_var_type, &num_vars));
   if (verbose)
@@ -304,7 +327,9 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
                   << base_name << "\" at time step " << time_step << '\n';
       }
 
-      HostWrite<double> merged_data(nents * ncomps);
+      // read_one_var returns the post-exchange array, always mesh->nents length
+      LO nents_mesh = mesh->nents(ent_dim);
+      Write<double> merged_data(nents_mesh * ncomps);
 
       for (auto const& comp : components) {
         int field_idx = -1;
@@ -316,22 +341,16 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
         }
 
         if (field_idx >= 0) {
-          HostWrite<double> comp_data(nents);
-          CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type,
-              field_idx + 1, obj_id, nents, comp_data.data()));
-
+          auto comp_data = HostRead<double>(read_one_var(field_idx + 1));
           int target_comp = comp.component_index - 1;
-          for (LO i = 0; i < nents; ++i) {
+          for (LO i = 0; i < nents_mesh; ++i)
             merged_data[i * ncomps + target_comp] = comp_data[i];
-          }
-
           processed_fields.insert(comp.full_name);
         }
       }
 
       auto name_osh = prefix + base_name + postfix;
-      auto device_read = Reals(merged_data.write());
-      mesh->add_tag(ent_dim, name_osh, ncomps, device_read);
+      mesh->add_tag(ent_dim, name_osh, ncomps, Reals(merged_data));
     }
   }
 
@@ -347,11 +366,7 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
     }
 
     auto name_osh = prefix + name + postfix;
-    HostWrite<double> host_write(nents, name_osh);
-    CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type, i + 1, obj_id,
-        nents, host_write.data()));
-    auto device_read = Reals(host_write.write());
-    mesh->add_tag(ent_dim, name_osh, 1, device_read);
+    mesh->add_tag(ent_dim, name_osh, 1, read_one_var(i + 1));
   }
 }
 
@@ -562,109 +577,11 @@ void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
 }
 
 #if defined(OMEGA_H_USE_MPI) && defined(PARALLEL_AWARE_EXODUS)
-//CC can this call read_fields as done in read_nodal_fields?
 static void read_sliced_nodal_fields(Mesh* mesh, int file, int time_step,
     bool verbose, Dist slice_verts2verts, GO nodes_begin, LO nslice_nodes,
     bool merge_components) {
-  int num_nodal_vars;
-  CALL(ex_get_variable_param(file, EX_NODAL, &num_nodal_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_nodal_vars << " nodal variables\n";
-  std::vector<char> names_memory;
-  std::vector<char*> name_ptrs;
-  setup_names(num_nodal_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(file, EX_NODAL, num_nodal_vars, name_ptrs.data()));
-
-  // Collect all field names
-  std::vector<std::string> field_names;
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    field_names.push_back(std::string(name_ptrs[std::size_t(i)]));
-  }
-
-  std::set<std::string> processed_fields;
-
-  if (merge_components) {
-    // Group fields by base name
-    auto groups = group_field_components(field_names);
-
-    // Process grouped fields
-    for (auto const& pair : groups) {
-      auto const& base_name = pair.first;
-      auto const& components = pair.second;
-
-      int ncomps = validate_component_range(components);
-      if (ncomps < 0) {
-        if (verbose) {
-          std::cout << "P" << mesh->comm()->rank()
-                    << ": Skipping merge for \"" << base_name
-                    << "\" - invalid component range\n";
-        }
-        continue;
-      }
-
-      if (verbose) {
-        std::cout << "P" << mesh->comm()->rank()
-                  << ": Merging " << ncomps << " components of \""
-                  << base_name << "\" at time step " << time_step << '\n';
-      }
-
-      // Read all components
-      HostWrite<double> slice_merged_data(nslice_nodes * ncomps);
-
-      for (auto const& comp : components) {
-        // Find index in original field list
-        int field_idx = -1;
-        for (int i = 0; i < num_nodal_vars; ++i) {
-          if (field_names[std::size_t(i)] == comp.full_name) {
-            field_idx = i;
-            break;
-          }
-        }
-
-        if (field_idx >= 0) {
-          HostWrite<double> comp_data(nslice_nodes);
-          CALL(ex_get_partial_var(file, time_step + 1, EX_NODAL,
-              field_idx + 1, /*obj_id*/ 0, nodes_begin + 1, nslice_nodes,
-              comp_data.data()));
-
-          // Copy into merged array at correct component position (0-indexed)
-          int target_comp = comp.component_index - 1;
-          for (LO i = 0; i < nslice_nodes; ++i) {
-            slice_merged_data[i * ncomps + target_comp] = comp_data[i];
-          }
-
-          processed_fields.insert(comp.full_name);
-        }
-      }
-
-      // Exchange and create multi-component tag
-      auto device_write = slice_merged_data.write();
-      auto slice_data = Reals(device_write);
-      auto data = slice_verts2verts.exch(slice_data, ncomps);
-      mesh->add_tag(VERT, base_name, ncomps, data);
-    } //end loop over field group
-  }
-
-  // Process remaining individual fields (not merged or not matching pattern)
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    auto name = field_names[std::size_t(i)];
-
-    if (processed_fields.count(name) > 0) {
-      continue;  // Already processed as part of merged field
-    }
-
-    if (verbose) {
-      std::cout << "P" << mesh->comm()->rank()
-                << ": Loading nodal variable \"" << name << "\"\n";
-    }
-
-    HostWrite<double> host_write(nslice_nodes);
-    CALL(ex_get_partial_var(file, time_step + 1, EX_NODAL, i + 1, /*obj_id*/ 0,
-        nodes_begin + 1, nslice_nodes, host_write.data()));
-    auto device_write = host_write.write();
-    auto slice_data = Reals(device_write);
-    auto data = slice_verts2verts.exch(slice_data, 1);
-    mesh->add_tag(VERT, name, 1, data);
-  }
+  read_fields(file, mesh, time_step, "", "", verbose, merge_components, VERT,
+      &slice_verts2verts, nodes_begin, nslice_nodes);
 }
 
 Mesh read_sliced(filesystem::path const& path, CommPtr comm, bool verbose, int,
