@@ -198,9 +198,9 @@ static void setup_names(
 }
 
 struct FieldComponent {
+  std::string full_name;
   std::string base_name;
   int component_index;
-  std::string full_name;
 };
 
 static std::map<std::string, std::vector<FieldComponent>>
@@ -214,16 +214,18 @@ group_field_components(std::vector<std::string> const& field_names) {
       // Has suffix like "_123"
       std::string base_name = match[1].str();
       int comp_idx = std::stoi(match[2].str());
-      groups[base_name].push_back({base_name, comp_idx, name});
+      groups[base_name].push_back({name, base_name, comp_idx});
     }
   }
 
   return groups;
 }
 
-static bool validate_component_range(
-    std::vector<FieldComponent> const& components, int& ncomps) {
-  if (components.empty()) return false;
+// Returns the number of components if valid (contiguous range starting at 1),
+// or -1 if the component indices are not a valid contiguous range.
+static int validate_component_range(
+    std::vector<FieldComponent> const& components) {
+  if (components.empty()) return -1;
 
   std::vector<int> indices;
   for (auto const& comp : components) {
@@ -231,55 +233,69 @@ static bool validate_component_range(
   }
   std::sort(indices.begin(), indices.end());
 
-  // Check if continuous from 1 to N
-  if (indices[0] != 1) return false;
+  if (indices[0] != 1) return -1;
 
   for (size_t i = 1; i < indices.size(); ++i) {
-    if (indices[i] != indices[i-1] + 1) return false;
+    if (indices[i] != indices[i-1] + 1) return -1;
   }
 
-  ncomps = int(indices.size());
-  return true;
+  return int(indices.size());
 }
 
-void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
+// Reads fields from an open Exodus file and adds them as mesh tags.
+// ent_dim: VERT for nodal fields, mesh->dim() for element fields.
+static void read_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix, std::string const& postfix, bool verbose,
-    bool merge_components) {
-  int num_elem_vars;
-  CALL(ex_get_variable_param(exodus_file, EX_ELEM_BLOCK, &num_elem_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_elem_vars << " element variables\n";
-  if (num_elem_vars == 0) return;
+    bool merge_components, Int ent_dim) {
+  ex_entity_type ex_var_type;
+  LO nents;
+  int obj_id;
+  char const* field_label;
+  if (ent_dim == VERT) {
+    ex_var_type = EX_NODAL;
+    nents = mesh->nverts();
+    obj_id = 0;
+    field_label = "nodal";
+  } else {
+    OMEGA_H_CHECK(ent_dim == mesh->dim());
+    ex_var_type = EX_ELEM_BLOCK;
+    nents = mesh->nelems();
+    obj_id = 1;
+    field_label = "element";
+  }
+  int num_vars;
+  CALL(ex_get_variable_param(exodus_file, ex_var_type, &num_vars));
+  if (verbose)
+    std::cout << "P" << mesh->comm()->rank() << ": " << num_vars
+              << " " << field_label << " variables\n";
+  if (num_vars == 0) return;
   std::vector<char> names_memory;
   std::vector<char*> name_ptrs;
-  setup_names(num_elem_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(
-      exodus_file, EX_ELEM_BLOCK, num_elem_vars, name_ptrs.data()));
+  setup_names(num_vars, names_memory, name_ptrs);
+  CALL(ex_get_variable_names(exodus_file, ex_var_type, num_vars, name_ptrs.data()));
 
-  // Collect all field names
   std::vector<std::string> field_names;
-  for (int i = 0; i < num_elem_vars; ++i) {
+  for (int i = 0; i < num_vars; ++i) {
     field_names.push_back(std::string(name_ptrs[std::size_t(i)]));
   }
 
   std::set<std::string> processed_fields;
 
   if (merge_components) {
-    // Group fields by base name
     auto groups = group_field_components(field_names);
 
-    // Process grouped fields
     for (auto const& pair : groups) {
       auto const& base_name = pair.first;
       auto const& components = pair.second;
 
-      int ncomps = 0;
-      if (!validate_component_range(components, ncomps)) {
+      int ncomps = validate_component_range(components);
+      if (ncomps < 0) {
         if (verbose) {
           std::cout << "P" << mesh->comm()->rank()
                     << ": Skipping merge for \"" << base_name
                     << "\" - invalid component range\n";
         }
-        continue;  // Will be processed as individual fields later
+        continue;
       }
 
       if (verbose) {
@@ -288,13 +304,11 @@ void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
                   << base_name << "\" at time step " << time_step << '\n';
       }
 
-      // Read all components
-      HostWrite<double> merged_data(mesh->nelems() * ncomps);
+      HostWrite<double> merged_data(nents * ncomps);
 
       for (auto const& comp : components) {
-        // Find index in original field list
         int field_idx = -1;
-        for (int i = 0; i < num_elem_vars; ++i) {
+        for (int i = 0; i < num_vars; ++i) {
           if (field_names[std::size_t(i)] == comp.full_name) {
             field_idx = i;
             break;
@@ -302,13 +316,12 @@ void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
         }
 
         if (field_idx >= 0) {
-          HostWrite<double> comp_data(mesh->nelems());
-          CALL(ex_get_var(exodus_file, time_step + 1, EX_ELEM_BLOCK,
-              field_idx + 1, 1, mesh->nelems(), comp_data.data()));
+          HostWrite<double> comp_data(nents);
+          CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type,
+              field_idx + 1, obj_id, nents, comp_data.data()));
 
-          // Copy into merged array at correct component position (0-indexed)
           int target_comp = comp.component_index - 1;
-          for (LO i = 0; i < mesh->nelems(); ++i) {
+          for (LO i = 0; i < nents; ++i) {
             merged_data[i * ncomps + target_comp] = comp_data[i];
           }
 
@@ -316,141 +329,44 @@ void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
         }
       }
 
-      // Create multi-component tag
       auto name_osh = prefix + base_name + postfix;
-      auto device_write = merged_data.write();
-      auto device_read = Reals(device_write);
-      mesh->add_tag(FACE, name_osh, ncomps, device_read);
+      auto device_read = Reals(merged_data.write());
+      mesh->add_tag(ent_dim, name_osh, ncomps, device_read);
     }
   }
 
-  // Process remaining individual fields (not merged or not matching pattern)
-  for (int i = 0; i < num_elem_vars; ++i) {
+  for (int i = 0; i < num_vars; ++i) {
     auto name = field_names[std::size_t(i)];
 
-    if (processed_fields.count(name) > 0) {
-      continue;  // Already processed as part of merged field
-    }
+    if (processed_fields.count(name) > 0) continue;
 
     if (verbose) {
       std::cout << "P" << mesh->comm()->rank()
-                << ": Loading element variable \"" << name
+                << ": Loading " << field_label << " variable \"" << name
                 << "\" at time step " << time_step << '\n';
     }
 
     auto name_osh = prefix + name + postfix;
-    HostWrite<double> host_write(mesh->nelems(), name_osh);
-    CALL(ex_get_var(exodus_file, time_step + 1, EX_ELEM_BLOCK, i + 1, 1, mesh->nelems(), host_write.data()));
-    auto device_write = host_write.write();
-    auto device_read = Reals(device_write);
-    mesh->add_tag(FACE, name_osh, 1, device_read);
+    HostWrite<double> host_write(nents, name_osh);
+    CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type, i + 1, obj_id,
+        nents, host_write.data()));
+    auto device_read = Reals(host_write.write());
+    mesh->add_tag(ent_dim, name_osh, 1, device_read);
   }
 }
 
 void read_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
     std::string const& prefix, std::string const& postfix, bool verbose,
     bool merge_components) {
-  int num_nodal_vars;
-  CALL(ex_get_variable_param(exodus_file, EX_NODAL, &num_nodal_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_nodal_vars << " nodal variables\n";
-  if (num_nodal_vars == 0) return;
-  std::vector<char> names_memory;
-  std::vector<char*> name_ptrs;
-  setup_names(num_nodal_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(
-      exodus_file, EX_NODAL, num_nodal_vars, name_ptrs.data()));
+  read_fields(exodus_file, mesh, time_step, prefix, postfix, verbose,
+      merge_components, VERT);
+}
 
-  // Collect all field names
-  std::vector<std::string> field_names;
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    field_names.push_back(std::string(name_ptrs[std::size_t(i)]));
-  }
-
-  std::set<std::string> processed_fields;
-
-  if (merge_components) {
-    // Group fields by base name
-    auto groups = group_field_components(field_names);
-
-    // Process grouped fields
-    for (auto const& pair : groups) {
-      auto const& base_name = pair.first;
-      auto const& components = pair.second;
-
-      int ncomps = 0;
-      if (!validate_component_range(components, ncomps)) {
-        if (verbose) {
-          std::cout << "P" << mesh->comm()->rank()
-                    << ": Skipping merge for \"" << base_name
-                    << "\" - invalid component range\n";
-        }
-        continue;  // Will be processed as individual fields later
-      }
-
-      if (verbose) {
-        std::cout << "P" << mesh->comm()->rank()
-                  << ": Merging " << ncomps << " components of \""
-                  << base_name << "\" at time step " << time_step << '\n';
-      }
-
-      // Read all components
-      HostWrite<double> merged_data(mesh->nverts() * ncomps);
-
-      for (auto const& comp : components) {
-        // Find index in original field list
-        int field_idx = -1;
-        for (int i = 0; i < num_nodal_vars; ++i) {
-          if (field_names[std::size_t(i)] == comp.full_name) {
-            field_idx = i;
-            break;
-          }
-        }
-
-        if (field_idx >= 0) {
-          HostWrite<double> comp_data(mesh->nverts());
-          CALL(ex_get_var(exodus_file, time_step + 1, EX_NODAL,
-              field_idx + 1, /*obj_id*/ 0, mesh->nverts(), comp_data.data()));
-
-          // Copy into merged array at correct component position (0-indexed)
-          int target_comp = comp.component_index - 1;
-          for (LO i = 0; i < mesh->nverts(); ++i) {
-            merged_data[i * ncomps + target_comp] = comp_data[i];
-          }
-
-          processed_fields.insert(comp.full_name);
-        }
-      }
-
-      // Create multi-component tag
-      auto name_osh = prefix + base_name + postfix;
-      auto device_write = merged_data.write();
-      auto device_read = Reals(device_write);
-      mesh->add_tag(VERT, name_osh, ncomps, device_read);
-    }
-  }
-
-  // Process remaining individual fields (not merged or not matching pattern)
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    auto name = field_names[std::size_t(i)];
-
-    if (processed_fields.count(name) > 0) {
-      continue;  // Already processed as part of merged field
-    }
-
-    if (verbose) {
-      std::cout << "P" << mesh->comm()->rank()
-                << ": Loading nodal variable \"" << name
-                << "\" at time step " << time_step << '\n';
-    }
-
-    auto name_osh = prefix + name + postfix;
-    HostWrite<double> host_write(mesh->nverts(), name_osh);
-    CALL(ex_get_var(exodus_file, time_step + 1, EX_NODAL, i + 1, /*obj_id*/ 0,
-        mesh->nverts(), host_write.data()));
-    auto device_write = host_write.write();
-    auto device_read = Reals(device_write);
-    mesh->add_tag(VERT, name_osh, 1, device_read);
-  }
+void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix, std::string const& postfix, bool verbose,
+    bool merge_components) {
+  read_fields(exodus_file, mesh, time_step, prefix, postfix, verbose,
+      merge_components, mesh->dim());
 }
 
 void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
@@ -646,6 +562,7 @@ void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
 }
 
 #if defined(OMEGA_H_USE_MPI) && defined(PARALLEL_AWARE_EXODUS)
+//CC can this call read_fields as done in read_nodal_fields?
 static void read_sliced_nodal_fields(Mesh* mesh, int file, int time_step,
     bool verbose, Dist slice_verts2verts, GO nodes_begin, LO nslice_nodes,
     bool merge_components) {
@@ -674,14 +591,14 @@ static void read_sliced_nodal_fields(Mesh* mesh, int file, int time_step,
       auto const& base_name = pair.first;
       auto const& components = pair.second;
 
-      int ncomps = 0;
-      if (!validate_component_range(components, ncomps)) {
+      int ncomps = validate_component_range(components);
+      if (ncomps < 0) {
         if (verbose) {
           std::cout << "P" << mesh->comm()->rank()
                     << ": Skipping merge for \"" << base_name
                     << "\" - invalid component range\n";
         }
-        continue;  // Will be processed as individual fields later
+        continue;
       }
 
       if (verbose) {
@@ -724,7 +641,7 @@ static void read_sliced_nodal_fields(Mesh* mesh, int file, int time_step,
       auto slice_data = Reals(device_write);
       auto data = slice_verts2verts.exch(slice_data, ncomps);
       mesh->add_tag(VERT, base_name, ncomps, data);
-    }
+    } //end loop over field group
   }
 
   // Process remaining individual fields (not merged or not matching pattern)
