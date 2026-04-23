@@ -216,9 +216,11 @@ static bool is_valid_field_group(
   }
   std::sort(indices.begin(), indices.end());
 
-  std::vector<int> expected(indices.size());
-  std::iota(expected.begin(), expected.end(), 0);
+  const auto firstIdx = indices[0];
+  if(firstIdx != 0 && firstIdx != 1) return false;
 
+  std::vector<int> expected(indices.size());
+  std::iota(expected.begin(), expected.end(), firstIdx);
   if( indices != expected ) return false;
 
   return true;
