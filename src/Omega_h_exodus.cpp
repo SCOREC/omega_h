@@ -244,7 +244,9 @@ group_field_components(std::vector<std::string> const& field_names) {
 
   for (const auto &[name, components] : groups) {
     const bool is_valid = is_valid_field_group(components);
-    std::cerr << "field " << name << " does not have a full set of components ... exiting\n";
+    if(!is_valid) {
+      std::cerr << "field " << name << " does not have a full set of components ... exiting\n";
+    }
     assert(is_valid);
   }
 
