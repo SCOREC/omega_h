@@ -15,6 +15,7 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <numeric> //iota
 
 #include "Omega_h_align.hpp"
 #include "Omega_h_array_ops.hpp"
@@ -201,45 +202,51 @@ struct FieldComponent {
   std::string full_name;
   std::string base_name;
   int component_index;
+  int exo_var_index;
 };
+
+static bool is_valid_field_group(
+    std::vector<FieldComponent> const& components) {
+  if (components.empty()) return false;
+
+  std::vector<int> indices;
+  indices.reserve(components.size());
+  for (auto const& comp : components) {
+    indices.push_back(comp.component_index);
+  }
+  std::sort(indices.begin(), indices.end());
+
+  std::vector<int> expected(indices.size());
+  std::iota(expected.begin(), expected.end(), 0);
+
+  if( indices != expected ) return false;
+
+  return true;
+}
 
 static std::map<std::string, std::vector<FieldComponent>>
 group_field_components(std::vector<std::string> const& field_names) {
   std::map<std::string, std::vector<FieldComponent>> groups;
   std::regex suffix_regex("^(.+)_(\\d+)$");
 
+  int exo_var_index = 0;
   for (auto const& name : field_names) {
     std::smatch match;
     if (std::regex_match(name, match, suffix_regex)) {
       // Has suffix like "_123"
       std::string base_name = match[1].str();
       int comp_idx = std::stoi(match[2].str());
-      groups[base_name].push_back({name, base_name, comp_idx});
+      groups[base_name].push_back({name, base_name, comp_idx, exo_var_index++});
     }
   }
 
+  for (const auto &[name, components] : groups) {
+    const bool is_valid = is_valid_field_group(components);
+    std::cerr << "field " << name << " does not have a full set of components ... exiting\n";
+    assert(is_valid);
+  }
+
   return groups;
-}
-
-// Returns the number of components if valid (contiguous range starting at 1),
-// or -1 if the component indices are not a valid contiguous range.
-static int validate_component_range(
-    std::vector<FieldComponent> const& components) {
-  if (components.empty()) return -1;
-
-  std::vector<int> indices;
-  for (auto const& comp : components) {
-    indices.push_back(comp.component_index);
-  }
-  std::sort(indices.begin(), indices.end());
-
-  if (indices[0] != 1) return -1;
-
-  for (size_t i = 1; i < indices.size(); ++i) {
-    if (indices[i] != indices[i-1] + 1) return -1;
-  }
-
-  return int(indices.size());
 }
 
 // Reads fields from an open Exodus file and adds them as mesh tags.
@@ -311,16 +318,7 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
       auto const& base_name = pair.first;
       auto const& components = pair.second;
 
-      int ncomps = validate_component_range(components);
-      if (ncomps < 0) {
-        if (verbose) {
-          std::cout << "P" << mesh->comm()->rank()
-                    << ": Skipping merge for \"" << base_name
-                    << "\" - invalid component range\n";
-        }
-        continue;
-      }
-
+      const int ncomps = components.size();
       if (verbose) {
         std::cout << "P" << mesh->comm()->rank()
                   << ": Merging " << ncomps << " components of \""
@@ -332,21 +330,14 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
       Write<double> merged_data(nents_mesh * ncomps);
 
       for (auto const& comp : components) {
-        int field_idx = -1;
-        for (int i = 0; i < num_vars; ++i) {
-          if (field_names[std::size_t(i)] == comp.full_name) {
-            field_idx = i;
-            break;
-          }
-        }
-
-        if (field_idx >= 0) {
-          auto comp_data = HostRead<double>(read_one_var(field_idx + 1));
-          int target_comp = comp.component_index - 1;
-          for (LO i = 0; i < nents_mesh; ++i)
-            merged_data[i * ncomps + target_comp] = comp_data[i];
-          processed_fields.insert(comp.full_name);
-        }
+        const auto field_idx = comp.exo_var_index;
+        const int target_comp = comp.component_index - 1;
+        auto comp_data = read_one_var(field_idx + 1);
+        auto setCompData = OMEGA_H_LAMBDA(LO i) {
+          merged_data[i * ncomps + target_comp] = comp_data[i];
+        };
+        parallel_for(nents_mesh, setCompData, "set_component_data_from_exo_var");
+        processed_fields.insert(comp.full_name);
       }
 
       auto name_osh = prefix + base_name + postfix;
@@ -366,7 +357,8 @@ static void read_fields(int exodus_file, Mesh* mesh, int time_step,
     }
 
     auto name_osh = prefix + name + postfix;
-    mesh->add_tag(ent_dim, name_osh, 1, read_one_var(i + 1));
+    auto var_array = read_one_var(i + 1);
+    mesh->add_tag(ent_dim, name_osh, 1, var_array);
   }
 }
 

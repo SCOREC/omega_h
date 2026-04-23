@@ -466,17 +466,28 @@ if(BUILD_TESTING)
   if(Omega_h_USE_SEACASExodus)
     test_func(osh2exo_multiCompField 1 ./osh2exo
       ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_2compTag.osh
-      plate_6elem_2compTag.exo)
+      plate_6elem_2compTag_coords_scalar_vec2d.exo)
     set_tests_properties(osh2exo_multiCompField PROPERTIES
       PASS_REGULAR_EXPRESSION "P0: 5 nodal variables")
-    list(APPEND TEST_EXES osh2exo_multiCompField)
+
+    test_func(exo2osh_plate 1 ./exo2osh -v
+      plate_6elem_2compTag_coords_scalar_vec2d.exo
+      plate_6elem_2compTag_exo.osh)
+    set_tests_properties(exo2osh_plate PROPERTIES
+      PASS_REGULAR_EXPRESSION "P0: 5 nodal variables")
+
+    test_func(exo2osh_plate_merged 1 ./exo2osh -v --merge-components
+      plate_6elem_2compTag_coords_scalar_vec2d.exo
+      plate_6elem_2compTag_exo_merged.osh)
+    set_tests_properties(exo2osh_plate_merged PROPERTIES
+      PASS_REGULAR_EXPRESSION "P0: Merging 2 components of \"coordinates\"")
+
     test_func(osh2exo_multiCompField_excluded 1 ./osh2exo
       ${CMAKE_SOURCE_DIR}/meshes/plate_6elem_2compTag.osh
       plate_6elem_2compTag.exo
       --excluded-nodal-fields "vec2d")
     set_tests_properties(osh2exo_multiCompField_excluded PROPERTIES
       PASS_REGULAR_EXPRESSION "P0: 3 nodal variables")
-    list(APPEND TEST_EXES osh2exo_multiCompField)
   endif()
 
   osh_add_exe(load_2d)
