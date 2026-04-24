@@ -494,6 +494,18 @@ if(BUILD_TESTING)
       gis_merged.osh)
     set_tests_properties(exo2osh_gis_merged PROPERTIES
       PASS_REGULAR_EXPRESSION "P0: Merging 11 components of \"temperature\"")
+
+    test_func(exo2osh_gis_p4 4 ./exo2osh -v
+      ${CMAKE_SOURCE_DIR}/meshes/greenlandIceSheet/gis.exo
+      gis_merged_p4.osh)
+    set_tests_properties(exo2osh_gis_p4 PROPERTIES
+      PASS_REGULAR_EXPRESSION "P0: Loading nodal variable \"temperature_11\"")
+
+    test_func(exo2osh_gis_merged_p4 4 ./exo2osh -v --merge-components
+      ${CMAKE_SOURCE_DIR}/meshes/greenlandIceSheet/gis.exo
+      gis_merged_p4.osh)
+    set_tests_properties(exo2osh_gis_merged_p4 PROPERTIES
+      PASS_REGULAR_EXPRESSION "P0: Merging 11 components of \"temperature\"")
   endif()
 
   osh_add_exe(load_2d)
