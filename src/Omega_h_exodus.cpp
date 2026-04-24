@@ -620,7 +620,6 @@ Mesh read_sliced(filesystem::path const& path, CommPtr comm, bool verbose, int,
   for (Int i = 0; i < dim; ++i) {
     h_coord_blk[i] = HostWrite<Real>(nslice_nodes);
   }
-  nc_set_log_level(5);
   CALL(ex_get_partial_coord(file, nodes_begin + 1, nslice_nodes,
       h_coord_blk[0].data(), h_coord_blk[1].data(), h_coord_blk[2].data()));
   HostWrite<Real> h_coords(nslice_nodes * dim);
