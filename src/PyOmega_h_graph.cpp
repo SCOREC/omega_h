@@ -4,8 +4,8 @@
 
 
 namespace Omega_h {
-void pybind11_graph(py::module& module) {
-  py::class_<Omega_h::Graph>(module, "OmegaHGraph")
+void pybind11_graph(py::module& m) {
+  py::class_<Omega_h::Graph>(m, "OmegaHGraph")
     .def_property(
       "a2ab",
       [](const Omega_h::Graph& graph) {

@@ -1,19 +1,19 @@
 #include <PyOmega_h.hpp>
 
-PYBIND11_MODULE(PyOmega_h, module) {
-  module.doc() = "Omega_h: simplex mesh adaptation";
-  Omega_h::pybind11_defines(module);
-  Omega_h::pybind11_array(module);
-  Omega_h::pybind11_comm(module);
-  Omega_h::pybind11_library(module);
-  Omega_h::pybind11_tag(module);
-  Omega_h::pybind11_graph(module);
-  Omega_h::pybind11_mesh(module);
-  Omega_h::pybind11_build(module);
-  Omega_h::pybind11_adapt(module);
-  Omega_h::pybind11_file(module);
-  Omega_h::pybind11_class(module);
+PYBIND11_MODULE(PyOmega_h, m) {
+  m.doc() = "Omega_h: simplex mesh adaptation";
+  Omega_h::pybind11_defines(m);
+  Omega_h::pybind11_array(m);
+  Omega_h::pybind11_comm(m);
+  Omega_h::pybind11_library(m);
+  Omega_h::pybind11_tag(m);
+  Omega_h::pybind11_graph(m);
+  Omega_h::pybind11_mesh(m);
+  Omega_h::pybind11_build(m);
+  Omega_h::pybind11_adapt(m);
+  Omega_h::pybind11_file(m);
+  Omega_h::pybind11_class(m);
 #ifdef OMEGA_H_USE_DOLFIN
-  Omega_h::pybind11_dolfin(module);
+  Omega_h::pybind11_dolfin(m);
 #endif
 }

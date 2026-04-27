@@ -3,15 +3,15 @@
 #include <PyOmega_h.hpp>
 
 namespace Omega_h {
-void pybind11_tag(py::module& module) {
+void pybind11_tag(py::module& m) {
    // Bind ArrayType enum for tag array types
-  py::enum_<Omega_h::ArrayType>(module, "ArrayType")
+  py::enum_<Omega_h::ArrayType>(m, "ArrayType")
     .value("VectorND", Omega_h::ArrayType::VectorND)
     .value("SymmetricSquareMatrix", Omega_h::ArrayType::SymmetricSquareMatrix)
     .export_values();
 
   // Bind TagBase class for tag metadata access
-  py::class_<Omega_h::TagBase>(module, "TagBase")
+  py::class_<Omega_h::TagBase>(m, "TagBase")
     .def("name", &Omega_h::TagBase::name, "Get tag name")
     .def("ncomps", &Omega_h::TagBase::ncomps, "Get number of components")
     .def("type", &Omega_h::TagBase::type, "Get tag data type (Omega_h_Type)")

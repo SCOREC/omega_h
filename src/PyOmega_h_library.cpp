@@ -19,10 +19,10 @@ namespace Omega_h {
 
 Library* pybind11_global_library = nullptr;
 
-void pybind11_library(py::module& module) {
+void pybind11_library(py::module& m) {
   // Bind Omega_h::Library
   py::class_<Omega_h::Library>(
-    module, "OmegaHLibrary")
+    m, "OmegaHLibrary")
     .def(py::init<>(), "Default constructor")
     .def("world", &Omega_h::Library::world, "Get the world communicator");
 }

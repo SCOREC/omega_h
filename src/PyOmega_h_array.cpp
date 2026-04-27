@@ -4,24 +4,24 @@
 namespace Omega_h {
 
 template <class Scalar, class Wrapper>
-static void pybind11_array_type(py::module& module,
+static void pybind11_array_type(py::module& m,
     std::string const& py_scalar, std::string const& py_wrapper) {
   auto write_name = std::string("Write_") + py_scalar;
   auto read_name = std::string("Read_") + py_scalar;
   auto hostread_name = std::string("HostRead_") + py_scalar;
   auto hostwrite_name = std::string("HostWrite_") + py_scalar;
   auto deepcopy_name = std::string("deep_copy_") + py_scalar;
-  py::class_<Write<Scalar>>(module, write_name.c_str())
+  py::class_<Write<Scalar>>(m, write_name.c_str())
       .def("size", &Write<Scalar>::size);
-  py::class_<Read<Scalar>>(module, read_name.c_str())
+  py::class_<Read<Scalar>>(m, read_name.c_str())
       .def(py::init<Write<Scalar>>())
       .def("size", &Read<Scalar>::size)
       .def(py::init<LO, Scalar, std::string const&>(), py::arg("size"),
           py::arg("value"), py::arg("name") = "");
   // Create an alias for the wrapper name
-  module.attr(py_wrapper.c_str()) = module.attr(read_name.c_str());
+  m.attr(py_wrapper.c_str()) = m.attr(read_name.c_str());
   py::class_<HostRead<Scalar>>(
-      module, hostread_name.c_str(), py::buffer_protocol())
+      m, hostread_name.c_str(), py::buffer_protocol())
       .def(py::init<Read<Scalar>>())
       .def_buffer([](HostRead<Scalar>& a) -> py::buffer_info {
         return py::buffer_info(
@@ -33,7 +33,7 @@ static void pybind11_array_type(py::module& module,
       })
       .def("get", &HostRead<Scalar>::get);
   py::class_<HostWrite<Scalar>>(
-      module, hostwrite_name.c_str(), py::buffer_protocol())
+      m, hostwrite_name.c_str(), py::buffer_protocol())
       .def(py::init<LO, std::string const&>(), py::arg("size"),
           py::arg("name") = "")
       .def_buffer([](HostWrite<Scalar>& a) -> py::buffer_info {
@@ -46,15 +46,15 @@ static void pybind11_array_type(py::module& module,
       .def("write", &HostWrite<Scalar>::write);
   Write<Scalar> (*deep_copy_type)(Read<Scalar> a, std::string const&) =
       &deep_copy;
-  module.def(deepcopy_name.c_str(), deep_copy_type, py::arg("a"),
+  m.def(deepcopy_name.c_str(), deep_copy_type, py::arg("a"),
       py::arg("name") = "");
 }
 
-void pybind11_array(py::module& module) {
-  pybind11_array_type<I8, Bytes>(module, "int8", "Bytes");
-  pybind11_array_type<I32, LOs>(module, "int32", "LOs");
-  pybind11_array_type<I64, GOs>(module, "int64", "GOs");
-  pybind11_array_type<Real, Reals>(module, "float64", "Reals");
+void pybind11_array(py::module& m) {
+  pybind11_array_type<I8, Bytes>(m, "int8", "Bytes");
+  pybind11_array_type<I32, LOs>(m, "int32", "LOs");
+  pybind11_array_type<I64, GOs>(m, "int64", "GOs");
+  pybind11_array_type<Real, Reals>(m, "float64", "Reals");
 }
 
 }  // namespace Omega_h
