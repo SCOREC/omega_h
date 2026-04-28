@@ -17,10 +17,10 @@ namespace Omega_h {
           py::arg("internal_do_not_use_ever") = false)
 
 
-void pybind11_mesh(py::module& module) {
+void pybind11_mesh(py::module& m) {
   void (Mesh::*set_parting)(Omega_h_Parting, Int, bool) = &Mesh::set_parting;
   void (Mesh::*balance)(bool) = &Mesh::balance;
-  py::class_<Omega_h::Mesh, std::shared_ptr<Omega_h::Mesh>>(module, "OmegaHMesh")
+  py::class_<Omega_h::Mesh, std::shared_ptr<Omega_h::Mesh>>(m, "OmegaHMesh")
     .def(py::init<>(), "Default constructor")
     .def(py::init<Omega_h::Library*>(), py::arg("library"),
          "Constructor with library")
@@ -458,10 +458,10 @@ void pybind11_mesh(py::module& module) {
         return omega_h_read_to_numpy(sizes);
       },
       "Get element sizes");
-  module.def(
+  m.def(
       "new_empty_mesh", []() { return Mesh(pybind11_global_library); });
   // Mesh utility functions
-  module.def(
+  m.def(
     "average_field",
     [](Omega_h::Mesh* mesh, Omega_h::Int dim, Omega_h::Int ncomps,
        py::array_t<Omega_h::Real> v2x) {
@@ -474,7 +474,7 @@ void pybind11_mesh(py::module& module) {
     "Average vertex field data to entity centers (e.g., get face coordinates "
     "from vertex coordinates)");
 
-  module.def(
+  m.def(
     "average_field",
     [](Omega_h::Mesh* mesh, Omega_h::Int dim, py::array_t<Omega_h::LO> a2e,
        Omega_h::Int ncomps, py::array_t<Omega_h::Real> v2x) {

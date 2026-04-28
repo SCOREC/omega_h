@@ -19,19 +19,19 @@ namespace py = pybind11;
 namespace Omega_h {
 class Library;
 extern Library* pybind11_global_library;
-void pybind11_defines(py::module& module);
-void pybind11_array(py::module& module);
-void pybind11_comm(py::module& module);
-void pybind11_library(py::module& module);
-void pybind11_tag(py::module& module);
-void pybind11_graph(py::module& module);
-void pybind11_mesh(py::module& module);
-void pybind11_build(py::module& module);
-void pybind11_adapt(py::module& module);
-void pybind11_file(py::module& module);
-void pybind11_class(py::module& module);
+void pybind11_defines(py::module& m);
+void pybind11_array(py::module& m);
+void pybind11_comm(py::module& m);
+void pybind11_library(py::module& m);
+void pybind11_tag(py::module& m);
+void pybind11_graph(py::module& m);
+void pybind11_mesh(py::module& m);
+void pybind11_build(py::module& m);
+void pybind11_adapt(py::module& m);
+void pybind11_file(py::module& m);
+void pybind11_class(py::module& m);
 #ifdef OMEGA_H_USE_DOLFIN
-void pybind11_dolfin(py::module& module);
+void pybind11_dolfin(py::module& m);
 #endif
 }  // namespace Omega_h
 

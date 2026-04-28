@@ -5,13 +5,13 @@
 
 namespace Omega_h {
 
-void pybind11_comm(py::module& module) {
+void pybind11_comm(py::module& m) {
   // Bind the Comm class
 #ifdef OMEGA_H_USE_MPI
   using CommHandle = std::uintptr_t;
 #endif
 
-  py::class_<Omega_h::Comm, std::shared_ptr<Omega_h::Comm>>(module, "Comm")
+  py::class_<Omega_h::Comm, std::shared_ptr<Omega_h::Comm>>(m, "Comm")
   // Constructors
 #ifdef OMEGA_H_USE_MPI
     .def(py::init([](Omega_h::Library* library, CommHandle impl_handle) {
