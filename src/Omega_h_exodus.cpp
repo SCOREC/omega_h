@@ -11,8 +11,11 @@
 
 #include <algorithm>
 #include <iostream>
+#include <map>
+#include <regex>
 #include <set>
 #include <sstream>
+#include <numeric> //iota
 
 #include "Omega_h_align.hpp"
 #include "Omega_h_array_ops.hpp"
@@ -195,55 +198,186 @@ static void setup_names(
   }
 }
 
-void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
-    std::string const& prefix, std::string const& postfix, bool verbose) {
-  int num_elem_vars;
-  CALL(ex_get_variable_param(exodus_file, EX_ELEM_BLOCK, &num_elem_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_elem_vars << " element variables\n";
-  if (num_elem_vars == 0) return;
+struct FieldComponent {
+  std::string full_name;
+  std::string base_name;
+  int component_index;
+  int exo_var_index;
+};
+
+static bool is_valid_field_group(
+    std::vector<FieldComponent> const& components) {
+  if (components.empty()) return false;
+
+  std::vector<int> indices;
+  indices.reserve(components.size());
+  for (auto const& comp : components) {
+    indices.push_back(comp.component_index);
+  }
+  std::sort(indices.begin(), indices.end());
+
+  const auto firstIdx = indices[0];
+  if(firstIdx != 0 && firstIdx != 1) return false;
+
+  std::vector<int> expected(indices.size());
+  std::iota(expected.begin(), expected.end(), firstIdx);
+  if( indices != expected ) return false;
+
+  return true;
+}
+
+static std::map<std::string, std::vector<FieldComponent>>
+group_field_components(std::vector<std::string> const& field_names) {
+  std::map<std::string, std::vector<FieldComponent>> groups;
+  std::regex suffix_regex("^(.+)_(\\d+)$");
+
+  int exo_var_index = 0;
+  for (auto const& name : field_names) {
+    std::smatch match;
+    if (std::regex_match(name, match, suffix_regex)) {
+      // Has suffix like "_123"
+      std::string base_name = match[1].str();
+      int comp_idx = std::stoi(match[2].str());
+      groups[base_name].push_back({name, base_name, comp_idx, exo_var_index++});
+    }
+  }
+
+  for (const auto &[name, components] : groups) {
+    const bool is_valid = is_valid_field_group(components);
+    if(!is_valid) {
+      std::cerr << "field " << name << " does not have a full set of components ... exiting\n";
+    }
+    assert(is_valid);
+  }
+
+  return groups;
+}
+
+// Reads fields from an open Exodus file and adds them as mesh tags.
+// ent_dim: VERT for nodal fields, mesh->dim() for element fields.
+//
+// For distributed (sliced) reading, provide non-null slice_dist along with the
+// local slice offset (slice_offset) and local count (nslice). Each rank reads
+// its slice via ex_get_partial_var and then uses slice_dist->exch() to produce
+// the full distributed field. When slice_dist is null, ex_get_var reads all
+// entities and the tag is added directly.
+static void read_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix, std::string const& postfix, bool verbose,
+    bool merge_components, Int ent_dim,
+    Dist* slice_dist = nullptr, GO slice_offset = 0, LO nslice = 0) {
+  ex_entity_type ex_var_type;
+  LO nents;
+  int obj_id;
+  char const* field_label;
+  if (ent_dim == VERT) {
+    ex_var_type = EX_NODAL;
+    nents = slice_dist ? nslice : mesh->nverts();
+    obj_id = 0;
+    field_label = "nodal";
+  } else {
+    OMEGA_H_CHECK(ent_dim == mesh->dim());
+    ex_var_type = EX_ELEM_BLOCK;
+    nents = slice_dist ? nslice : mesh->nelems();
+    obj_id = 1;
+    field_label = "element";
+  }
+
+  // Reads one Exodus variable (1-based var_idx) and returns a distributed
+  // device array, handling both sliced and non-sliced cases.
+  auto read_one_var = [&](int var_idx) -> Reals {
+    HostWrite<double> buf(nents);
+    if (slice_dist) {
+      CALL(ex_get_partial_var(exodus_file, time_step + 1, ex_var_type,
+          var_idx, obj_id, slice_offset + 1, nents, buf.data()));
+      return slice_dist->exch(Reals(buf.write()), 1);
+    } else {
+      CALL(ex_get_var(exodus_file, time_step + 1, ex_var_type,
+          var_idx, obj_id, nents, buf.data()));
+      return Reals(buf.write());
+    }
+  };
+
+  int num_vars;
+  CALL(ex_get_variable_param(exodus_file, ex_var_type, &num_vars));
+  if (verbose)
+    std::cout << "P" << mesh->comm()->rank() << ": " << num_vars
+              << " " << field_label << " variables\n";
+  if (num_vars == 0) return;
   std::vector<char> names_memory;
   std::vector<char*> name_ptrs;
-  setup_names(num_elem_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(
-      exodus_file, EX_ELEM_BLOCK, num_elem_vars, name_ptrs.data()));
-  for (int i = 0; i < num_elem_vars; ++i) {
-    auto name = name_ptrs[std::size_t(i)];
-    if (verbose)
-      std::cout << "P" << mesh->comm()->rank() << ": Loading element variable \"" << name << "\" at time step "
-	<< time_step << '\n';
-    auto name_osh = prefix + std::string(name) + postfix;
-    HostWrite<double> host_write(mesh->nelems(), name_osh);
-    CALL(ex_get_var(exodus_file, time_step + 1, EX_ELEM_BLOCK, i + 1, 1, mesh->nelems(), host_write.data()));
-    auto device_write = host_write.write();
-    auto device_read = Reals(device_write);
-    mesh->add_tag(FACE, name_osh, 1, device_read);
+  setup_names(num_vars, names_memory, name_ptrs);
+  CALL(ex_get_variable_names(exodus_file, ex_var_type, num_vars, name_ptrs.data()));
+
+  std::vector<std::string> field_names;
+  for (int i = 0; i < num_vars; ++i) {
+    field_names.push_back(std::string(name_ptrs[std::size_t(i)]));
+  }
+
+  std::set<std::string> processed_fields;
+
+  if (merge_components) {
+    auto groups = group_field_components(field_names);
+
+    for (auto const& pair : groups) {
+      auto const& base_name = pair.first;
+      auto const& components = pair.second;
+
+      const int ncomps = components.size();
+      if (verbose) {
+        std::cout << "P" << mesh->comm()->rank()
+                  << ": Merging " << ncomps << " components of \""
+                  << base_name << "\" at time step " << time_step << '\n';
+      }
+
+      // read_one_var returns the post-exchange array, always mesh->nents length
+      LO nents_mesh = mesh->nents(ent_dim);
+      Write<double> merged_data(nents_mesh * ncomps);
+
+      for (auto const& comp : components) {
+        const auto field_idx = comp.exo_var_index;
+        const int target_comp = comp.component_index - 1;
+        auto comp_data = read_one_var(field_idx + 1);
+        auto setCompData = OMEGA_H_LAMBDA(LO i) {
+          merged_data[i * ncomps + target_comp] = comp_data[i];
+        };
+        parallel_for(nents_mesh, setCompData, "set_component_data_from_exo_var");
+        processed_fields.insert(comp.full_name);
+      }
+
+      auto name_osh = prefix + base_name + postfix;
+      mesh->add_tag(ent_dim, name_osh, ncomps, Reals(merged_data));
+    }
+  }
+
+  for (int i = 0; i < num_vars; ++i) {
+    auto name = field_names[std::size_t(i)];
+
+    if (processed_fields.count(name) > 0) continue;
+
+    if (verbose) {
+      std::cout << "P" << mesh->comm()->rank()
+                << ": Loading " << field_label << " variable \"" << name
+                << "\" at time step " << time_step << '\n';
+    }
+
+    auto name_osh = prefix + name + postfix;
+    auto var_array = read_one_var(i + 1);
+    mesh->add_tag(ent_dim, name_osh, 1, var_array);
   }
 }
 
 void read_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
-    std::string const& prefix, std::string const& postfix, bool verbose) {
-  int num_nodal_vars;
-  CALL(ex_get_variable_param(exodus_file, EX_NODAL, &num_nodal_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_nodal_vars << " nodal variables\n";
-  if (num_nodal_vars == 0) return;
-  std::vector<char> names_memory;
-  std::vector<char*> name_ptrs;
-  setup_names(num_nodal_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(
-      exodus_file, EX_NODAL, num_nodal_vars, name_ptrs.data()));
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    auto name = name_ptrs[std::size_t(i)];
-    if (verbose)
-      std::cout << "P" << mesh->comm()->rank() << ": Loading nodal variable \"" << name << "\" at time step "
-                << time_step << '\n';
-    auto name_osh = prefix + std::string(name) + postfix;
-    HostWrite<double> host_write(mesh->nverts(), name_osh);
-    CALL(ex_get_var(exodus_file, time_step + 1, EX_NODAL, i + 1, /*obj_id*/ 0,
-        mesh->nverts(), host_write.data()));
-    auto device_write = host_write.write();
-    auto device_read = Reals(device_write);
-    mesh->add_tag(VERT, name_osh, 1, device_read);
-  }
+    std::string const& prefix, std::string const& postfix, bool verbose,
+    bool merge_components) {
+  read_fields(exodus_file, mesh, time_step, prefix, postfix, verbose,
+      merge_components, VERT);
+}
+
+void read_element_fields(int exodus_file, Mesh* mesh, int time_step,
+    std::string const& prefix, std::string const& postfix, bool verbose,
+    bool merge_components) {
+  read_fields(exodus_file, mesh, time_step, prefix, postfix, verbose,
+      merge_components, mesh->dim());
 }
 
 void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
@@ -440,29 +574,14 @@ void read_mesh(int file, Mesh* mesh, bool verbose, int classify_with) {
 
 #if defined(OMEGA_H_USE_MPI) && defined(PARALLEL_AWARE_EXODUS)
 static void read_sliced_nodal_fields(Mesh* mesh, int file, int time_step,
-    bool verbose, Dist slice_verts2verts, GO nodes_begin, LO nslice_nodes) {
-  int num_nodal_vars;
-  CALL(ex_get_variable_param(file, EX_NODAL, &num_nodal_vars));
-  if (verbose) std::cout << "P" << mesh->comm()->rank() << ": " << num_nodal_vars << " nodal variables\n";
-  std::vector<char> names_memory;
-  std::vector<char*> name_ptrs;
-  setup_names(num_nodal_vars, names_memory, name_ptrs);
-  CALL(ex_get_variable_names(file, EX_NODAL, num_nodal_vars, name_ptrs.data()));
-  for (int i = 0; i < num_nodal_vars; ++i) {
-    auto name = name_ptrs[std::size_t(i)];
-    if (verbose) std::cout << "P" << mesh->comm()->rank() << ": Loading nodal variable \"" << name << "\"\n";
-    HostWrite<double> host_write(nslice_nodes);
-    CALL(ex_get_partial_var(file, time_step + 1, EX_NODAL, i + 1, /*obj_id*/ 0,
-        nodes_begin + 1, nslice_nodes, host_write.data()));
-    auto device_write = host_write.write();
-    auto slice_data = Reals(device_write);
-    auto data = slice_verts2verts.exch(slice_data, 1);
-    mesh->add_tag(VERT, name, 1, data);
-  }
+    bool verbose, Dist slice_verts2verts, GO nodes_begin, LO nslice_nodes,
+    bool merge_components) {
+  read_fields(file, mesh, time_step, "", "", verbose, merge_components, VERT,
+      &slice_verts2verts, nodes_begin, nslice_nodes);
 }
 
 Mesh read_sliced(filesystem::path const& path, CommPtr comm, bool verbose, int,
-    int time_step) {
+    int time_step, bool merge_components) {
   ScopedTimer timer("exodus::read");
   verbose = verbose && (comm->rank() == 0);
   auto comm_mpi = comm->get_impl();
@@ -501,7 +620,6 @@ Mesh read_sliced(filesystem::path const& path, CommPtr comm, bool verbose, int,
   for (Int i = 0; i < dim; ++i) {
     h_coord_blk[i] = HostWrite<Real>(nslice_nodes);
   }
-  nc_set_log_level(5);
   CALL(ex_get_partial_coord(file, nodes_begin + 1, nslice_nodes,
       h_coord_blk[0].data(), h_coord_blk[1].data(), h_coord_blk[2].data()));
   HostWrite<Real> h_coords(nslice_nodes * dim);
@@ -600,13 +718,13 @@ Mesh read_sliced(filesystem::path const& path, CommPtr comm, bool verbose, int,
     if (time_step < 0) time_step = num_time_steps - 1;
     if (verbose) std::cout << "P" << comm->rank() << ": reading time step " << time_step << std::endl;
     read_sliced_nodal_fields(&mesh, file, time_step, verbose, slice_verts2verts,
-        nodes_begin, nslice_nodes);
+        nodes_begin, nslice_nodes, merge_components);
   }
   CALL(ex_close(file));
   return mesh;
 }
 #else
-Mesh read_sliced(filesystem::path const&, CommPtr, bool, int, int) {
+Mesh read_sliced(filesystem::path const&, CommPtr, bool, int, int, bool) {
   Omega_h_fail(
       "Can't read Exodus file by slices, Exodus not compiled with parallel "
       "support\n");
