@@ -8,7 +8,6 @@
 #  SIMMODSUITE_MINOR_VERSION - the date code from the version string
 #
 # Based on input variables:
-#  SIM_MPI
 #  SIMMETRIX_LIB_DIR
 #  SIMMETRIX_INCLUDE_DIR
 # And environment variable:
@@ -18,13 +17,6 @@
 # VERSION/
 #         include/*.h
 #         lib/ARCHOS/*.a
-
-if (Omega_h_USE_MPI)
-  set(SIM_MPI "" CACHE STRING "MPI implementation used for SimPartitionWrapper")
-  if(SIM_MPI MATCHES "^$")
-    message(FATAL_ERROR "SIM_MPI is not defined... libSimPartitionWrapper-$SIM_MPI.a should exist in the SimModSuite lib directory")
-  endif()
-endif()
 
 macro(simLibCheckBootstrap libs)
   simLibCheck(${libs} TRUE)
@@ -111,11 +103,7 @@ message(STATUS "Building with SimModSuite ${SIM_DOT_VERSION}")
 
 set(SIMMODSUITE_LIBS "")
 
-if (Omega_h_USE_MPI)
-  set(SIM_BOOTSTRAP_LIB_NAME SimPartitionedMesh-mpi)
-else()
-  set(SIM_BOOTSTRAP_LIB_NAME SimPartitionedMesh)
-endif()
+set(SIM_BOOTSTRAP_LIB_NAME SimPartitionedMesh)
 
 simLibCheckBootstrap("${SIM_BOOTSTRAP_LIB_NAME}")
 
@@ -168,11 +156,9 @@ simLibCheck("${SIM_OPT_LIB_NAMES}" FALSE)
 
 if (Omega_h_USE_MPI)
   set(SIM_CORE_LIB_NAMES
-    SimPartitionedMesh-mpi
     SimMeshing
     SimMeshTools
-    SimModel
-    SimPartitionWrapper-${SIM_MPI})
+    SimModel)
 else()
   set(SIM_CORE_LIB_NAMES
     SimMeshing
