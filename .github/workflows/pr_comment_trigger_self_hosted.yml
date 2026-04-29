@@ -154,7 +154,6 @@ jobs:
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
             -DSKIP_SIMMETRIX_VERSION_CHECK=on \
-            -DSIM_MPI=mpich4.2.3 \
             -DOmega_h_USE_Kokkos=on \
             -DOmega_h_CUDA_ARCH="80" \
             -DCMAKE_CUDA_ARCHITECTURES="80" \
@@ -188,7 +187,6 @@ jobs:
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
             -DSKIP_SIMMETRIX_VERSION_CHECK=on \
-            -DSIM_MPI=mpich4.2.3 \
             -DOmega_h_USE_Kokkos=off \
             -DOmega_h_USE_ADIOS2=ON \
             -DOmega_h_USE_Gmsh=ON \
@@ -220,7 +218,6 @@ jobs:
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
             -DSKIP_SIMMETRIX_VERSION_CHECK=on \
-            -DSIM_MPI=mpich4.2.3 \
             -DOmega_h_USE_Kokkos=on \
             -DKokkos_PREFIX=${KOKKOS_SERIAL_BUILD}/install \
             -DOmega_h_USE_ADIOS2=ON \
@@ -253,7 +250,6 @@ jobs:
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
             -DSKIP_SIMMETRIX_VERSION_CHECK=on \
-            -DSIM_MPI=mpich4.2.3 \
             -DOmega_h_USE_Kokkos=on \
             -DKokkos_PREFIX=${KOKKOS_OPENMP_BUILD}/install \
             -DOmega_h_USE_ADIOS2=ON \
@@ -317,7 +313,6 @@ jobs:
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
             -DSKIP_SIMMETRIX_VERSION_CHECK=on \
-            -DSIM_MPI=mpich4.2.3 \
             -DOmega_h_USE_Kokkos=on \
             -DOmega_h_CUDA_ARCH="80" \
             -DCMAKE_CUDA_ARCHITECTURES="80" \
