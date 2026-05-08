@@ -490,24 +490,32 @@ void read_internal(std::istream& stream, Mesh* mesh) {
     Omega_h_fail("There were no Elements of dimension higher than zero!\n");
   }
 
-  // Check mesh on XY plane for 2D mesh
+  // Check that 2D meshes lie on the XY plane via bounding box extents.
+  // omega_h only keeps x and y for 2D.
   if (max_dim == 2) {
-    // sum of absolute values of z coordinates should be zero
-    double coord_sums[3] = {0.0, 0.0, 0.0};
+    OMEGA_H_CHECK(!node_coords.empty());
+    Vector<3> bbox_min = node_coords[0];
+    Vector<3> bbox_max = node_coords[0];
     for (const auto& coords : node_coords) {
-      coord_sums[0] += std::abs(coords[0]);
-      coord_sums[1] += std::abs(coords[1]);
-      coord_sums[2] += std::abs(coords[2]);
+      for (Int j = 0; j < 3; ++j) {
+        bbox_min[j] = std::min(bbox_min[j], coords[j]);
+        bbox_max[j] = std::max(bbox_max[j], coords[j]);
+      }
     }
-
-    double tol = 1e-12 * (coord_sums[0] + coord_sums[1]);
-    if (coord_sums[2] > tol) {
+    Vector<3> extent;
+    for (Int j = 0; j < 3; ++j) {
+      extent[j] = bbox_max[j] - bbox_min[j];
+    }
+    Real tol = 1e-12 * std::max(extent[0], extent[1]);
+    if (extent[2] > tol) {
       Omega_h_fail(
-          "2D meshes can only have nodes on the XY plane, but z coordinates "
-          "are not zero: [sum(abs(z-coords))=%f]\n", coord_sums[2]);
+          "2D meshes must lie on the XY plane, but the bounding box has "
+          "non-zero extent in Z: [z_extent=%e]\n", extent[2]);
     }
-    OMEGA_H_CHECK_PRINTF(coord_sums[0] > tol, "Coordinates are zero in X : [sum(abs(x-coords))=%e]\n", coord_sums[0]);
-    OMEGA_H_CHECK_PRINTF(coord_sums[1] > tol, "Coordinates are zero in Y : [sum(abs(y-coords))=%e]\n", coord_sums[1]);
+    OMEGA_H_CHECK_PRINTF(extent[0] > tol,
+        "Bounding box has zero extent in X: [x_extent=%e]\n", extent[0]);
+    OMEGA_H_CHECK_PRINTF(extent[1] > tol,
+        "Bounding box has zero extent in Y: [y_extent=%e]\n", extent[1]);
   }
 
   HostWrite<Real> host_coords(nnodes * max_dim);
