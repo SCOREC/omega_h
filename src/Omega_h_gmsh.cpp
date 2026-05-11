@@ -489,6 +489,35 @@ void read_internal(std::istream& stream, Mesh* mesh) {
   } else {
     Omega_h_fail("There were no Elements of dimension higher than zero!\n");
   }
+
+  // Check that 2D meshes lie on the XY plane via bounding box extents.
+  // omega_h only keeps x and y for 2D.
+  if (max_dim == 2) {
+    OMEGA_H_CHECK(!node_coords.empty());
+    Vector<3> bbox_min = node_coords[0];
+    Vector<3> bbox_max = node_coords[0];
+    for (const auto& coords : node_coords) {
+      for (Int j = 0; j < 3; ++j) {
+        bbox_min[j] = std::min(bbox_min[j], coords[j]);
+        bbox_max[j] = std::max(bbox_max[j], coords[j]);
+      }
+    }
+    Vector<3> extent;
+    for (Int j = 0; j < 3; ++j) {
+      extent[j] = bbox_max[j] - bbox_min[j];
+    }
+    Real tol = 1e-12 * std::max(extent[0], extent[1]);
+    if (extent[2] > tol) {
+      Omega_h_fail(
+          "2D meshes must lie on the XY plane, but the bounding box has "
+          "non-zero extent in Z: [z_extent=%e]\n", extent[2]);
+    }
+    OMEGA_H_CHECK_PRINTF(extent[0] > tol,
+        "Bounding box has zero extent in X: [x_extent=%e]\n", extent[0]);
+    OMEGA_H_CHECK_PRINTF(extent[1] > tol,
+        "Bounding box has zero extent in Y: [y_extent=%e]\n", extent[1]);
+  }
+
   HostWrite<Real> host_coords(nnodes * max_dim);
   for (LO i = 0; i < nnodes; ++i) {
     for (Int j = 0; j < max_dim; ++j) {
