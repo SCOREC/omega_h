@@ -222,13 +222,13 @@ static void read_meta(adios2::IO &io, adios2::Engine &reader, Mesh* mesh, std::s
   mesh->set_dim(Int(dim));
 
   name=pref+"comm_size"; read_value(io, reader, mesh->comm(), &commsize, name);
-  OMEGA_H_CHECK(mesh->comm()->size() == commsize);
+  OMEGA_H_ALWAYS_CHECK(mesh->comm()->size() == commsize);
 
   name=pref+"rank"; read_value(io, reader, mesh->comm(), &commrank, name);
-  OMEGA_H_CHECK(mesh->comm()->rank() == commrank);
+  OMEGA_H_ALWAYS_CHECK(mesh->comm()->rank() == commrank);
 
   name=pref+"parting"; read_value(io, reader, mesh->comm(), &parting, name);
-  OMEGA_H_CHECK(parting == (OMEGA_H_ELEM_BASED) ||
+  OMEGA_H_ALWAYS_CHECK(parting == (OMEGA_H_ELEM_BASED) ||
                 parting == (OMEGA_H_GHOSTED) ||
                 parting == (OMEGA_H_VERT_BASED));
 

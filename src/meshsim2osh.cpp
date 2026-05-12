@@ -7,7 +7,7 @@
 #include "Omega_h_for.hpp"
 
 void localToGlobal(Omega_h::Mesh* mesh, int entDim) {
-  OMEGA_H_CHECK(entDim >= 0 && entDim <= mesh->dim());
+  OMEGA_H_ALWAYS_CHECK(entDim >= 0 && entDim <= mesh->dim());
   std::string kernelName = "local_to_global_" + entDim;
   Omega_h::Write<Omega_h::GO> global(mesh->nents(entDim));
   Omega_h::parallel_for(kernelName.c_str(), mesh->nents(entDim),

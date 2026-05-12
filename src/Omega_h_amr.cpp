@@ -180,7 +180,7 @@ static void refine_elem_based(Mesh* mesh, TransferOpts xfer_opts) {
 }
 
 void refine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
-  OMEGA_H_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
+  OMEGA_H_ALWAYS_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
   amr::mark_refined(mesh, elems_are_marked);
   mesh->set_parting(OMEGA_H_GHOSTED);
   amr::refine_ghosted(mesh);
@@ -189,7 +189,7 @@ void refine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
 }
 
 void derefine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
-  OMEGA_H_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
+  OMEGA_H_ALWAYS_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
   amr::tag_derefined(mesh, elems_are_marked);
   LOs new_ents2old_ents[4];
   GOs new_globals[4];

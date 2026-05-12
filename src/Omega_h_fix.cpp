@@ -24,7 +24,7 @@ void compute_ill_metric_dim(
   mesh->add_tag(dim, "metric", ncomps, elem_metrics);
   std::cout << "projecting them\n";
   auto metrics = project_metrics(mesh, elem_metrics);
-  OMEGA_H_CHECK(ncomps == divide_no_remainder(metrics.size(), mesh->nverts()));
+  OMEGA_H_ALWAYS_CHECK(ncomps == divide_no_remainder(metrics.size(), mesh->nverts()));
   if (isotropy == OMEGA_H_ANISOTROPIC) {
     for (Int i = 0; i < 5; ++i) {
       std::cout << "metric smoothing iteration " << i << '\n';

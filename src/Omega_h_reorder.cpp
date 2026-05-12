@@ -56,7 +56,7 @@ static void reorder_mesh_by_verts(Mesh* mesh, LOs new_verts2old_verts) {
 
 void reorder_by_hilbert(Mesh* mesh) {
   OMEGA_H_TIME_FUNCTION;
-  OMEGA_H_CHECK(mesh->comm()->size() == 1);
+  OMEGA_H_ALWAYS_CHECK(mesh->comm()->size() == 1);
   auto coords = mesh->coords();
   LOs new_verts2old_verts = hilbert::sort_coords(coords, mesh->dim());
   reorder_mesh_by_verts(mesh, new_verts2old_verts);

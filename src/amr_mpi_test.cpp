@@ -61,7 +61,7 @@ static void test_2D_case2(CommPtr comm) {
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
   auto comm = lib.world();
-  OMEGA_H_CHECK(comm->size() == 2); 
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 2); 
   Omega_h::test_2D_case1(comm);
   Omega_h::test_2D_case2(comm);
 }

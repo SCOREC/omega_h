@@ -7,7 +7,7 @@
 
 int main(int argc, char** argv) {
   auto lib = Omega_h::Library(&argc, &argv);
-  OMEGA_H_CHECK(argc == 2);
+  OMEGA_H_ALWAYS_CHECK(argc == 2);
   auto inpath = argv[1];
   auto mesh = Omega_h::Mesh(&lib);
   auto maximum_size = Omega_h::Real(0.9);

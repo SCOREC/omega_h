@@ -8,12 +8,12 @@ static void test_repro_sum() {
     Reals a = {0,1,2};
     Real res = repro_sum(a);
     printf("result %f\n", res);
-    OMEGA_H_CHECK(are_close(res,3.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(res,3.0));
   }
   {
     Reals a({std::exp2(int(20)), std::exp2(int(-20))});
     Real sum = repro_sum(a);
-    OMEGA_H_CHECK(sum == std::exp2(20) + std::exp2(int(-20)));
+    OMEGA_H_ALWAYS_CHECK(sum == std::exp2(20) + std::exp2(int(-20)));
   }
   {
     const int n = 1'000'000;
@@ -22,7 +22,7 @@ static void test_repro_sum() {
     auto const res = repro_sum(read(a));
     const double expected = (n-1)*static_cast<double>(n)/2.0;
     if(res != expected) fprintf(stderr, "expected %f != res %f\n", expected, res);
-    OMEGA_H_CHECK(res == expected);
+    OMEGA_H_ALWAYS_CHECK(res == expected);
   }
 
 }

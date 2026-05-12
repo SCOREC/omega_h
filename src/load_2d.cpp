@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Usage: %s inputMesh.osh\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-  OMEGA_H_CHECK(argc == 2);
+  OMEGA_H_ALWAYS_CHECK(argc == 2);
   Omega_h::Mesh2D mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
 }

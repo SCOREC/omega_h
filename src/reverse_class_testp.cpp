@@ -13,33 +13,33 @@ void test_cutBox(Library *lib, const std::string &mesh_file) {
   auto mesh = Mesh(lib);
   binary::read (mesh_file, lib->world(), &mesh);
 
-  OMEGA_H_CHECK (!mesh.has_revClass(3));
+  OMEGA_H_ALWAYS_CHECK (!mesh.has_revClass(3));
   auto reg_rc = mesh.ask_revClass(3);
   auto reg_rc_get = mesh.get_revClass(3);
-  OMEGA_H_CHECK (mesh.has_revClass(3));
-  OMEGA_H_CHECK (reg_rc.ab2b == reg_rc_get.ab2b);
-  OMEGA_H_CHECK (reg_rc.a2ab == reg_rc_get.a2ab);
+  OMEGA_H_ALWAYS_CHECK (mesh.has_revClass(3));
+  OMEGA_H_ALWAYS_CHECK (reg_rc.ab2b == reg_rc_get.ab2b);
+  OMEGA_H_ALWAYS_CHECK (reg_rc.a2ab == reg_rc_get.a2ab);
 
-  OMEGA_H_CHECK (!mesh.has_revClass(2));
+  OMEGA_H_ALWAYS_CHECK (!mesh.has_revClass(2));
   auto face_rc = mesh.ask_revClass(2);
   auto face_rc_get = mesh.get_revClass(2);
-  OMEGA_H_CHECK (mesh.has_revClass(2));
-  OMEGA_H_CHECK (face_rc.ab2b == face_rc_get.ab2b);
-  OMEGA_H_CHECK (face_rc.a2ab == face_rc_get.a2ab);
+  OMEGA_H_ALWAYS_CHECK (mesh.has_revClass(2));
+  OMEGA_H_ALWAYS_CHECK (face_rc.ab2b == face_rc_get.ab2b);
+  OMEGA_H_ALWAYS_CHECK (face_rc.a2ab == face_rc_get.a2ab);
 
-  OMEGA_H_CHECK (!mesh.has_revClass(1));
+  OMEGA_H_ALWAYS_CHECK (!mesh.has_revClass(1));
   auto edge_rc = mesh.ask_revClass(1);
   auto edge_rc_get = mesh.get_revClass(1);
-  OMEGA_H_CHECK (mesh.has_revClass(1));
-  OMEGA_H_CHECK (edge_rc.ab2b == edge_rc_get.ab2b);
-  OMEGA_H_CHECK (edge_rc.a2ab == edge_rc_get.a2ab);
+  OMEGA_H_ALWAYS_CHECK (mesh.has_revClass(1));
+  OMEGA_H_ALWAYS_CHECK (edge_rc.ab2b == edge_rc_get.ab2b);
+  OMEGA_H_ALWAYS_CHECK (edge_rc.a2ab == edge_rc_get.a2ab);
 
-  OMEGA_H_CHECK (!mesh.has_revClass(0));
+  OMEGA_H_ALWAYS_CHECK (!mesh.has_revClass(0));
   auto vert_rc = mesh.ask_revClass(0);
   auto vert_rc_get = mesh.get_revClass(0);
-  OMEGA_H_CHECK (mesh.has_revClass(0));
-  OMEGA_H_CHECK (vert_rc.ab2b == vert_rc_get.ab2b);
-  OMEGA_H_CHECK (vert_rc.a2ab == vert_rc_get.a2ab);
+  OMEGA_H_ALWAYS_CHECK (mesh.has_revClass(0));
+  OMEGA_H_ALWAYS_CHECK (vert_rc.ab2b == vert_rc_get.ab2b);
+  OMEGA_H_ALWAYS_CHECK (vert_rc.a2ab == vert_rc_get.a2ab);
 
   auto rc_r2f = mesh.ask_revClass_downAdj (3, 2);
   auto rc_r2e = mesh.ask_revClass_downAdj (3, 1);
@@ -59,18 +59,18 @@ void test_box(Library *lib, const std::string &mesh_file) {
  
   if (!rank) {
     auto vtx2_6_rc = mesh.ask_revClass(0, LOs({2, 6}));
-    OMEGA_H_CHECK (vtx2_6_rc.ab2b == LOs({17}));
-    OMEGA_H_CHECK (vtx2_6_rc.a2ab == LOs({0, 1, 1}));
+    OMEGA_H_ALWAYS_CHECK (vtx2_6_rc.ab2b == LOs({17}));
+    OMEGA_H_ALWAYS_CHECK (vtx2_6_rc.a2ab == LOs({0, 1, 1}));
   }
 
   if (rank) {
     auto vtx2_6_rc = mesh.ask_revClass(0, LOs({2, 6}));
-    OMEGA_H_CHECK (vtx2_6_rc.ab2b == LOs({7}));
-    OMEGA_H_CHECK (vtx2_6_rc.a2ab == LOs({0, 0, 1}));
+    OMEGA_H_ALWAYS_CHECK (vtx2_6_rc.ab2b == LOs({7}));
+    OMEGA_H_ALWAYS_CHECK (vtx2_6_rc.a2ab == LOs({0, 0, 1}));
 
     auto vtx6_rc = mesh.ask_revClass(0, LOs({6}));
-    OMEGA_H_CHECK (vtx6_rc.ab2b == LOs({7}));
-    OMEGA_H_CHECK (vtx6_rc.a2ab == LOs({0, 1}));
+    OMEGA_H_ALWAYS_CHECK (vtx6_rc.ab2b == LOs({7}));
+    OMEGA_H_ALWAYS_CHECK (vtx6_rc.a2ab == LOs({0, 1}));
   }
 
   return;
