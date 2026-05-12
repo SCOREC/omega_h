@@ -1,0 +1,236 @@
+name: CMake test matrix
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        compiler: [g++, clang++]
+          
+    env:
+      CCACHE_DIR: ${{github.workspace}}/.ccache
+      CCACHE_BASEDIR: ${{github.workspace}}
+      CCACHE_COMPRESS: true
+      CCACHE_MAXSIZE: 100M
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        path: omega_h
+
+    - name: install mpich and dependencies
+      run: |
+           sudo apt update
+           sudo apt install mpich libhdf5-dev libnetcdf-dev clang
+
+    - name: setup ccache
+      id: setup-ccache
+      run: |
+        sudo apt-get install ccache
+        ccache -p # Print ccache config
+        echo timestamp=$(date -u '+%Y-%m-%dT%T') >> "$GITHUB_OUTPUT"
+
+    - name: ccache
+      uses: actions/cache@v4
+      with:
+        path: ${{github.workspace}}/.ccache
+        key: "${{matrix.compiler}}-ccache-${{github.ref}}-${{github.sha}}"
+        restore-keys: |
+          ${{matrix.compiler}}-ccache-${{github.ref}}-
+          ${{matrix.compiler}}-ccache-
+
+    - name: Clear ccache statistics
+      run: ccache -z
+    
+    - name: cache gmsh
+      id: cache-gmsh
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.temp}}/gmsh
+        key: build-gmsh-${{ matrix.compiler }}
+
+    - name: clone gmsh
+      if: steps.cache-gmsh.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --branch gmsh_4_14_1 https://gitlab.onelab.info/gmsh/gmsh.git
+    
+    - name: build and install gmsh
+      if: steps.cache-gmsh.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp}}/gmsh
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DENABLE_BUILD_DYNAMIC=1 \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DENABLE_BUILD_LIB=ON \
+            -DBUILD_SHARED_LIBS=ON
+           cmake --build . -j 4 --target install
+    
+    - name: cache libMeshb
+      id: cache-libmeshb
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.temp}}/libmeshb
+        key: build-libmeshb-${{ matrix.compiler }}
+
+    - name: clone libMeshb
+      if: steps.cache-libmeshb.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --depth 1 https://github.com/LoicMarechal/libMeshb.git libmeshb
+
+    - name: build and install libMeshb
+      if: steps.cache-libmeshb.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}/libmeshb
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DBUILD_SHARED_LIBS=ON
+           cmake --build . -j 4 --target install
+    
+    - name: cache kokkos
+      id: cache-kokkos
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.temp}}/kokkos
+        key: build-kokkos-${{ matrix.compiler }}
+
+    - name: clone Kokkos
+      if: steps.cache-kokkos.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --branch 5.0.0 https://github.com/kokkos/kokkos.git kokkos
+
+    - name: build and install kokkos
+      if: steps.cache-kokkos.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}/kokkos
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DKokkos_ENABLE_CUDA=OFF \
+            -DBUILD_SHARED_LIBS=ON
+           cmake --build . -j 4 --target install
+    
+    - name: cache trilinos
+      id: cache-trilinos
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.temp}}/trilinos
+        key: build-trilinos-${{ matrix.compiler }}
+
+    - name: clone Trilinos
+      if: steps.cache-trilinos.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --depth 1 https://github.com/trilinos/Trilinos.git trilinos
+
+    - name: build and install Trilinos
+      if: steps.cache-trilinos.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}/trilinos
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DBUILD_SHARED_LIBS:BOOL=ON \
+            -DTPL_ENABLE_MPI:BOOL=ON \
+            -DCMAKE_CXX_COMPILER:FILEPATH=mpicxx \
+            -DCMAKE_C_COMPILER:FILEPATH=mpicc \
+            -DTrilinos_ENABLE_Fortran=OFF \
+            -DTrilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
+            -DTrilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=OFF \
+            -DTrilinos_ENABLE_SEACAS:BOOL=ON \
+            -DTrilinos_ENABLE_SEACASExodus:BOOL=ON \
+            -DTrilinos_ENABLE_Kokkos:BOOL=ON
+           cmake --build . -j 4 --target install
+
+    - name: cache ADIOS2
+      id: cache-adios2
+      uses: actions/cache@v3
+      with:
+        path: ${{runner.temp}}/adios2
+        key: build-adios2-${{ matrix.compiler }}
+
+    - name: clone ADIOS2
+      if: steps.cache-adios2.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}
+      run: |
+           git clone --depth 1 https://github.com/ornladios/ADIOS2.git adios2
+
+    - name: build and install ADIOS2
+      if: steps.cache-adios2.outputs.cache-hit != 'true'
+      working-directory: ${{runner.temp }}/adios2
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DADIOS2_USE_CUDA=OFF \
+            -DCMAKE_CXX_COMPILER=mpicxx \
+            -DCMAKE_C_COMPILER=mpicc \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DADIOS2_USE_ZFP=OFF
+           cmake --build . -j 4 --target install
+
+    - name: Set environment variables for gmsh
+      run: |
+           echo "CMAKE_PREFIX_PATH=${{runner.temp}}/gmsh/build/install:$CMAKE_PREFIX_PATH" >> $GITHUB_ENV
+           echo "LD_LIBRARY_PATH=${{runner.temp}}/gmsh/build/install/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+           echo "CMAKE_LIBRARY_PATH=${{runner.temp}}/adios2/build/install/lib:$CMAKE_LIBRARY_PATH" >> $GITHUB_ENV
+
+    - name: build and install omega_h
+      working-directory: omega_h
+      run: |
+           ls ${{runner.temp}}/adios2/build/install/lib/cmake/adios2
+           ls ${{runner.temp}}/adios2/build/install
+           ls ${{runner.temp}}/adios2/build/install/include
+           mkdir build
+           cd build
+           cmake .. \
+            -DCMAKE_BUILD_TYPE="Release" \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_INSTALL_PREFIX=install \
+            -DOmega_h_USE_MPI=on \
+            -DOmega_h_USE_Kokkos=on \
+            -DKokkos_PREFIX=${{runner.temp}}/kokkos/build/install \
+            -DBUILD_TESTING=off \
+            -DBUILD_SHARED_LIBS=on \
+            -DOmega_h_USE_ADIOS2=ON \
+            -DADIOS2_DIR=${{runner.temp}}/adios2/build/install/lib/cmake/adios2 \
+            -DOmega_h_USE_Gmsh=ON \
+            -DGmsh_INCLUDE_DIRS=${{runner.temp}}/gmsh/build/install/include \
+            -DGmsh_LIBRARIES=${{runner.temp}}/gmsh/build/install/lib/libgmsh.so \
+            -DOmega_h_USE_libMeshb=on \
+            -DlibMeshb_PREFIX=${{runner.temp}}/libmeshb/build/install \
+            -DOmega_h_USE_OpenMP=OFF \
+            -DCMAKE_CXX_EXTENSIONS=OFF
+           cmake --build . -j 8 --target install
+    
+    - name: Print ccache statistics
+      run: ccache -s
+
+    - name: test omega_h install
+      working-directory: omega_h/example/external_installation
+      run: |
+           mkdir build
+           cd build
+           cmake .. \
+            -DOmega_h_DIR=${{github.workspace}}/omega_h/build/install/lib/cmake/Omega_h
+           cmake --build . -j 8
+    
+    
