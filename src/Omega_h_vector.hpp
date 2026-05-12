@@ -20,7 +20,7 @@ OMEGA_H_INLINE Real const* scalar_ptr(Vector<n> const& v) {
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator+(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator+(const Vector<n>& a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   Vector<n> c;
   for (Int i = 0; i < n; ++i) c[i] = a[i] + b[i];
   return c;
@@ -28,13 +28,13 @@ OMEGA_H_INLINE Vector<n> operator+(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
 
 template <Int n>
 OMEGA_H_INLINE Vector<n>& operator+=(
-    Vector<n>& a, Vector<n> b) OMEGA_H_NOEXCEPT {
+    Vector<n>& a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   a = a + b;
   return a;
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator-(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator-(const Vector<n> & a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   Vector<n> c;
   for (Int i = 0; i < n; ++i) c[i] = a[i] - b[i];
   return c;
@@ -42,20 +42,20 @@ OMEGA_H_INLINE Vector<n> operator-(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
 
 template <Int n>
 OMEGA_H_INLINE Vector<n>& operator-=(
-    Vector<n>& a, Vector<n> b) OMEGA_H_NOEXCEPT {
+    Vector<n>& a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   a = a - b;
   return a;
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator-(Vector<n> a) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator-(const Vector<n>& a) OMEGA_H_NOEXCEPT {
   Vector<n> c;
   for (Int i = 0; i < n; ++i) c[i] = -a[i];
   return c;
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator*(Vector<n> a, Real b)OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator*(const Vector<n>& a, Real b)OMEGA_H_NOEXCEPT {
   Vector<n> c;
   for (Int i = 0; i < n; ++i) c[i] = a[i] * b;
   return c;
@@ -68,12 +68,12 @@ OMEGA_H_INLINE Vector<n>& operator*=(Vector<n>& a, Real b) OMEGA_H_NOEXCEPT {
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator*(Real a, Vector<n> b)OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator*(Real a, const Vector<n>& b)OMEGA_H_NOEXCEPT {
   return b * a;
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> operator/(Vector<n> a, Real b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> operator/(const Vector<n>& a, Real b) OMEGA_H_NOEXCEPT {
   Vector<n> c;
   for (Int i = 0; i < n; ++i) c[i] = a[i] / b;
   return c;
@@ -86,17 +86,17 @@ OMEGA_H_INLINE Vector<n>& operator/=(Vector<n>& a, Real b) OMEGA_H_NOEXCEPT {
 }
 
 template <Int n>
-OMEGA_H_INLINE Real operator*(Vector<n> a, Vector<n> b)OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Real operator*(const Vector<n>& a, const Vector<n>& b)OMEGA_H_NOEXCEPT {
   return inner_product(a, b);
 }
 
 template <Int n>
-OMEGA_H_INLINE Real norm_squared(Vector<n> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Real norm_squared(const Vector<n>& v) OMEGA_H_NOEXCEPT {
   return v * v;
 }
 
 template <Int n>
-OMEGA_H_INLINE Real norm(Vector<n> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Real norm(const Vector<n>& v) OMEGA_H_NOEXCEPT {
   return std::sqrt(norm_squared(v));
 }
 
@@ -105,7 +105,7 @@ OMEGA_H_INLINE Real norm(Vector<1> v) OMEGA_H_NOEXCEPT {
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> normalize(Vector<n> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> normalize(const Vector<n>& v) OMEGA_H_NOEXCEPT {
   return v / norm(v);
 }
 
@@ -131,7 +131,7 @@ OMEGA_H_INLINE Vector<3> vector_3(Real x, Real y, Real z) OMEGA_H_NOEXCEPT {
 }
 
 template <Int n>
-OMEGA_H_INLINE bool are_close(Vector<n> a, Vector<n> b, Real tol = EPSILON,
+OMEGA_H_INLINE bool are_close(const Vector<n>& a, const Vector<n>& b, Real tol = EPSILON,
     Real floor = EPSILON) OMEGA_H_NOEXCEPT {
   for (Int i = 0; i < n; ++i)
     if (!are_close(a[i], b[i], tol, floor)) return false;
@@ -152,7 +152,7 @@ OMEGA_H_INLINE Vector<n> zero_vector() OMEGA_H_NOEXCEPT {
 
 /* Moore-Penrose pseudo-inverse of a vector */
 template <Int n>
-OMEGA_H_INLINE Vector<n> pseudo_invert(Vector<n> a) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> pseudo_invert(const Vector<n>& a) OMEGA_H_NOEXCEPT {
   auto nsq = a * a;
   if (nsq < EPSILON) return zero_vector<n>();
   return a / nsq;
@@ -164,7 +164,7 @@ OMEGA_H_INLINE Vector<n> pseudo_invert(Vector<n> a) OMEGA_H_NOEXCEPT {
    and negate the components if the resulting
    bit pattern makes a larger integer */
 template <Int n>
-OMEGA_H_INLINE Vector<n> positivize(Vector<n> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> positivize(const Vector<n>& v) OMEGA_H_NOEXCEPT {
   std::uint32_t bits = 0;
   for (Int i = 0; i < n; ++i) bits |= (std::uint32_t(v[i] >= 0.0) << i);
   std::uint32_t neg_bits = (~bits) & ((std::uint32_t(1) << n) - 1);
@@ -172,35 +172,35 @@ OMEGA_H_INLINE Vector<n> positivize(Vector<n> v) OMEGA_H_NOEXCEPT {
   return v;
 }
 
-OMEGA_H_INLINE Real cross(Vector<2> a, Vector<2> b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Real cross(const Vector<2>& a, const Vector<2>& b) OMEGA_H_NOEXCEPT {
   return (a[0] * b[1] - a[1] * b[0]);
 }
 
 OMEGA_H_INLINE Vector<3> cross(
-    Omega_h::Vector<3> a, Omega_h::Vector<3> b) OMEGA_H_NOEXCEPT {
+    const Omega_h::Vector<3>& a, const Omega_h::Vector<3>& b) OMEGA_H_NOEXCEPT {
   return vector_3(a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
       a[0] * b[1] - a[1] * b[0]);
 }
 
-OMEGA_H_INLINE Vector<2> perp(Vector<2> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<2> perp(const Vector<2>& v) OMEGA_H_NOEXCEPT {
   return vector_2(-v[1], v[0]);
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> project(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> project(const Vector<n>& a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   auto dir = normalize(b);
   auto len = a * dir;
   return len * dir;
 }
 
 template <Int n>
-OMEGA_H_INLINE Vector<n> reject(Vector<n> a, Vector<n> b) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<n> reject(const Vector<n>& a, const Vector<n>& b) OMEGA_H_NOEXCEPT {
   return a - project(a, b);
 }
 
 template <Int n>
 OMEGA_H_DEVICE void set_vector(
-    Write<Real> const& a, Int i, Vector<n> v) OMEGA_H_NOEXCEPT {
+    Write<Real> const& a, Int i, const Vector<n>& v) OMEGA_H_NOEXCEPT {
   for (Int j = 0; j < n; ++j) a[i * n + j] = v[j];
 }
 
@@ -212,7 +212,7 @@ OMEGA_H_DEVICE Vector<n> get_vector(Arr const& a, Int i) OMEGA_H_NOEXCEPT {
 }
 
 template <int new_dim, int old_dim>
-OMEGA_H_INLINE Vector<new_dim> resize(Vector<old_dim> v) OMEGA_H_NOEXCEPT {
+OMEGA_H_INLINE Vector<new_dim> resize(const Vector<old_dim>& v) OMEGA_H_NOEXCEPT {
   constexpr int min_dim = Omega_h::min2(new_dim, old_dim);
   Vector<new_dim> v2;
   for (int i = 0; i < min_dim; ++i) v2(i) = v(i);
@@ -227,14 +227,14 @@ Reals dot_vectors(Reals a, Reals b, Int dim);
 Reals resize_vectors(Reals vectors, Int old_dim, Int new_dim);
 
 template <Int dim>
-Reals repeat_vector(LO n, Vector<dim> v);
+Reals repeat_vector(LO n, const Vector<dim>& v);
 
-extern template Reals repeat_vector(LO n, Vector<1> v);
-extern template Reals repeat_vector(LO n, Vector<2> v);
-extern template Reals repeat_vector(LO n, Vector<3> v);
-extern template Reals repeat_vector(LO n, Vector<4> v);
-extern template Reals repeat_vector(LO n, Vector<6> v);
-extern template Reals repeat_vector(LO n, Vector<9> v);
+extern template Reals repeat_vector(LO n, const Vector<1>& v);
+extern template Reals repeat_vector(LO n, const Vector<2>& v);
+extern template Reals repeat_vector(LO n, const Vector<3>& v);
+extern template Reals repeat_vector(LO n, const Vector<4>& v);
+extern template Reals repeat_vector(LO n, const Vector<6>& v);
+extern template Reals repeat_vector(LO n, const Vector<9>& v);
 
 }  // namespace Omega_h
 
