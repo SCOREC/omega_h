@@ -1,0 +1,51 @@
+name: Runner Debug Test
+
+on:
+  workflow_dispatch:  # manually triggered from GitHub UI
+  push:
+    branches:
+      - yus/test_action_runner  # trigger on pushes to this branch
+
+jobs:
+  debug:
+    runs-on: runs-on: [self-hosted, linux, x64, gpu]
+    steps:
+      - name: Check basic info
+        run: |
+          echo "✓ Runner is alive"
+          echo "Hostname: $(hostname)"
+          echo "User: $(whoami)"
+          echo "Date: $(date)"
+          echo "Working dir: $(pwd)"
+
+      - name: Check network
+        run: |
+          echo "Pinging GitHub..."
+          curl -I https://github.com
+          curl -I https://api.github.com
+
+      - name: Check environment
+        run: |
+          echo "PATH: $PATH"
+          env | sort
+
+      - name: Check resources
+        run: |
+          echo "--- Memory ---"
+          free -h
+          echo "--- Disk ---"
+          df -h
+          echo "--- CPU ---"
+          uptime
+
+      - name: Check GPU
+        run: |
+          nvidia-smi || echo "⚠ GPU not available"
+
+      - name: Sleep test (checks connection stays alive)
+        run: |
+          for i in 1 2 3 4 5; do
+            echo "Step $i/5 - $(date)"
+            sleep 5
+          done
+          echo "✓ Connection held for 25 seconds"
