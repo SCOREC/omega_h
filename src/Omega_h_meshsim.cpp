@@ -6,12 +6,14 @@
 #include "Omega_h_mesh.hpp"
 #include "Omega_h_mixedMesh.hpp"
 #include "Omega_h_adj.hpp"
+#include "SimParasolidKrnl.h"
 
 #include "MeshSim.h" // required to load GeomSim models in '.smd' files
 #include "SimUtil.h"
 #ifdef OMEGA_H_USE_SIMDISCRETE
 #include "SimDiscrete.h"  // required to load discrete models in '.smd' files
 #endif
+#include "SimParasolidKrnl.h"
 
 namespace {
   int classId(pEntity e) {
@@ -739,8 +741,15 @@ Mesh read(pMesh* m, filesystem::path const& numbering_fname, CommPtr comm, pMesh
 Mesh readImpl(filesystem::path const& mesh_fname, filesystem::path const& mdl_fname,
     filesystem::path const& numbering_fname, CommPtr comm) {
   pNativeModel nm = NULL;
+  std::cout<<__FUNCTION__<<std::endl;
+  const char* nativefile = "/users/nathd2/lore.scorec.rpi.edu/Stellalator/full_assembly_with_Sealeddivertors_nat.x_t";
+  enum { TEXT_FORMAT = 0 };
+  nm = ParasolidNM_createFromFile(nativefile, TEXT_FORMAT);
+  std::cout<<"Done1"<<std::endl;
+
   pProgress p = NULL;
   pGModel g = GM_load(mdl_fname.c_str(), nm, p);
+  std::cout<<"Done2"<<std::endl;
   pMesh m = M_load(mesh_fname.c_str(), g, p);
   auto mesh = read(&m, numbering_fname, comm);
   M_release(m);

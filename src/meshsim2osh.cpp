@@ -18,6 +18,7 @@ void localToGlobal(Omega_h::Mesh* mesh, int entDim) {
 
 
 int main(int argc, char** argv) {
+  std::cout<<__FUNCTION__<<std::endl;
   auto lib = Omega_h::Library(&argc, &argv);
   auto comm = lib.world();
   Omega_h::CmdLine cmdline;
@@ -37,9 +38,12 @@ int main(int argc, char** argv) {
     std::cout << "attaching numbering...\n";
     numbering_in = cmdline.get<std::string>("-numbering", "numbering-in");
   }
-  auto isMixed = Omega_h::meshsim::isMixed(mesh_in, model_in);
-  std::cerr << "isMixed " << isMixed << "\n";
+
+  std::cout<<__FUNCTION__<<std::endl;
+  auto isMixed = false;//Omega_h::meshsim::isMixed(mesh_in, model_in);
+  std::cout << "isMixed " << isMixed << "\n";
   if( !isMixed ) {
+    std::cout<<"Will read \n";
     auto mesh = Omega_h::meshsim::read(mesh_in, model_in, numbering_in, comm);
     //convert the local numbering to global
     //needed for oshdiff, see github issue #40
@@ -48,6 +52,7 @@ int main(int argc, char** argv) {
     }
     Omega_h::binary::write(mesh_out, &mesh);
   } else {
+    std::cout<<"ill read this \n";
     auto mesh = Omega_h::meshsim::readMixed(mesh_in, model_in, comm);
   }
   return 0;
