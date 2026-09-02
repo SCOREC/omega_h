@@ -865,6 +865,10 @@ if(Omega_h_USE_ADIOS2)
   list(APPEND Omega_h_HEADERS Omega_h_adios2.hpp)
 endif()
 
+if (Omega_h_USE_pybind11)
+  list(APPEND Omega_h_HEADERS PyOmega_h_numpy_transform.hpp)
+endif()
+
 install(FILES ${Omega_h_HEADERS} DESTINATION include)
 
 if (Omega_h_USE_pybind11)
