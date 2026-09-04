@@ -170,7 +170,6 @@ endif()
 message(STATUS "Omega_h_USE_ADIOS2: ${Omega_h_USE_ADIOS2}")
 if(Omega_h_USE_ADIOS2)
   list(APPEND Omega_h_SOURCES Omega_h_adios2.cpp)
-  find_package(ADIOS2 REQUIRED)
 endif()
 
 if(Omega_h_USE_egadslite)
