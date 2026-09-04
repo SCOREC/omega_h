@@ -90,7 +90,7 @@ jobs:
           echo "GMSH_BUILD=$gmsbdir" >> $GITHUB_ENV
 
           # egadsliteCuda
-          git clone git@github.com:SCOREC/egadsliteCuda.git ${workDir}/egadsliteCuda
+          git clone https://github.com/SCOREC/egadsliteCuda.git ${workDir}/egadsliteCuda
           egadslitebdir=${workDir}/build-egadsliteCuda
           cmake -S ${workDir}/egadsliteCuda -B $egadslitebdir \
             -DCMAKE_INSTALL_PREFIX=$egadslitebdir/install \
@@ -99,7 +99,7 @@ jobs:
           echo "EGADSLITE_BUILD=$egadslitebdir" >> $GITHUB_ENV
 
           #libMeshb
-          git clone -b v7.80 git@github.com:LoicMarechal/libMeshb.git ${workDir}/libMeshb
+          git clone -b v7.80 https://github.com/LoicMarechal/libMeshb.git ${workDir}/libMeshb
           libMeshbdir=${workDir}/build-libMeshb
           cmake -S ${workDir}/libMeshb -B $libMeshbdir \
             -DCMAKE_INSTALL_PREFIX=$libMeshbdir/install \
