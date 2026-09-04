@@ -49,8 +49,8 @@ static int get_npoints(std::istream& stream) {
   read_val(stream, points_marker);
   read_val(stream, npoints);
   read_val(stream, double_marker);
-  OMEGA_H_CHECK(points_marker == "POINTS");
-  OMEGA_H_CHECK(double_marker == "double");
+  OMEGA_H_ALWAYS_CHECK(points_marker == "POINTS");
+  OMEGA_H_ALWAYS_CHECK(double_marker == "double");
   return npoints;
 }
 
@@ -75,8 +75,8 @@ static int get_cell_nelems(std::istream& stream) {
   read_val(stream, cells_marker);
   read_val(stream, nelems);
   read_val(stream, garbage);
-  OMEGA_H_CHECK(cells_marker == "CELLS");
-  OMEGA_H_CHECK(nelems > 0);
+  OMEGA_H_ALWAYS_CHECK(cells_marker == "CELLS");
+  OMEGA_H_ALWAYS_CHECK(nelems > 0);
   return nelems;
 }
 
@@ -103,7 +103,7 @@ static void eat_elem_types(std::istream& stream) {
   std::string cell_type_marker;
   read_val(stream, cell_type_marker);
   read_val(stream, nlines);
-  OMEGA_H_CHECK(cell_type_marker == "CELL_TYPES");
+  OMEGA_H_ALWAYS_CHECK(cell_type_marker == "CELL_TYPES");
   for (int i = 0; i < nlines; ++i) read_val(stream, garbage);
   eat_newlines(stream);
 }
@@ -115,7 +115,7 @@ static int get_mat_id_nelems(std::istream& stream) {
   read_val(stream, cell_data_marker);
   read_val(stream, nelems);
   read_val(stream, scalars_marker);
-  OMEGA_H_CHECK(cell_data_marker == "CELL_DATA");
+  OMEGA_H_ALWAYS_CHECK(cell_data_marker == "CELL_DATA");
   get_line(stream);
   get_line(stream);
   return nelems;
@@ -153,13 +153,12 @@ static void classify(
 
 static void build(Omega_h::Mesh* mesh, std::string vtk_path) {
   std::ifstream file(vtk_path.c_str());
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   check_header(file);
   auto coords = get_coords(file);
   auto ev2v = get_ev2v(file);
   eat_elem_types(file);
   auto mat = get_elem_mat_ids(file);
-  //OMEGA_H_CHECK(file.eof());
   build_mesh(mesh, coords, ev2v);
   classify(mesh, mat);
   Omega_h::reorder_by_hilbert(mesh);

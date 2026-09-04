@@ -100,8 +100,8 @@ static Dist close_down(Mesh* mesh, Remotes old_use_owners, Dist elems2owners) {
 }
 
 void ghost_mesh(Mesh* mesh, Int nlayers, bool verbose) {
-  OMEGA_H_CHECK(mesh->nghost_layers() >= 0);
-  OMEGA_H_CHECK(nlayers > mesh->nghost_layers());
+  OMEGA_H_ALWAYS_CHECK(mesh->nghost_layers() >= 0);
+  OMEGA_H_ALWAYS_CHECK(nlayers > mesh->nghost_layers());
   auto nnew_layers = nlayers - mesh->nghost_layers();
   auto own_verts2own_elems = get_own_verts2own_elems(mesh);
   auto verts2owners = mesh->ask_dist(VERT);

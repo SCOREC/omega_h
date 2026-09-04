@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
       Omega_h::get_amr_topology(&mesh, 1, num_child_edges, p2mds, mds2p, p2mv);
   Omega_h::LOs truth(
       {0, 1, 1, 2, 9, 6, 6, 2, 9, 8, 8, 7, 7, 4, 4, 0, 1, 5, 6, 5, 8, 5, 4, 5});
-  OMEGA_H_CHECK(truth.size() == 24);
-  OMEGA_H_CHECK(edge_verts == truth);
+  OMEGA_H_ALWAYS_CHECK(truth.size() == 24);
+  OMEGA_H_ALWAYS_CHECK(edge_verts == truth);
   return 0;
 }

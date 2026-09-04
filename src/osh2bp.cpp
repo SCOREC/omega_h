@@ -18,7 +18,7 @@ int main(int argc, char** argv)
     fprintf(stderr, "Usage: %s inputMesh.osh outputMesh.bp\n", argv[0]);
     exit(EXIT_FAILURE);
   }
-  OMEGA_H_CHECK(argc == 3);
+  OMEGA_H_ALWAYS_CHECK(argc == 3);
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
   Omega_h::adios::write(argv[2], &mesh);

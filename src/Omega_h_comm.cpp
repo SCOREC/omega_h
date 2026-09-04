@@ -60,7 +60,7 @@ Comm::Comm(Library* library_in, bool is_graph, bool sends_to_self)
     host_srcs_ = HostRead<I32>(srcs_);
     host_dsts_ = HostRead<I32>(dsts_);
   } else {
-    OMEGA_H_CHECK(!sends_to_self);
+    OMEGA_H_ALWAYS_CHECK(!sends_to_self);
   }
 }
 #endif

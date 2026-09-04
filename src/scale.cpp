@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
   auto nverts = mesh.nverts();
   auto coords = mesh.coords();
   Omega_h::Write<Omega_h::Real> scaled_coords(coords.size());
-  OMEGA_H_CHECK(coords.size() == dim * nverts);
+  OMEGA_H_ALWAYS_CHECK(coords.size() == dim * nverts);
 
   Omega_h::parallel_for(
       nverts, OMEGA_H_LAMBDA(const Omega_h::LO vert_id) {
