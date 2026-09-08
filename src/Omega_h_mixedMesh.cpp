@@ -37,19 +37,19 @@ MixedMesh::MixedMesh(Library* library_in) : MixedMesh() {
 };
 
 void MixedMesh::set_library(Library* library_in) {
-  OMEGA_H_CHECK(library_in != nullptr);
+  OMEGA_H_ALWAYS_CHECK(library_in != nullptr);
   library_ = library_in;
 }
 
 void MixedMesh::set_comm(CommPtr const& new_comm) {
-  OMEGA_H_CHECK(new_comm->size() == 1);
+  OMEGA_H_ALWAYS_CHECK(new_comm->size() == 1);
   comm_ = new_comm;
 }
 
 void MixedMesh::set_dim(Int dim_in) {
-  OMEGA_H_CHECK(dim_ == -1);
-  OMEGA_H_CHECK(dim_in >= 1);
-  OMEGA_H_CHECK(dim_in <= 3);
+  OMEGA_H_ALWAYS_CHECK(dim_ == -1);
+  OMEGA_H_ALWAYS_CHECK(dim_in >= 1);
+  OMEGA_H_ALWAYS_CHECK(dim_in <= 3);
   dim_ = dim_in;
 }
 

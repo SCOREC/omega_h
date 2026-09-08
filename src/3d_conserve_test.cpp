@@ -25,7 +25,7 @@ static void check_total_mass(Mesh* mesh) {
   if (mesh->comm()->rank() == 0) {
     std::cerr << "total mass " << total_mass << '\n';
   }
-  OMEGA_H_CHECK(are_close(1.0, total_mass, 1e-4, 1e-4));
+  OMEGA_H_ALWAYS_CHECK(are_close(1.0, total_mass, 1e-4, 1e-4));
 }
 
 static Real get_object_size(Mesh* mesh, Int obj) {
@@ -65,7 +65,7 @@ static Vector<3> get_total_momentum(Mesh* mesh) {
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  OMEGA_H_CHECK(argc == 2);
+  OMEGA_H_ALWAYS_CHECK(argc == 2);
   auto world = lib.world();
   auto mesh = gmsh::read(argv[1], world);
   mesh.set_parting(OMEGA_H_GHOSTED);
@@ -115,7 +115,7 @@ int main(int argc, char** argv) {
       std::cout << "model region " << obj_ids[obj] << " size before "
                 << sizes_before[obj] << ", after " << size_after << '\n';
     }
-    OMEGA_H_CHECK(are_close(mass_after, masses_before[obj], 1e-4, 1e-4));
+    OMEGA_H_ALWAYS_CHECK(are_close(mass_after, masses_before[obj], 1e-4, 1e-4));
   }
   auto momentum_after = get_total_momentum(&mesh);
   if (world->rank() == 0) {
@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
     std::cout << "momentum after" << ' ' << momentum_after[0] << ' '
               << momentum_after[1] << ' ' << momentum_after[2] << '\n';
   }
-  OMEGA_H_CHECK(are_close(momentum_before, momentum_after));
+  OMEGA_H_ALWAYS_CHECK(are_close(momentum_before, momentum_after));
   bool ok = check_regression("gold_3d_conserve", &mesh);
   if (!ok) return 2;
   return 0;

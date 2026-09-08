@@ -36,7 +36,7 @@ Mesh::Mesh() {
 Mesh::Mesh(Library* library_in) : Mesh() { set_library(library_in); }
 
 void Mesh::set_library(Library* library_in) {
-  OMEGA_H_CHECK(library_in != nullptr);
+  OMEGA_H_ALWAYS_CHECK(library_in != nullptr);
   library_ = library_in;
 }
 

@@ -6,7 +6,7 @@ namespace Omega_h {
 
 void bcast_mesh(Mesh* mesh, CommPtr new_comm, bool is_source) {
   if (new_comm->rank() == 0) {
-    OMEGA_H_CHECK(is_source);
+    OMEGA_H_ALWAYS_CHECK(is_source);
   }
   I32 family;
   if (is_source) family = mesh->family();

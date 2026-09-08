@@ -11,7 +11,7 @@ namespace Omega_h {
 template <Int mesh_dim, Int metric_dim>
 Read<I8> prevent_coarsen_overshoot_tmp(
     Mesh* mesh, Real max_length, LOs cands2edges, Read<I8> cand_codes) {
-  OMEGA_H_CHECK(mesh->dim() == mesh_dim);
+  OMEGA_H_ALWAYS_CHECK(mesh->dim() == mesh_dim);
   MetricEdgeLengths<mesh_dim, metric_dim> measurer(mesh);
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto v2e = mesh->ask_up(VERT, EDGE);

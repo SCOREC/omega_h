@@ -17,11 +17,11 @@ using namespace Omega_h;
 
 void check_tag(const Tag<Real>* tag, int flag) {
   if (flag) {
-    OMEGA_H_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
+    OMEGA_H_ALWAYS_CHECK(tag->array_type() == ArrayType::SymmetricSquareMatrix);
   } else {
-    OMEGA_H_CHECK(tag->array_type() == ArrayType::VectorND);
+    OMEGA_H_ALWAYS_CHECK(tag->array_type() == ArrayType::VectorND);
   }
-  OMEGA_H_CHECK(tag->ncomps() == 3);
+  OMEGA_H_ALWAYS_CHECK(tag->ncomps() == 3);
 }
 
 void test_vtk(Mesh* mesh, CommPtr world, const std::string& tag_name, int flag) {

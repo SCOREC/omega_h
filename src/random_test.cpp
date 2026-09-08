@@ -6,14 +6,14 @@ using namespace Omega_h;
 
 static OMEGA_H_DEVICE void contrib(Write<Real> const& buckets, Real value) {
   if (value < 0.0 || value >= 1.0) return;
-  OMEGA_H_CHECK(buckets.exists());
+  OMEGA_H_ALWAYS_CHECK(buckets.exists());
   buckets[LO(std::floor(value * buckets.size()))]++;
 }
 
 static Real test_chi_squared(std::string const& name,
     HostRead<Real> const& buckets, HostRead<Real> const& cdfs,
     Real num_distribution_parameters, Real nsamples, Real cutoff) {
-  OMEGA_H_CHECK(cdfs.size() == buckets.size() + 1);
+  OMEGA_H_ALWAYS_CHECK(cdfs.size() == buckets.size() + 1);
   LO num_nonempty_buckets = 0;
   for (LO i = 0; i < buckets.size(); ++i) {
     if (buckets[i] != 0) ++num_nonempty_buckets;
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
   auto d_weibull_2_buckets = Write<Real>(nbuckets, 0);
   auto d_weibull_3_buckets = Write<Real>(nbuckets, 0);
   auto d_weibull_4_buckets = Write<Real>(nbuckets, 0);
-  OMEGA_H_CHECK(d_uniform_buckets.exists());
+  OMEGA_H_ALWAYS_CHECK(d_uniform_buckets.exists());
   auto f = OMEGA_H_LAMBDA(LO) {
     OMEGA_H_CHECK(d_uniform_buckets.exists());
     UnitUniformDistribution uniform_rng{seed, key, 0};
@@ -108,9 +108,9 @@ int main(int argc, char** argv) {
   auto h_weibull_2_cdfs = HostRead<Real>(Reals(h_weibull_2_cdfs_w.write()));
   auto h_weibull_3_cdfs = HostRead<Real>(Reals(h_weibull_3_cdfs_w.write()));
   auto h_weibull_4_cdfs = HostRead<Real>(Reals(h_weibull_4_cdfs_w.write()));
-  OMEGA_H_CHECK(std::abs(cumulative_chi_squared_density(2, 1) - 0.4) < 0.01);
-  OMEGA_H_CHECK(std::abs(cumulative_chi_squared_density(3, 1) - 0.2) < 0.01);
-  OMEGA_H_CHECK(std::abs(cumulative_chi_squared_density(3, 3) - 0.6) < 0.01);
+  OMEGA_H_ALWAYS_CHECK(std::abs(cumulative_chi_squared_density(2, 1) - 0.4) < 0.01);
+  OMEGA_H_ALWAYS_CHECK(std::abs(cumulative_chi_squared_density(3, 1) - 0.2) < 0.01);
+  OMEGA_H_ALWAYS_CHECK(std::abs(cumulative_chi_squared_density(3, 3) - 0.6) < 0.01);
   test_chi_squared(
       "uniform", h_uniform_buckets, h_uniform_cdfs, 1.0, nsamples, 0.01);
   test_chi_squared(

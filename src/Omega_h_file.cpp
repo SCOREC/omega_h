@@ -446,16 +446,16 @@ void read(std::istream& stream, Mesh* mesh, I32 version) {
   ScopedTimer timer("binary::read(istream, mesh, version)");
   unsigned char magic_in[2];
   stream.read(reinterpret_cast<char*>(magic_in), sizeof(magic));
-  OMEGA_H_CHECK(magic_in[0] == magic[0]);
-  OMEGA_H_CHECK(magic_in[1] == magic[1]);
+  OMEGA_H_ALWAYS_CHECK(magic_in[0] == magic[0]);
+  OMEGA_H_ALWAYS_CHECK(magic_in[1] == magic[1]);
   bool needs_swapping = !is_little_endian_cpu();
   if (version == -1) read_value(stream, version, needs_swapping);
-  OMEGA_H_CHECK(version >= 1);
-  OMEGA_H_CHECK(version <= latest_version);
+  OMEGA_H_ALWAYS_CHECK(version >= 1);
+  OMEGA_H_ALWAYS_CHECK(version <= latest_version);
   I8 is_compressed;
   read_value(stream, is_compressed, needs_swapping);
 #ifndef OMEGA_H_USE_ZLIB
-  OMEGA_H_CHECK(!is_compressed);
+  OMEGA_H_ALWAYS_CHECK(!is_compressed);
 #endif
   read_meta(stream, mesh, version, needs_swapping);
   LO nverts;
@@ -503,7 +503,7 @@ static void write_int_file(
     filesystem::path const& filepath, Mesh* mesh, I32 value) {
   if (mesh->comm()->rank() == 0) {
     std::ofstream file(filepath.c_str());
-    OMEGA_H_CHECK(file.is_open());
+    OMEGA_H_ALWAYS_CHECK(file.is_open());
     file << value << '\n';
   }
 }
@@ -564,7 +564,7 @@ void write(filesystem::path const& path, Mesh* mesh) {
   filepath /= std::to_string(mesh->comm()->rank());
   filepath += ".osh";
   std::ofstream file(filepath.c_str());
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   write(file, mesh);
   write_nparts(path, mesh);
   write_version(path, mesh);
@@ -580,7 +580,7 @@ void read_in_comm(
   filepath /= std::to_string(mesh->comm()->rank());
   if (version != -1) filepath += ".osh";
   std::ifstream file(filepath.c_str(), std::ios::binary);
-  OMEGA_H_CHECK(file.is_open());
+  OMEGA_H_ALWAYS_CHECK(file.is_open());
   read(file, mesh, version);
 }
 
@@ -719,7 +719,7 @@ OMEGA_H_DLL Mesh read_mesh_file(filesystem::path const& path, CommPtr comm) {
   } else if (extension == ".vtu") {
     Mesh mesh(comm->library());
     std::ifstream stream(path.c_str());
-    OMEGA_H_CHECK(stream.is_open());
+    OMEGA_H_ALWAYS_CHECK(stream.is_open());
     vtk::read_vtu(stream, comm, &mesh);
     return mesh;
   } else {

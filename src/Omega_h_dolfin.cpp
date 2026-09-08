@@ -86,7 +86,7 @@ void to_dolfin(dolfin::Mesh& mesh_dolfin, Mesh* mesh_osh) {
   static char const* const cell_type_names[4] = {
       "point", "interval", "triangle", "tetrahedron"};
   auto dim = mesh_osh->dim();
-  OMEGA_H_CHECK(mesh_osh->parting() == OMEGA_H_ELEM_BASED);
+  OMEGA_H_ALWAYS_CHECK(mesh_osh->parting() == OMEGA_H_ELEM_BASED);
   std::map<std::int32_t, std::set<unsigned int>> shared_verts;
   form_sharing(mesh_osh, VERT, &shared_verts);
   editor.open(mesh_dolfin, cell_type_names[dim], dim, dim);
@@ -174,8 +174,8 @@ static void fix_inverted_elements(Int dim, Write<LO> elem_verts, Reals coords) {
 void from_dolfin(Mesh* mesh_osh, dolfin::Mesh const& mesh_dolfin) {
   auto& topology = mesh_dolfin.topology();
   auto& geometry = mesh_dolfin.geometry();
-  OMEGA_H_CHECK(geometry.degree() == 1);
-  OMEGA_H_CHECK(topology.dim() == geometry.dim());
+  OMEGA_H_ALWAYS_CHECK(geometry.degree() == 1);
+  OMEGA_H_ALWAYS_CHECK(topology.dim() == geometry.dim());
   auto dim = Int(topology.dim());
   auto nverts = LO(topology.size(VERT));
   auto nelems = LO(topology.size(dim));
@@ -194,7 +194,7 @@ void from_dolfin(Mesh* mesh_osh, dolfin::Mesh const& mesh_dolfin) {
   auto& elem_verts_dolfin = topology(dim, VERT);
   auto nverts_per_cell = dim + 1;
   if (nelems)
-    OMEGA_H_CHECK(Int(elem_verts_dolfin.size(0)) == (nverts_per_cell));
+    OMEGA_H_ALWAYS_CHECK(Int(elem_verts_dolfin.size(0)) == (nverts_per_cell));
   auto h_elem_verts = HostWrite<LO>(nelems * (nverts_per_cell));
   for (LO i = 0; i < nelems; ++i) {
     auto ptr_dolfin = elem_verts_dolfin(i);
