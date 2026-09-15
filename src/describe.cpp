@@ -107,6 +107,16 @@ int main(int argc, char** argv)
                 printTagInfo<Omega_h::Real>(mesh, oss, dim, tag, "F64");
         }
 
+        if (!mesh.class_sets.empty()) {
+            oss << "\nClass Sets: (Name, [(Model Entity Dim, Model Entity Id), ...])\n";
+            for (auto const& set : mesh.class_sets) {
+                oss << set.first << ": ";
+                for (auto const& pair : set.second)
+                    oss << "(" << pair.dim << ", " << pair.id << ") ";
+                oss << "\n";
+            }
+        }
+
         std::cout << oss.str();
     }
 
