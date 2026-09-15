@@ -298,6 +298,7 @@ macro(osh_add_util EXE_NAME)
 endmacro(osh_add_util)
 
 osh_add_util(describe)
+osh_add_util(fixHumboldtClass)
 osh_add_util(msh2osh)
 osh_add_util(osh2vtk)
 osh_add_util(osh2xgc)
