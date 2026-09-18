@@ -94,7 +94,7 @@ jobs:
           egadslitebdir=${workDir}/build-egadsliteCuda
           cmake -S ${workDir}/egadsliteCuda -B $egadslitebdir \
             -DCMAKE_INSTALL_PREFIX=$egadslitebdir/install \
-            -DCMAKE_CUDA_ARCHITECTURES=86
+            -DCMAKE_CUDA_ARCHITECTURES=80
           cmake --build $egadslitebdir --target install -j 4
           echo "EGADSLITE_BUILD=$egadslitebdir" >> $GITHUB_ENV
 
@@ -206,7 +206,7 @@ jobs:
           source $OMEGAH_WORK_DIR/envGcc13.sh
 
           workDir=$OMEGAH_WORK_DIR
-          export CMAKE_PREFIX_PATH="$libMeshbdir/install:$egadslitebdir/install:$kkbdir_rdc/install:$CMAKE_PREFIX_PATH"
+          export CMAKE_PREFIX_PATH="$libMeshbdir/install:$egadslitebdir/install:$egadslitebdir/install/lib64/:$kkbdir_rdc/install:$CMAKE_PREFIX_PATH"
 
           # omegah
           bdir=${workDir}/build-omegah
