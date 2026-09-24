@@ -36,7 +36,7 @@ static void check_total_mass(Mesh* mesh) {
   if (!mesh->comm()->rank()) {
     std::cout << "mass " << mass << " expected " << expected_mass << '\n';
   }
-  OMEGA_H_CHECK(are_close(mass, expected_mass));
+  OMEGA_H_ALWAYS_CHECK(are_close(mass, expected_mass));
 }
 
 static Vector<2> get_total_momentum(Mesh* mesh) {
@@ -97,7 +97,7 @@ int main(int argc, char** argv) {
     std::cout << "after" << ' ' << momentum_after[0] << ' ' << momentum_after[1]
               << '\n';
   }
-  OMEGA_H_CHECK(are_close(momentum_before, momentum_after));
+  OMEGA_H_ALWAYS_CHECK(are_close(momentum_before, momentum_after));
   bool ok = check_regression("gold_2d_conserve", &mesh);
   if (!ok) return 2;
   return 0;

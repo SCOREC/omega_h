@@ -6,7 +6,7 @@
 using namespace Omega_h;
 
 static void test_three_ranks(CommPtr comm){
-  OMEGA_H_CHECK(comm->size() == 3);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 3);
   Dist dist;
   dist.set_parent_comm(comm);
 /* MPI Rank          :  0       1       2 
@@ -32,12 +32,12 @@ static void test_three_ranks(CommPtr comm){
 
   //Perform the exchange operation, and verify it was executed correctly
   auto b = dist.exch(a, width);
-  OMEGA_H_CHECK(b == Reals({2.0 * reverse_root + 1, 2.0 * reverse_root}));
+  OMEGA_H_ALWAYS_CHECK(b == Reals({2.0 * reverse_root + 1, 2.0 * reverse_root}));
 }
 
 //send two copies of the first(second) packet/value from rank 0 to rank 1(2)
 static void test_packet_fanout(CommPtr comm){
-  OMEGA_H_CHECK(comm->size() == 3);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 3);
   Dist dist;
   dist.set_parent_comm(comm);
 /* MPI Rank          :  0       1       2 
@@ -75,16 +75,16 @@ static void test_packet_fanout(CommPtr comm){
   
   //Check our that our end partition is what we expected
   if(comm->rank() == 0)
-    OMEGA_H_CHECK(b == Reals({}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({}));
   else if(comm->rank() == 1)
-    OMEGA_H_CHECK(b == Reals({1, 1}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({1, 1}));
   else
-    OMEGA_H_CHECK(b == Reals({2, 2}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({2, 2}));
 }
 
 //Send all data from rank 0 to rank 1 and 2
 static void test_rank_fanout(CommPtr comm){
-  OMEGA_H_CHECK(comm->size() == 3);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 3);
   Dist dist;
   dist.set_parent_comm(comm);
 /* MPI Rank          :  0       1      2 
@@ -118,14 +118,14 @@ static void test_rank_fanout(CommPtr comm){
 
   //Check End Partition is what we expected
   if(comm->rank() == 0)
-    OMEGA_H_CHECK(b == Reals({}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({}));
   else
-    OMEGA_H_CHECK(b == Reals({1, 2}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({1, 2}));
 }
 
 //send values from rank 1 and 2 to rand 0 *and* sum the received values
 static void test_exchange_reduce(CommPtr comm){
-  OMEGA_H_CHECK(comm->size() == 3);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 3);
   Dist dist;
   dist.set_parent_comm(comm);
 /* MPI Rank          :  0    1    2
@@ -160,13 +160,13 @@ static void test_exchange_reduce(CommPtr comm){
 
   //Check End Partition is what we expected
   if(comm->rank() == 0)
-    OMEGA_H_CHECK(b == Reals({2}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({2}));
   else
-    OMEGA_H_CHECK(b == Reals({}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({}));
 }
 
 static void test_fan_reduce(CommPtr comm){
-  OMEGA_H_CHECK(comm->size() == 3);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 3);
   Dist dist;
   dist.set_parent_comm(comm);
 /* MPI Rank          :  0    1    2
@@ -200,9 +200,9 @@ static void test_fan_reduce(CommPtr comm){
 
   //Check End Partition is what we expected
   if(comm->rank() == 0)
-    OMEGA_H_CHECK(b == Reals({}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({}));
   else
-    OMEGA_H_CHECK(b == Reals({1}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({1}));
 
   //Invert Dist and Perform Exchange Reduce Operation
   //Note: The Dist Class stores 2 copies of roots2items, one forward and one reverse. It is critical
@@ -213,9 +213,9 @@ static void test_fan_reduce(CommPtr comm){
 
   //Check Inverted Partition is what we expect
   if(comm->rank() == 0)
-    OMEGA_H_CHECK(c == Reals({2}));
+    OMEGA_H_ALWAYS_CHECK(c == Reals({2}));
   else
-    OMEGA_H_CHECK(c == Reals({}));
+    OMEGA_H_ALWAYS_CHECK(c == Reals({}));
 }
 
 int main(int argc, char** argv) {

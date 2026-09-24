@@ -9,38 +9,38 @@
 using namespace Omega_h;
 
 static void test_edge_length() {
-  OMEGA_H_CHECK(are_close(1., anisotropic_edge_length(1., 1.)));
-  OMEGA_H_CHECK(anisotropic_edge_length(1., 2.) > 1.);
-  OMEGA_H_CHECK(anisotropic_edge_length(1., 2.) < 1.5);
+  OMEGA_H_ALWAYS_CHECK(are_close(1., anisotropic_edge_length(1., 1.)));
+  OMEGA_H_ALWAYS_CHECK(anisotropic_edge_length(1., 2.) > 1.);
+  OMEGA_H_ALWAYS_CHECK(anisotropic_edge_length(1., 2.) < 1.5);
 }
 
 static void test_least_squares() {
   Matrix<4, 2> m({1, 1, 1, 2, 1, 3, 1, 4});
   Vector<4> b({6, 5, 7, 10});
   auto x = solve_using_qr(m, b);
-  OMEGA_H_CHECK(are_close(x, vector_2(3.5, 1.4)));
+  OMEGA_H_ALWAYS_CHECK(are_close(x, vector_2(3.5, 1.4)));
 }
 
 static void test_power() {
   auto x = 3.14159;
-  OMEGA_H_CHECK(x == power(x, 1, 1));
-  OMEGA_H_CHECK(x == power(x, 2, 2));
-  OMEGA_H_CHECK(x == power(x, 3, 3));
-  OMEGA_H_CHECK(are_close(x * x, power(x, 2, 1)));
-  OMEGA_H_CHECK(are_close(x * x * x, power(x, 3, 1)));
-  OMEGA_H_CHECK(are_close(std::sqrt(x), power(x, 1, 2)));
-  OMEGA_H_CHECK(are_close(std::cbrt(x), power(x, 1, 3)));
-  OMEGA_H_CHECK(are_close(std::sqrt(x * x * x), power(x, 3, 2)));
-  OMEGA_H_CHECK(are_close(std::cbrt(x * x), power(x, 2, 3)));
+  OMEGA_H_ALWAYS_CHECK(x == power(x, 1, 1));
+  OMEGA_H_ALWAYS_CHECK(x == power(x, 2, 2));
+  OMEGA_H_ALWAYS_CHECK(x == power(x, 3, 3));
+  OMEGA_H_ALWAYS_CHECK(are_close(x * x, power(x, 2, 1)));
+  OMEGA_H_ALWAYS_CHECK(are_close(x * x * x, power(x, 3, 1)));
+  OMEGA_H_ALWAYS_CHECK(are_close(std::sqrt(x), power(x, 1, 2)));
+  OMEGA_H_ALWAYS_CHECK(are_close(std::cbrt(x), power(x, 1, 3)));
+  OMEGA_H_ALWAYS_CHECK(are_close(std::sqrt(x * x * x), power(x, 3, 2)));
+  OMEGA_H_ALWAYS_CHECK(are_close(std::cbrt(x * x), power(x, 2, 3)));
 }
 
 static void test_cubic(Few<Real, 3> coeffs, Int nroots_wanted,
     Few<Real, 3> roots_wanted, Few<Int, 3> mults_wanted) {
   auto roots = find_polynomial_roots(coeffs);
-  OMEGA_H_CHECK(roots.n == nroots_wanted);
+  OMEGA_H_ALWAYS_CHECK(roots.n == nroots_wanted);
   for (Int i = 0; i < roots.n; ++i) {
-    OMEGA_H_CHECK(roots.mults[i] == mults_wanted[i]);
-    OMEGA_H_CHECK(are_close(roots.values[i], roots_wanted[i]));
+    OMEGA_H_ALWAYS_CHECK(roots.mults[i] == mults_wanted[i]);
+    OMEGA_H_ALWAYS_CHECK(are_close(roots.values[i], roots_wanted[i]));
   }
 }
 
@@ -55,8 +55,8 @@ static void test_cubic() {
 static void test_form_ortho_basis() {
   auto n = normalize(vector_3(1, 1, 1));
   auto f = form_ortho_basis(n);
-  OMEGA_H_CHECK(are_close(f[0], n));
-  OMEGA_H_CHECK(are_close(transpose(f) * f, identity_matrix<3, 3>()));
+  OMEGA_H_ALWAYS_CHECK(are_close(f[0], n));
+  OMEGA_H_ALWAYS_CHECK(are_close(transpose(f) * f, identity_matrix<3, 3>()));
 }
 
 template <Int m, Int n>
@@ -65,8 +65,8 @@ static void test_qr_decomp(Matrix<m, n> a) {
   auto r = qr.r;
   auto q = identity_matrix<m, n>();
   for (Int j = 0; j < n; ++j) implicit_q_x(m, n, q[j], qr.v);
-  OMEGA_H_CHECK(are_close(a, q * r));
-  OMEGA_H_CHECK(are_close(transpose(q) * q, identity_matrix<n, n>()));
+  OMEGA_H_ALWAYS_CHECK(are_close(a, q * r));
+  OMEGA_H_ALWAYS_CHECK(are_close(transpose(q) * q, identity_matrix<n, n>()));
 }
 
 static void test_qr_decomps() {
@@ -81,8 +81,8 @@ static void test_eigen(
   auto ed = decompose_eigen(m);
   auto q = ed.q;
   auto l = ed.l;
-  OMEGA_H_CHECK(are_close(q, q_expect));
-  OMEGA_H_CHECK(are_close(l, l_expect));
+  OMEGA_H_ALWAYS_CHECK(are_close(q, q_expect));
+  OMEGA_H_ALWAYS_CHECK(are_close(l, l_expect));
 }
 
 template <Int dim>
@@ -90,24 +90,24 @@ static void test_eigen(Matrix<dim, dim> m, Vector<dim> l_expect) {
   auto ed = decompose_eigen(m);
   auto q = ed.q;
   auto l = ed.l;
-  OMEGA_H_CHECK(are_close(l, l_expect, 1e-8, 1e-8));
-  OMEGA_H_CHECK(are_close(m, compose_eigen(q, l)));
+  OMEGA_H_ALWAYS_CHECK(are_close(l, l_expect, 1e-8, 1e-8));
+  OMEGA_H_ALWAYS_CHECK(are_close(m, compose_eigen(q, l)));
 }
 
 static void test_eigen_cubic_ortho(Matrix<3, 3> m, Vector<3> l_expect) {
   auto ed = decompose_eigen(m);
   auto q = ed.q;
   auto l = ed.l;
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       are_close(transpose(q) * q, identity_matrix<3, 3>(), 1e-8, 1e-8));
-  OMEGA_H_CHECK(are_close(l, l_expect, 1e-8, 1e-8));
-  OMEGA_H_CHECK(are_close(m, compose_ortho(q, l), 1e-8, 1e-8));
+  OMEGA_H_ALWAYS_CHECK(are_close(l, l_expect, 1e-8, 1e-8));
+  OMEGA_H_ALWAYS_CHECK(are_close(m, compose_ortho(q, l), 1e-8, 1e-8));
 }
 
 static void test_eigen_metric(Vector<3> h) {
   auto q =
       rotate(PI / 4., vector_3(0, 0, 1)) * rotate(PI / 4., vector_3(0, 1, 0));
-  OMEGA_H_CHECK(are_close(transpose(q) * q, identity_matrix<3, 3>()));
+  OMEGA_H_ALWAYS_CHECK(are_close(transpose(q) * q, identity_matrix<3, 3>()));
   auto l = metric_eigenvalues_from_lengths(h);
   auto a = compose_ortho(q, l);
   test_eigen_cubic_ortho(a, l);
@@ -142,8 +142,8 @@ static void test_eigen_jacobi(
     Matrix<dim, dim> a, Matrix<dim, dim> expect_q, Vector<dim> expect_l) {
   auto ed = decompose_eigen_jacobi(a);
   ed = sort_by_magnitude(ed);
-  OMEGA_H_CHECK(are_close(ed.q, expect_q));
-  OMEGA_H_CHECK(are_close(ed.l, expect_l));
+  OMEGA_H_ALWAYS_CHECK(are_close(ed.q, expect_q));
+  OMEGA_H_ALWAYS_CHECK(are_close(ed.l, expect_l));
 }
 
 static void test_eigen_jacobi_sign_bug() {
@@ -172,23 +172,23 @@ static void test_most_normal() {
   {
     Few<Vector<3>, 3> N = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     auto N_c = get_most_normal_normal(N, 3);
-    OMEGA_H_CHECK(are_close(N_c, normalize(vector_3(1, 1, 1))));
+    OMEGA_H_ALWAYS_CHECK(are_close(N_c, normalize(vector_3(1, 1, 1))));
   }
   {
     Few<Vector<3>, 4> N = {
         {1, 0, 0}, {0, 0, 1}, normalize(vector_3(1, 1, 1)), {0, 1, 0}};
     auto N_c = get_most_normal_normal(N, 4);
-    OMEGA_H_CHECK(are_close(N_c, normalize(vector_3(1, 1, 1))));
+    OMEGA_H_ALWAYS_CHECK(are_close(N_c, normalize(vector_3(1, 1, 1))));
   }
   {
     Few<Vector<3>, 3> N = {{1, 0, 0}, {0, 1, 0}, {0, 1, 0}};
     auto N_c = get_most_normal_normal(N, 3);
-    OMEGA_H_CHECK(are_close(N_c, normalize(vector_3(1, 1, 0))));
+    OMEGA_H_ALWAYS_CHECK(are_close(N_c, normalize(vector_3(1, 1, 0))));
   }
   {
     Few<Vector<3>, 3> N = {{1, 0, 0}, {1, 0, 0}, {1, 0, 0}};
     auto N_c = get_most_normal_normal(N, 3);
-    OMEGA_H_CHECK(are_close(N_c, normalize(vector_3(1, 0, 0))));
+    OMEGA_H_ALWAYS_CHECK(are_close(N_c, normalize(vector_3(1, 0, 0))));
   }
 }
 
@@ -202,7 +202,7 @@ static void test_intersect_ortho_metrics(
   /* if we decompose it, the eigenvectors may
      get re-ordered. */
   for (Int i = 0; i < 3; ++i) {
-    OMEGA_H_CHECK(
+    OMEGA_H_ALWAYS_CHECK(
         are_close(metric_desired_length(mi, q[i]), hi_expect[i], 1e-3));
   }
 }
@@ -214,8 +214,8 @@ static void test_intersect_subset_metrics() {
   auto r2 = rotate(PI / 4);
   auto m1 = compose_metric(r1, h1);
   auto m2 = compose_metric(r2, h2);
-  OMEGA_H_CHECK(are_close(intersect_metrics(m2, m1), m1));
-  OMEGA_H_CHECK(are_close(intersect_metrics(m1, m2), m1));
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(m2, m1), m1));
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(m1, m2), m1));
 }
 
 static void test_intersect_with_null() {
@@ -223,34 +223,34 @@ static void test_intersect_with_null() {
       rotate(PI / 4., vector_3(0, 0, 1)) * rotate(PI / 4., vector_3(0, 1, 0));
   auto m1 = compose_metric(q, vector_3(1, 1, 1e-3));
   auto m2 = zero_matrix<3, 3>();
-  OMEGA_H_CHECK(are_close(intersect_metrics(m1, m2), m1));
-  OMEGA_H_CHECK(are_close(intersect_metrics(m2, m1), m1));
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(m1, m2), m1));
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(m2, m1), m1));
 }
 
 static void test_intersect_degen_metrics() {
   test_intersect_with_null();
   // 2.a
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
                               diagonal(vector_3(0, 0, 1))),
       diagonal(vector_3(1, 0, 1))));
   // 2.b
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
                               diagonal(vector_3(2, 0, 0))),
       diagonal(vector_3(2, 0, 0))));
   // 3.a
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
                               diagonal(vector_3(2, 1, 0))),
       diagonal(vector_3(2, 1, 0))));
   // 3.b
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 0)),
                               diagonal(vector_3(0, 1, 2))),
       diagonal(vector_3(1, 1, 2))));
   // 4.a
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 2)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 2)),
                               diagonal(vector_3(2, 0, 1))),
       diagonal(vector_3(2, 0, 2))));
   // 4.b
-  OMEGA_H_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 2)),
+  OMEGA_H_ALWAYS_CHECK(are_close(intersect_metrics(diagonal(vector_3(1, 0, 2)),
                               diagonal(vector_3(2, 1, 0))),
       diagonal(vector_3(2, 1, 2))));
 }
@@ -274,27 +274,27 @@ static void test_interpolate_metrics() {
   auto b = repeat_symm(
       4, compose_metric(identity_matrix<2, 2>(), vector_2(1.0, 1.0)));
   auto c = interpolate_between_metrics(4, a, b, 0.0);
-  OMEGA_H_CHECK(are_close(a, c));
+  OMEGA_H_ALWAYS_CHECK(are_close(a, c));
   c = interpolate_between_metrics(4, a, b, 1.0);
-  OMEGA_H_CHECK(are_close(b, c));
+  OMEGA_H_ALWAYS_CHECK(are_close(b, c));
 }
 
 static void test_circumcenter() {
   Few<Vector<3>, 3> right_tri(
       {vector_3(0, 0, 0), vector_3(1, 0, 0), vector_3(0, 1, 0)});
   auto v0 = get_circumcenter_vector(simplex_basis<3, 2>(right_tri));
-  OMEGA_H_CHECK(are_close(v0, vector_3(0.5, 0.5, 0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(v0, vector_3(0.5, 0.5, 0)));
   Few<Vector<3>, 3> equal_tri(
       {vector_3(0, std::sqrt(3), 0), vector_3(-1, 0, 0), vector_3(1, 0, 0)});
   auto v1 = get_circumcenter_vector(simplex_basis<3, 2>(equal_tri));
-  OMEGA_H_CHECK(are_close(v1, vector_3(0, -std::sqrt(3) * 2.0 / 3.0, 0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(v1, vector_3(0, -std::sqrt(3) * 2.0 / 3.0, 0)));
 }
 
 template <Int dim>
 static void test_lie(Matrix<dim, dim> F) {
   auto log_F = log_polar(F);
   auto exp_log_F = exp_polar(log_F);
-  OMEGA_H_CHECK(are_close(exp_log_F, F));
+  OMEGA_H_ALWAYS_CHECK(are_close(exp_log_F, F));
 }
 
 template <Int dim>
@@ -335,8 +335,8 @@ static void test_lie() {
 template <Int n>
 static void test_positivize(Vector<n> pos) {
   auto neg = pos * -1.0;
-  OMEGA_H_CHECK(are_close(positivize(pos), pos));
-  OMEGA_H_CHECK(are_close(positivize(neg), pos));
+  OMEGA_H_ALWAYS_CHECK(are_close(positivize(pos), pos));
+  OMEGA_H_ALWAYS_CHECK(are_close(positivize(neg), pos));
 }
 
 static void test_positivize() {
@@ -349,59 +349,59 @@ static void test_positivize() {
 static void test_inball() {
   Few<Vector<1>, 2> regular_edge = {{-1.0}, {1.0}};
   auto inball1 = get_inball(regular_edge);
-  OMEGA_H_CHECK(are_close(inball1.c, vector_1(0.0)));
-  OMEGA_H_CHECK(are_close(inball1.r, 1.0));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball1.c, vector_1(0.0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball1.r, 1.0));
   Few<Vector<2>, 3> regular_tri = {
       {-1.0, 0.0}, {1.0, 0.0}, {0.0, std::sqrt(3.0)}};
   auto inball2 = get_inball(regular_tri);
-  OMEGA_H_CHECK(are_close(inball2.c, vector_2(0.0, std::sqrt(3.0) / 3.0)));
-  OMEGA_H_CHECK(are_close(inball2.r, std::sqrt(3.0) / 3.0));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball2.c, vector_2(0.0, std::sqrt(3.0) / 3.0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball2.r, std::sqrt(3.0) / 3.0));
   Few<Vector<3>, 4> regular_tet = {{1, 0, -1.0 / std::sqrt(2.0)},
       {-1, 0, -1.0 / std::sqrt(2.0)}, {0, -1, 1.0 / std::sqrt(2.0)},
       {0, 1, 1.0 / std::sqrt(2.0)}};
   auto inball3 = get_inball(regular_tet);
-  OMEGA_H_CHECK(are_close(inball3.c, vector_3(0.0, 0.0, 0.0)));
-  OMEGA_H_CHECK(are_close(inball3.r, 2.0 / std::sqrt(24.0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball3.c, vector_3(0.0, 0.0, 0.0)));
+  OMEGA_H_ALWAYS_CHECK(are_close(inball3.r, 2.0 / std::sqrt(24.0)));
 }
 
 static void test_volume_vert_gradients() {
   {
     Few<Vector<1>, 2> parent_edge = {{0.0}, {1.0}};
     auto grad0 = get_size_gradient(parent_edge, 0);
-    OMEGA_H_CHECK(are_close(grad0, vector_1(-1.0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad0, vector_1(-1.0)));
     auto grad1 = get_size_gradient(parent_edge, 1);
-    OMEGA_H_CHECK(are_close(grad1, vector_1(1.0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad1, vector_1(1.0)));
   }
   {
     Few<Vector<2>, 3> parent_tri = {{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}};
     auto grad0 = get_size_gradient(parent_tri, 0);
-    OMEGA_H_CHECK(are_close(grad0, vector_2(-0.5, -0.5)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad0, vector_2(-0.5, -0.5)));
     auto grad1 = get_size_gradient(parent_tri, 1);
-    OMEGA_H_CHECK(are_close(grad1, vector_2(0.5, 0.0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad1, vector_2(0.5, 0.0)));
     auto grad2 = get_size_gradient(parent_tri, 2);
-    OMEGA_H_CHECK(are_close(grad2, vector_2(0.0, 0.5)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad2, vector_2(0.0, 0.5)));
   }
   {
     Few<Vector<3>, 4> parent_tet = {{0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     auto os = 1.0 / 6.0;
     auto grad0 = get_size_gradient(parent_tet, 0);
-    OMEGA_H_CHECK(are_close(grad0, vector_3(-os, -os, -os)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad0, vector_3(-os, -os, -os)));
     auto grad1 = get_size_gradient(parent_tet, 1);
-    OMEGA_H_CHECK(are_close(grad1, vector_3(os, 0, 0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad1, vector_3(os, 0, 0)));
     auto grad2 = get_size_gradient(parent_tet, 2);
-    OMEGA_H_CHECK(are_close(grad2, vector_3(0, os, 0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad2, vector_3(0, os, 0)));
     auto grad3 = get_size_gradient(parent_tet, 3);
-    OMEGA_H_CHECK(are_close(grad3, vector_3(0, 0, os)));
+    OMEGA_H_ALWAYS_CHECK(are_close(grad3, vector_3(0, 0, os)));
   }
 }
 
 template <Int dim>
 static void test_svd_properties(Matrix<dim, dim> const A) {
   auto const svd = decompose_svd(A);
-  OMEGA_H_CHECK(are_close(svd.U * svd.S * svd.V, A));
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(are_close(svd.U * svd.S * svd.V, A));
+  OMEGA_H_ALWAYS_CHECK(
       are_close(svd.U * transpose(svd.U), identity_matrix<dim, dim>()));
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       are_close(svd.V * transpose(svd.V), identity_matrix<dim, dim>()));
 }
 
@@ -409,31 +409,31 @@ static void test_svd() {
   {
     auto const a = identity_matrix<1, 1>();
     auto const svd = decompose_svd(a);
-    OMEGA_H_CHECK(are_close(svd.U(0, 0), 1.0));
-    OMEGA_H_CHECK(are_close(svd.S(0, 0), 1.0));
-    OMEGA_H_CHECK(are_close(svd.V(0, 0), 1.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.U(0, 0), 1.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.S(0, 0), 1.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.V(0, 0), 1.0));
   }
   {
     auto const a = identity_matrix<1, 1>() * 0.5;
     auto const svd = decompose_svd(a);
-    OMEGA_H_CHECK(are_close(svd.U(0, 0), 1.0));
-    OMEGA_H_CHECK(are_close(svd.S(0, 0), 0.5));
-    OMEGA_H_CHECK(are_close(svd.V(0, 0), 1.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.U(0, 0), 1.0));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.S(0, 0), 0.5));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.V(0, 0), 1.0));
   }
   {
     auto const a = identity_matrix<2, 2>();
     auto const svd = decompose_svd(a);
-    OMEGA_H_CHECK(are_close(svd.U, a));
-    OMEGA_H_CHECK(are_close(svd.S, a));
-    OMEGA_H_CHECK(are_close(svd.V, a));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.U, a));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.S, a));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.V, a));
   }
   {
     auto const I = identity_matrix<2, 2>();
     auto const a = I * 0.5;
     auto const svd = decompose_svd(a);
-    OMEGA_H_CHECK(are_close(svd.U, I));
-    OMEGA_H_CHECK(are_close(svd.S, a));
-    OMEGA_H_CHECK(are_close(svd.V, I));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.U, I));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.S, a));
+    OMEGA_H_ALWAYS_CHECK(are_close(svd.V, I));
   }
   test_svd_properties(F_from_coords<2>({{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}}));
   test_svd_properties(F_from_coords<2>({{0.0, 0.0}, {2.0, 0.0}, {0.0, 1.0}}));
@@ -456,11 +456,11 @@ static void test_quaternion(double angle, Vector<3> axis) {
   auto const angle2 = norm(axis_angle);
   auto axis2 = axis_angle;
   if (angle2 > DBL_EPSILON) axis2 /= angle2;
-  OMEGA_H_CHECK(are_close(tensor, tensor2));
-  OMEGA_H_CHECK(are_close(angle, angle2));
-  if (angle > DBL_EPSILON) OMEGA_H_CHECK(are_close(axis, axis2));
+  OMEGA_H_ALWAYS_CHECK(are_close(tensor, tensor2));
+  OMEGA_H_ALWAYS_CHECK(are_close(angle, angle2));
+  if (angle > DBL_EPSILON) OMEGA_H_ALWAYS_CHECK(are_close(axis, axis2));
   auto const quaternion2 = quaternion_from_axis_angle(angle * axis);
-  OMEGA_H_CHECK(are_close(quaternion, quaternion2));
+  OMEGA_H_ALWAYS_CHECK(are_close(quaternion, quaternion2));
 }
 
 static void test_quaternions() {
@@ -486,7 +486,7 @@ static void test_quaternions() {
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  OMEGA_H_CHECK(std::string(lib.version()) == OMEGA_H_SEMVER);
+  OMEGA_H_ALWAYS_CHECK(std::string(lib.version()) == OMEGA_H_SEMVER);
   test_edge_length();
   test_least_squares();
   test_power();

@@ -56,6 +56,11 @@ void fail(char const* format, ...);
        : Omega_h::fail("assertion %s failed at %s +%d\n", #cond, __FILE__, __LINE__))
 #endif
 
+// host only check, cannot be disabled by CMake BUILD_TYPE etc.
+#define OMEGA_H_ALWAYS_CHECK(cond)                                              \
+  ((cond) ? ((void)0)                                                          \
+   : Omega_h::fail("assertion %s failed at %s +%d\n", #cond, __FILE__, __LINE__))
+
 #ifndef NDEBUG
 #  define OMEGA_H_CHECK_MSG(cond, a) do {                   \
     if (!(cond)) std::cout << "ERROR: " << a << std::endl;  \

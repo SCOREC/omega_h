@@ -33,24 +33,24 @@ static bool accepts(
 
 static void test_finite_automaton() {
   auto lower = make_char_range_nfa('a', 'z');
-  OMEGA_H_CHECK(accepts(lower, "a"));
-  OMEGA_H_CHECK(accepts(lower, "q"));
-  OMEGA_H_CHECK(accepts(lower, "z"));
-  OMEGA_H_CHECK(!accepts(lower, "X"));
-  OMEGA_H_CHECK(!accepts(lower, "246"));
-  OMEGA_H_CHECK(!accepts(lower, "abc"));
-  OMEGA_H_CHECK(!accepts(lower, "\xff"));
+  OMEGA_H_ALWAYS_CHECK(accepts(lower, "a"));
+  OMEGA_H_ALWAYS_CHECK(accepts(lower, "q"));
+  OMEGA_H_ALWAYS_CHECK(accepts(lower, "z"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(lower, "X"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(lower, "246"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(lower, "abc"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(lower, "\xff"));
   auto single = make_char_single_nfa('q');
-  OMEGA_H_CHECK(!accepts(single, "a"));
-  OMEGA_H_CHECK(accepts(single, "q"));
-  OMEGA_H_CHECK(!accepts(single, "r"));
-  OMEGA_H_CHECK(!accepts(single, "abc"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(single, "a"));
+  OMEGA_H_ALWAYS_CHECK(accepts(single, "q"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(single, "r"));
+  OMEGA_H_ALWAYS_CHECK(!accepts(single, "abc"));
   auto upper = make_char_range_nfa('A', 'Z');
   auto alpha_nfa = FiniteAutomaton::unite(lower, upper);
   auto alpha_dfa = FiniteAutomaton::make_deterministic(alpha_nfa);
-  OMEGA_H_CHECK(get_nstates(alpha_dfa) > 2);
+  OMEGA_H_ALWAYS_CHECK(get_nstates(alpha_dfa) > 2);
   auto alpha = FiniteAutomaton::simplify(alpha_dfa);
-  OMEGA_H_CHECK(get_nstates(alpha) == 2);
+  OMEGA_H_ALWAYS_CHECK(get_nstates(alpha) == 2);
   {
     auto num = make_char_range_nfa('0', '9');
     auto under = make_char_single_nfa('_');
@@ -59,13 +59,13 @@ static void test_finite_automaton() {
     auto under_alnum_star = FiniteAutomaton::star(under_alnum);
     auto ident_nfa = FiniteAutomaton::concat(under_alpha, under_alnum_star);
     auto ident_dfa = FiniteAutomaton::make_deterministic(ident_nfa);
-    OMEGA_H_CHECK(get_nstates(ident_dfa) > 2);
+    OMEGA_H_ALWAYS_CHECK(get_nstates(ident_dfa) > 2);
     auto identifier = FiniteAutomaton::simplify(ident_dfa);
-    OMEGA_H_CHECK(get_nstates(identifier) == 2);
-    OMEGA_H_CHECK(accepts(identifier, "_soup"));
-    OMEGA_H_CHECK(!accepts(identifier, "007"));
-    OMEGA_H_CHECK(accepts(identifier, "All_The_Case"));
-    OMEGA_H_CHECK(!accepts(identifier, "fire|hose"));
+    OMEGA_H_ALWAYS_CHECK(get_nstates(identifier) == 2);
+    OMEGA_H_ALWAYS_CHECK(accepts(identifier, "_soup"));
+    OMEGA_H_ALWAYS_CHECK(!accepts(identifier, "007"));
+    OMEGA_H_ALWAYS_CHECK(accepts(identifier, "All_The_Case"));
+    OMEGA_H_ALWAYS_CHECK(!accepts(identifier, "fire|hose"));
   }
 }
 
@@ -106,11 +106,11 @@ static void test_lalr1_language() {
 
 static void test_regex_lexer() {
   auto lexer = regex::build_lexer();
-  OMEGA_H_CHECK(accepts(lexer, "a", regex::TOK_CHAR));
-  OMEGA_H_CHECK(accepts(lexer, ".", regex::TOK_DOT));
-  OMEGA_H_CHECK(accepts(lexer, "?", regex::TOK_MAYBE));
-  OMEGA_H_CHECK(accepts(lexer, "\\.", regex::TOK_CHAR));
-  OMEGA_H_CHECK(accepts(lexer, "\\?", regex::TOK_CHAR));
+  OMEGA_H_ALWAYS_CHECK(accepts(lexer, "a", regex::TOK_CHAR));
+  OMEGA_H_ALWAYS_CHECK(accepts(lexer, ".", regex::TOK_DOT));
+  OMEGA_H_ALWAYS_CHECK(accepts(lexer, "?", regex::TOK_MAYBE));
+  OMEGA_H_ALWAYS_CHECK(accepts(lexer, "\\.", regex::TOK_CHAR));
+  OMEGA_H_ALWAYS_CHECK(accepts(lexer, "\\?", regex::TOK_CHAR));
 }
 
 static void test_regex_language() {
@@ -134,7 +134,7 @@ static void test_regex_reader(std::string const& regex,
     }
   }
   for (auto& expect_non_match : expect_non_matches) {
-    OMEGA_H_CHECK(!accepts(fa, expect_non_match, 42));
+    OMEGA_H_ALWAYS_CHECK(!accepts(fa, expect_non_match, 42));
   }
 }
 
@@ -236,14 +236,14 @@ static void test_hydro() {
   ExprEnv env(2, 1);
   env.register_variable("x", Reals({0.0, 1.0}));
   auto res = any_cast<Reals>(op->eval(env));
-  OMEGA_H_CHECK(are_close(res, Reals({0.0, 0.01})));
+  OMEGA_H_ALWAYS_CHECK(are_close(res, Reals({0.0, 0.01})));
 }
 
 int main(int argc, char** argv) {
   Omega_h::Library lib(&argc, &argv);
   std::string a("  ");
   std::string b("");
-  OMEGA_H_CHECK(0 == a.compare(0, 0, b));
+  OMEGA_H_ALWAYS_CHECK(0 == a.compare(0, 0, b));
   test_finite_automaton();
   test_lr0_language();
   test_lalr1_language();

@@ -81,9 +81,9 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
   }
 #ifdef OMEGA_H_USE_MPI
   int mpi_is_init;
-  OMEGA_H_CHECK(MPI_SUCCESS == MPI_Initialized(&mpi_is_init));
+  OMEGA_H_ALWAYS_CHECK(MPI_SUCCESS == MPI_Initialized(&mpi_is_init));
   if (!mpi_is_init) {
-    OMEGA_H_CHECK(MPI_SUCCESS == MPI_Init(argc, argv));
+    OMEGA_H_ALWAYS_CHECK(MPI_SUCCESS == MPI_Init(argc, argv));
     we_called_mpi_init = true;
   } else {
     we_called_mpi_init = false;
@@ -124,7 +124,7 @@ void Library::initialize(char const* head_desc, int* argc, char*** argv
   mpi_ranks_flag.add_arg<int>("value");
   if (argc && argv) {
     bool parse_success = cmdline.parse(world_, argc, *argv);
-    OMEGA_H_CHECK(parse_success);
+    OMEGA_H_ALWAYS_CHECK(parse_success);
   }
   bool add_filename = false;
   if (cmdline.parsed("--osh-time-with-filename")) {
@@ -212,7 +212,7 @@ Library::~Library() {
 #endif
 #ifdef OMEGA_H_USE_MPI
   if (we_called_mpi_init) {
-    OMEGA_H_CHECK(MPI_SUCCESS == MPI_Finalize());
+    OMEGA_H_ALWAYS_CHECK(MPI_SUCCESS == MPI_Finalize());
     we_called_mpi_init = false;
   }
 #endif
