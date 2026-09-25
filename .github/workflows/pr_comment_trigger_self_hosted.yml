@@ -204,7 +204,9 @@ jobs:
         shell: bash
         run: |
           source $OMEGAH_WORK_DIR/envGcc13.sh
-
+          libMeshbdir=$LIBMESHB_BUILD
+          kkbdir_rdc=$KOKKOS_CUDA_RDC_BUILD
+          egadslitebdir=$EGADSLITE_BUILD
           workDir=$OMEGAH_WORK_DIR
           export CMAKE_PREFIX_PATH="$libMeshbdir/install:$egadslitebdir/install:$kkbdir_rdc/install:$CMAKE_PREFIX_PATH"
 
