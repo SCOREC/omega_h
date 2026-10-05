@@ -2,7 +2,7 @@
 
 branch=$1
 
-cd /lustre/orion/csc679/scratch/castia5/globus-compute/omega_h-test
+cd /lustre/orion/cli193/scratch/yus9/globus-compute/omega_h-test
 
 module load PrgEnv-amd
 module load rocm
