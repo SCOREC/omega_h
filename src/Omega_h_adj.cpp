@@ -163,6 +163,22 @@ LOs find_unique(LOs const hv2v, Topo_type const high_type, Topo_type
   return find_unique_deg(deg, uv2v);
 }
 
+/* the LO products can overflow, so form the length in 64 bits and check it */
+static LO checked_uses_length(LO const nhigh, Int const nlows_per_high,
+    Int const nverts_per_low) {
+  I64 const length = I64(nhigh) * I64(nlows_per_high) * I64(nverts_per_low);
+  if (length < 0 || length > I64(ArithTraits<LO>::max())) {
+    Omega_h_fail(
+        "form_uses: %lld entities, each expanded into %d entities of %d "
+        "vertices, need an array of %lld entries; valid local-ordinal array "
+        "lengths are 0 through %lld\n",
+        static_cast<long long>(nhigh), nlows_per_high, nverts_per_low,
+        static_cast<long long>(length),
+        static_cast<long long>(ArithTraits<LO>::max()));
+  }
+  return static_cast<LO>(length);
+}
+
 LOs form_uses(LOs const hv2v, Omega_h_Family const family, Int const high_dim,
     Int const low_dim) {
   OMEGA_H_TIME_FUNCTION;
@@ -170,8 +186,8 @@ LOs form_uses(LOs const hv2v, Omega_h_Family const family, Int const high_dim,
   Int const nverts_per_low = element_degree(family, low_dim, 0);
   Int const nlows_per_high = element_degree(family, high_dim, low_dim);
   LO const nhigh = divide_no_remainder(hv2v.size(), nverts_per_high);
-  LO const nuses = nhigh * nlows_per_high;
-  Write<LO> uv2v(nuses * nverts_per_low);
+  LO const length = checked_uses_length(nhigh, nlows_per_high, nverts_per_low);
+  Write<LO> uv2v(length);
   auto f = OMEGA_H_LAMBDA(LO h) {
     LO const h_begin = h * nverts_per_high;
     for (Int u = 0; u < nlows_per_high; ++u) {
@@ -193,8 +209,8 @@ LOs form_uses(LOs const hv2v, Topo_type const high_type,
   Int const nverts_per_low = element_degree(low_type, Topo_type::vertex);
   Int const nlows_per_high = element_degree(high_type, low_type);
   LO const nhigh = divide_no_remainder(hv2v.size(), nverts_per_high);
-  LO const nuses = nhigh * nlows_per_high;
-  Write<LO> uv2v(nuses * nverts_per_low);
+  LO const length = checked_uses_length(nhigh, nlows_per_high, nverts_per_low);
+  Write<LO> uv2v(length);
   auto f = OMEGA_H_LAMBDA(LO h) {
     LO const h_begin = h * nverts_per_high;
     for (Int u = 0; u < nlows_per_high; ++u) {
