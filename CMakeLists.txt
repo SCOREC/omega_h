@@ -85,7 +85,7 @@ set(SEACASExodus_PREFIX_DEFAULT ${Trilinos_PREFIX})
 bob_add_dependency(PUBLIC NAME SEACASExodus TARGETS SEACASExodus::all_libs)
 
 set(Omega_h_USE_pybind11_DEFAULT OFF)
-bob_public_dep(pybind11)
+bob_private_dep(pybind11)
 
 if(Omega_h_USE_Kokkos)
   bob_option(Omega_h_USE_Kokkos_Sort "Use Kokkos sort_by_key instead of vendor (Thrust, SYCL, etc.) provided sorting APIs." ON)
@@ -157,6 +157,7 @@ set(Omega_h_KEY_BOOLS
     Omega_h_USE_ADIOS2
     Omega_h_USE_DOLFIN
     Omega_h_USE_dwarf
+    Omega_h_USE_pybind11
     Omega_h_CHECK_BOUNDS
     Omega_h_THROW
     OMEGA_H_USE_GPU_AWARE_MPI

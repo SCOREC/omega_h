@@ -885,6 +885,9 @@ if (Omega_h_USE_pybind11)
   if (Omega_h_USE_DOLFIN)
     list(APPEND PYBIND11_SOURCES PyOmega_h_dolfin.cpp)
   endif()
+  # Disable LTO/IPO before adding the Python module to avoid fatbinData conflicts
+  # when compiling with nvcc. Same fix as SCOREC/pcms@b38e4d3 (PR #258).
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
   pybind11_add_module(PyOmega_h
       ${PYBIND11_SOURCES})
   target_link_libraries(PyOmega_h PUBLIC omega_h)
