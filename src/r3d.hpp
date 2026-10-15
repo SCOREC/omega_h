@@ -84,21 +84,15 @@ constexpr R3D_INLINE T square(T x) {
 
 template <typename T, Int n>
 class Few {
-  using UninitT = typename std::aligned_storage<sizeof(T), alignof(T)>::type;
-  UninitT array_[n];
+  // see issue #245
+  T array_[n];
 
  public:
   enum { size = n };
-  R3D_INLINE T* data() { return reinterpret_cast<T*>(array_); }
-  R3D_INLINE T const* data() const {
-    return reinterpret_cast<T const*>(array_);
-  }
-  R3D_INLINE T volatile* data() volatile {
-    return reinterpret_cast<T volatile*>(array_);
-  }
-  R3D_INLINE T const volatile* data() const volatile {
-    return reinterpret_cast<T const volatile*>(array_);
-  }
+  R3D_INLINE T* data() { return array_; }
+  R3D_INLINE T const* data() const { return array_; }
+  R3D_INLINE T volatile* data() volatile { return array_; }
+  R3D_INLINE T const volatile* data() const volatile { return array_; }
   R3D_INLINE T& operator[](Int i) { return data()[i]; }
   R3D_INLINE T const& operator[](Int i) const { return data()[i]; }
   R3D_INLINE T volatile& operator[](Int i) volatile { return data()[i]; }

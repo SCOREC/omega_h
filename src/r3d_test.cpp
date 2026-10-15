@@ -77,7 +77,34 @@ static void test_2d() {
   OMEGA_H_CHECK(null_intersection.nverts == 0);
 }
 
+static void test_2d_self_intersection() {
+  r3d::Few<r3d::Vector<2>, 3> verts = {
+      {-1660.4524999999999, 211.69999999999999},
+      {-1582.3433333333332, 211.69999999999999},
+      {-1582.3433333333332, 289.80916666666667}};
+  r3d::Polytope<2> intersection;
+  r3d::intersect_simplices(intersection, verts, verts);
+  auto expected = 0.5 * (1660.4524999999999 - 1582.3433333333332) *
+                  (289.80916666666667 - 211.69999999999999);
+  OMEGA_H_CHECK(Omega_h::are_close(r3d::measure(intersection), expected));
+}
+
+static void test_3d_self_intersection() {
+  const double x0 = -1660.4524999999999, x1 = -1582.3433333333332;
+  const double y0 = 211.69999999999999, y1 = 289.80916666666667;
+  const double z0 = 35.130000000000003, z1 = 113.23916666666668;
+  r3d::Few<r3d::Vector<3>, 4> verts = {
+      {x0, y0, z0}, {x1, y0, z0}, {x1, y1, z0}, {x1, y0, z1}};
+  r3d::Polytope<3> intersection;
+  r3d::intersect_simplices(intersection, verts, verts);
+  auto expected = (x1 - x0) * (y1 - y0) * (z1 - z0) / 6.0;
+  OMEGA_H_CHECK(
+      Omega_h::are_close(std::abs(r3d::measure(intersection)), expected));
+}
+
 int main() {
   test_2d();
   test_3d();
+  test_2d_self_intersection();
+  test_3d_self_intersection();
 }
