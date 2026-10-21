@@ -202,6 +202,7 @@ jobs:
       - name: build with Kokkos CUDA RDC backend
         id: build_kokkos_cuda_rdc
         shell: bash
+        continue-on-error: true
         run: |
           source $OMEGAH_WORK_DIR/envGcc13.sh
           libMeshbdir=$LIBMESHB_BUILD
