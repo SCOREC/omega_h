@@ -909,11 +909,17 @@ if (Omega_h_USE_pybind11)
   target_link_libraries(PyOmega_h PUBLIC omega_h)
   # this is useful for direct CMake installation into python.
   # This enables spack environment installation to directly load the PyOmega_h module
-  set(PyOmega_h_DEST "${CMAKE_INSTALL_LIBDIR}/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages")
-  # Ensure the extension can resolve Omega_h shared libraries from a standard
-  # prefix install layout (e.g. Spack), where the module lives under
-  # <prefix>/<libdir>/pythonX.Y/site-packages and core libs live in <libdir>.
-  set_target_properties(PyOmega_h PROPERTIES INSTALL_RPATH "\$ORIGIN;\$ORIGIN/../../../")
+  # Defaults to the standard CPython prefix layout (lib/)
+  set(PyOmega_h_DEST
+      "lib/python${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}/site-packages"
+      CACHE STRING "Install dir for the PyOmega_h module")
+  # Ensure the extension can resolve Omega_h shared libraries in <prefix>/<libdir>
+  # from wherever the module is installed (PyOmega_h_DEST).
+  get_filename_component(_PyOmega_h_dir "${PyOmega_h_DEST}" ABSOLUTE
+                         BASE_DIR "${CMAKE_INSTALL_PREFIX}")
+  file(RELATIVE_PATH _PyOmega_h_to_lib "${_PyOmega_h_dir}"
+       "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+  set_target_properties(PyOmega_h PROPERTIES INSTALL_RPATH "\$ORIGIN;\$ORIGIN/${_PyOmega_h_to_lib}")
   install(TARGETS PyOmega_h
       ARCHIVE DESTINATION "${PyOmega_h_DEST}"
       LIBRARY DESTINATION "${PyOmega_h_DEST}")
