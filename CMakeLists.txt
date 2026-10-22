@@ -47,9 +47,14 @@ if (Omega_h_ENABLE_DEMANGLED_STACKTRACE)
 endif()
 
 if (Omega_h_USE_MPI)
-  enable_language(C)
-  set(MPI_REQUIRED_VERSION 3)
-  bob_add_dependency(PUBLIC NAME MPI COMPONENTS CXX TARGETS MPI::MPI_CXX)
+  if (Omega_h_USE_ADIOS2)
+    enable_language(C)
+    set(MPI_REQUIRED_VERSION 3)
+    bob_add_dependency(PUBLIC NAME MPI COMPONENTS C CXX TARGETS MPI::MPI_CXX)
+  else()
+    set(MPI_REQUIRED_VERSION 3)
+    bob_add_dependency(PUBLIC NAME MPI COMPONENTS CXX TARGETS MPI::MPI_CXX)
+  endif()
 endif()
 
 set(Omega_h_USE_ZLIB_DEFAULT ON)
@@ -101,6 +106,10 @@ bob_add_dependency(PUBLIC NAME SEACASExodus TARGETS SEACASExodus::all_libs)
 
 set(Omega_h_USE_pybind11_DEFAULT OFF)
 bob_private_dep(pybind11)
+
+set(Omega_h_USE_ADIOS2_DEFAULT OFF)
+set(ADIOS2_PREFIX_DEFAULT ${ADIOS2_DIR})
+bob_add_dependency(PUBLIC NAME ADIOS2 TARGETS adios2::adios2)
 
 if(Omega_h_USE_Kokkos)
   bob_option(Omega_h_USE_Kokkos_Sort "Use Kokkos sort_by_key instead of vendor (Thrust, SYCL, etc.) provided sorting APIs." ON)
