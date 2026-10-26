@@ -55,7 +55,7 @@ static void parallel_sort(T* b, T* e, Comp c) {
   const auto q = space.sycl_queue();
   auto policy = ::oneapi::dpl::execution::make_device_policy(q);
   oneapi::dpl::sort(policy,b,e,c);
-#elif defined(OMEGA_H_USE_OPENMP)
+#elif defined(OMEGA_H_USE_OPENMP) && !defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_HIP)
   pss::parallel_stable_sort(b, e, c);
 #else
   std::stable_sort(b, e, c);
