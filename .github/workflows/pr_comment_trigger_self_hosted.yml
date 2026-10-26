@@ -369,7 +369,7 @@ jobs:
           export LD_LIBRARY_PATH="$gmsbdir/install/lib64:$LD_LIBRARY_PATH"
 
           # omegah
-          bdir=${workDir}/build-omegah
+          bdir=${workDir}/build-omegah-py
           cmake -S omegah_${{ github.event.issue.number }} -B $bdir \
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Debug \
