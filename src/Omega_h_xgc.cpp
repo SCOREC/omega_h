@@ -1,6 +1,7 @@
 #include "Omega_h_file.hpp"
 
 #include <fstream>
+#include <limits>
 #include <string>
 
 #include "Omega_h_build.hpp"
@@ -128,6 +129,8 @@ void write(filesystem::path const& basename, Mesh* mesh) {
   if (!node_stream.is_open()) {
     Omega_h_fail("couldn't open \"%s\"\n", node_path.c_str());
   }
+  // write coordinates with enough digits to round-trip exactly
+  node_stream.precision(std::numeric_limits<Real>::max_digits10);
   node_stream << nverts << " 2 0 1\n";
   for (LO i = 0; i < nverts; ++i) {
     node_stream << i + 1 << " " << h_coords[i * dim] << " "
