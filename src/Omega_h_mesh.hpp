@@ -41,6 +41,9 @@ class Mesh {
   void set_family(Omega_h_Family family);
   void set_matched(I8 is_matched);
   virtual void set_dim(Int dim_in);
+  void set_space_dim(Int sdim);
+  Int tdim() const { return dim(); }
+  Int space_dim() const { return space_dim_ < 0 ? dim() : space_dim_; }
   void set_verts(LO nverts_in);
   void set_ents(Int ent_dim, Adj down);
   void set_parents(Int ent_dim, Parents parents);
@@ -270,6 +273,9 @@ class Mesh {
 
 protected:
   Int dim_;
+
+ private:
+  Int space_dim_ = -1;
 
  public:
   void add_coords(Reals array);

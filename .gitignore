@@ -13,3 +13,7 @@ cmake_install.cmake
 *cache*
 *orig*
 compile_commands.json
+/spack/.spack-env/
+/spack-build-*/
+/.spack_patched
+/baseline-ctest.log

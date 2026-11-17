@@ -414,6 +414,8 @@ if(BUILD_TESTING)
   osh_add_exe(reprosum_test)
   osh_add_exe(arrayops_test)
   osh_add_exe(sort_test)
+  osh_add_exe(unit_embedded)
+  test_func(run_unit_embedded 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh)
   osh_add_exe(unit_math)
 
   osh_add_exe(test_patches)

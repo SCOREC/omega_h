@@ -85,6 +85,15 @@ void Mesh::set_dim(Int dim_in) {
   dim_ = dim_in;
 }
 
+void Mesh::set_space_dim(Int sdim) {
+  if (dim_ < 1 || sdim < dim_ || sdim > 3)
+    Omega_h_fail("set_space_dim: require 1 <= dim (%d) <= space_dim (%d) <= 3\n", dim_, sdim);
+  if (has_tag(VERT, "coordinates") &&
+      get_tagbase(VERT, "coordinates")->ncomps() != sdim)
+    Omega_h_fail("set_space_dim: coordinates component count differs from space_dim (%d)\n", sdim);
+  space_dim_ = sdim;
+}
+
 void Mesh::set_verts(LO nverts_in) { nents_[VERT] = nverts_in; }
 
 void Mesh::set_ents(Int ent_dim, Adj down) {
@@ -412,13 +421,16 @@ Adj Mesh::ask_adj(Int from, Int to) {
 }
 
 void Mesh::add_coords(Reals array) {
-  add_tag<Real>(0, "coordinates", dim(), array);
+  if (array.size() != nverts() * space_dim())
+    Omega_h_fail("add_coords: coordinate count differs from nverts * space_dim\n");
+  add_tag<Real>(0, "coordinates", space_dim(), array);
 }
 
 Reals Mesh::coords() const { return get_array<Real>(0, "coordinates"); }
 
 void Mesh::set_coords(Reals const& array) {
-  OMEGA_H_CHECK(array.size() == nverts() * dim());
+  if (array.size() != nverts() * space_dim())
+    Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
   set_tag<Real>(VERT, "coordinates", array);
 }
 
@@ -916,6 +928,7 @@ Mesh Mesh::copy_meta() const {
   Mesh m(library_);
   m.family_ = this->family_;
   m.dim_ = this->dim_;
+  m.space_dim_ = this->space_dim_;
   m.comm_ = this->comm_;
   m.parting_ = this->parting_;
   m.nghost_layers_ = this->nghost_layers_;

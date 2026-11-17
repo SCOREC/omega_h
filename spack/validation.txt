@@ -1,0 +1,41 @@
+Omega_h CUDA development baseline — 2026-11-16
+
+Source revision: 7647c8a52547a737f06de91d3f47952643ca5b64 (master)
+Spack: 1.2.2
+Root spec hash: e75oxhtzuco7duikps7lxhipgonztqyk
+Recipe namespace: omega_dev
+Development source: /users/mersoj2/code/omega_h
+
+Configuration:
+  GCC 12.3.0; CUDA 12.1.105; Kokkos 4.7.04 +cuda cuda_arch=75
+  MPICH 4.1.1 (external, GPU-aware MPI disabled)
+  RelWithDebInfo; shared libraries; BUILD_TESTING=ON; THROW=OFF
+  GPU: NVIDIA GeForce RTX 2060 SUPER, compute capability 7.5
+  NVIDIA driver: 590.48.01
+
+Build:
+  spack -e ./spack install -j 4
+  Result: successful build and installation (10m20s).
+
+Build directory:
+  /tmp/mersoj2/spack-stage/spack-stage-omega-h-develop-e75oxhtzuco7duikps7lxhipgonztqyk/spack-build-e75oxht
+
+Tests (run through spack -e ./spack build-env omega-h --):
+  ctest --test-dir <build directory> --output-on-failure --timeout 300 -j 1
+  Result: 100% tests passed, 0 tests failed out of 51.
+  Total Test time (real): 151.66 seconds.
+  Includes 12 two-rank MPI cases and 2 four-rank MPI cases.
+  Detailed test output: <build directory>/Testing/Temporary/LastTest.log
+
+Build and tests ran outside the Codex sandbox for cache/store and GPU access.
+Python, Exodus, Gmsh, proprietary interfaces, and optional omega_h-data
+tests were not enabled. This establishes the current CUDA baseline;
+the plan's non-Kokkos C1/C2 baselines remain to be run before implementation.
+
+CPU baselines before implementation (same source revision):
+  C1: Debug, MPI ON, Kokkos OFF, THROW ON: 51/51 passed (34.25s).
+  C2: Release, MPI OFF, Kokkos OFF, THROW OFF: 40/40 passed (2.86s).
+  Build directories: build-c1 and build-c2.
+  Test through Spack with LD_PRELOAD=<absolute build dir>/src/libomega_h.so
+  to override the installed CUDA root's RPATH injected by Spack.
+  Detailed baseline logs retained as baseline-LastTest.log in each build.

@@ -204,6 +204,7 @@ static void write_meta(
   write_value(stream, family, needs_swapping);
   auto dim = I8(mesh->dim());
   write_value(stream, dim, needs_swapping);
+  write_value(stream, I8(mesh->space_dim()), needs_swapping);
   I32 comm_size = mesh->comm()->size();
   write_value(stream, comm_size, needs_swapping);
   I32 comm_rank = mesh->comm()->rank();
@@ -234,6 +235,11 @@ static void read_meta(
   I8 dim;
   read_value(stream, dim, needs_swapping);
   mesh->set_dim(Int(dim));
+  if (version >= 12) {
+    I8 sdim;
+    read_value(stream, sdim, needs_swapping);
+    mesh->set_space_dim(Int(sdim));
+  }
   I32 comm_size;
   read_value(stream, comm_size, needs_swapping);
   OMEGA_H_CHECK(mesh->comm()->size() == comm_size);
@@ -482,6 +488,9 @@ void read(std::istream& stream, Mesh* mesh, I32 version) {
       mesh->set_owners(d, owners);
     }
   }
+  if (mesh->has_tag(VERT, "coordinates") &&
+      mesh->get_tagbase(VERT, "coordinates")->ncomps() != mesh->space_dim())
+    Omega_h_fail("binary::read: coordinates component count differs from space_dim (%d)\n", mesh->space_dim());
   if (version >= 8) {
     read_sets(stream, mesh, needs_swapping);
   }

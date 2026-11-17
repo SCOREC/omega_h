@@ -190,6 +190,10 @@ Omega_h_Comparison compare_meshes(
     if (should_print) std::cout << "mesh dimensions differ\n";
     return OMEGA_H_DIFF;
   }
+  if (a->space_dim() != b->space_dim()) {
+    if (should_print) std::cout << "mesh spatial dimensions differ\n";
+    return OMEGA_H_DIFF;
+  }
   Omega_h_Comparison result = OMEGA_H_SAME;
   for (Int dim = 0; dim <= a->dim(); ++dim) {
     if (a->nglobal_ents(dim) != b->nglobal_ents(dim)) {
