@@ -465,8 +465,10 @@ Read<GO> Mesh::globals(Int ent_dim) const {
 }
 
 Reals Mesh::ask_lengths() {
+  bool const metric = has_tag(VERT, "metric");
+  if (metric) OMEGA_H_GATE_EMBEDDED(this);
   if (!has_tag(EDGE, "length")) {
-    auto lengths = measure_edges_metric(this);
+    auto lengths = metric ? measure_edges_metric(this) : measure_edges_real(this);
     add_tag(EDGE, "length", 1, lengths);
   }
   return get_array<Real>(EDGE, "length");
@@ -662,8 +664,8 @@ void Mesh::balance(bool predictive) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), OMEGA_H_COORDS_TDIM_ONLY(*this));
-  if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
+      average_field(this, dim(), LOs(nelems(), 0, 1), space_dim(), coords_view().raw());
+  if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Reals masses;
   Real abs_tol;
   if (predictive) {
@@ -740,8 +742,8 @@ void Mesh::balance(Reals weights) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), OMEGA_H_COORDS_TDIM_ONLY(*this));
-  if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
+      average_field(this, dim(), LOs(nelems(), 0, 1), space_dim(), coords_view().raw());
+  if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Real abs_tol;
   abs_tol = max2(0.0, get_max(comm_, weights));
   abs_tol *= 2.0;
