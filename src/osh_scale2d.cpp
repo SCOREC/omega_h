@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
   auto path_out = cmdline.get<std::string>("output.osh");
   Omega_h::Mesh2D mesh(&lib);
   Omega_h::binary::read(path_in, lib.world(), &mesh, /*strict=*/true);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
   mesh.set_parting(OMEGA_H_GHOSTED);
   auto metrics = Omega_h::get_implied_isos(&mesh);
   auto scalar =

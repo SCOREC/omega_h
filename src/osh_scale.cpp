@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
   auto target_nelems = cmdline.get<double>("<target nelems>");
   auto path_out = cmdline.get<std::string>("output.osh");
   auto mesh = Omega_h::binary::read(path_in, &lib, /*strict=*/true);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
   mesh.set_parting(OMEGA_H_GHOSTED);
   auto metrics = Omega_h::get_implied_isos(&mesh);
   auto scalar =

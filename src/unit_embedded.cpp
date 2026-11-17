@@ -9,6 +9,7 @@
 #include "Omega_h_for.hpp"
 
 using namespace Omega_h;
+#include "embedded_gates_test.hpp"
 
 static void require(bool condition) {
   if (!condition) Omega_h_fail("embedded mesh test failed\n");
@@ -62,6 +63,9 @@ int main(int argc, char** argv) {
   require(embedded.space_dim() == 3);
   auto ordinary = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 0, 2, 2, 0);
   check_deprecated(ordinary, embedded);
+#ifdef OMEGA_H_THROW
+  check_embedded_gates(embedded, ordinary);
+#endif
   auto fixed = embedded.coords_view<3>();
   CoordsView<> dynamic = fixed;
   auto roundtrip = dynamic.as<3>();

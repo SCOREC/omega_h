@@ -35,6 +35,7 @@ static bool okay(Mesh* mesh, AdaptOpts const& opts) {
 
 bool warp_to_limit(
     Mesh* mesh, AdaptOpts const& opts, bool exit_on_stall, Int max_niters) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (!mesh->has_tag(VERT, "warp")) return false;
   check_okay(mesh, opts);
   auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
@@ -84,6 +85,7 @@ bool warp_to_limit(
 }
 
 bool approach_metric(Mesh* mesh, AdaptOpts const& opts, Real min_step) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto name = "metric";
   auto target_name = "target_metric";
   if (!mesh->has_tag(VERT, target_name)) return false;

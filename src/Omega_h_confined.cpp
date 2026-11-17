@@ -17,6 +17,7 @@
 namespace Omega_h {
 
 Bytes find_bridge_edges(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto verts2class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto edges2class_dim = mesh->get_array<I8>(EDGE, "class_dim");
   auto edges_are_bridges_w = Write<I8>(mesh->nedges());
@@ -161,6 +162,7 @@ Reals get_tet_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 }
 
 Reals get_pad_dists(Mesh* mesh, Int pad_dim, Read<I8> edges_are_bridges) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (pad_dim == EDGE) {
     if (mesh->dim() == 3) {
       return get_edge_pad_dists<3>(mesh, edges_are_bridges);
@@ -259,6 +261,7 @@ Reals get_pinched_tet_angles(Mesh* mesh) {
 }
 
 Reals get_pinched_angles(Mesh* mesh, Int pinched_dim) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (pinched_dim == FACE) {
     if (mesh->dim() == 3) {
       return get_pinched_tri_angles_dim<3>(mesh);

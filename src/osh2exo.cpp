@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   }
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(inpath, lib.world(), &mesh);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
   Omega_h::exodus::write(outpath, &mesh, verbose, classify_with, excludedNodalFields);
   return 0;
 }

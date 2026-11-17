@@ -50,6 +50,7 @@ Read<I8> prevent_coarsen_overshoot_tmp(
 
 Read<I8> prevent_coarsen_overshoot(
     Mesh* mesh, Real max_length, LOs cands2edges, Read<I8> cand_codes) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto metric_dim = get_metric_dim(mesh);
   if (mesh->dim() == 3 && metric_dim == 3) {
     return prevent_coarsen_overshoot_tmp<3, 3>(

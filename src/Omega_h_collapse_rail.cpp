@@ -15,6 +15,7 @@ namespace Omega_h {
 void choose_rails(Mesh* mesh, LOs cands2edges, Read<I8> cand_edge_codes,
     Reals cand_edge_quals, Read<I8>* verts_are_cands, Reals* vert_quals,
     Read<GO>* vert_rails) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(mesh->parting() == OMEGA_H_GHOSTED);
   auto edges2cands = invert_injective_map(cands2edges, mesh->nedges());
   auto v2e = mesh->ask_up(VERT, EDGE);
@@ -78,6 +79,7 @@ void choose_rails(Mesh* mesh, LOs cands2edges, Read<I8> cand_edge_codes,
 
 void find_rails(Mesh* mesh, LOs keys2verts, Read<GO> verts2rail,
     LOs* rails2edges, Read<I8>* rail_col_dirs) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto nkeys = keys2verts.size();
   auto v2e = mesh->ask_up(VERT, EDGE);
   auto v2ve = v2e.a2ab;

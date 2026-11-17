@@ -192,6 +192,7 @@ static void run_case(Library* lib, Case const& c, Int niters) {
   }
   auto world = lib->world();
   auto mesh = gmsh::read(c.file_name(), world);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
   mesh.set_parting(OMEGA_H_GHOSTED);
   {
     auto metrics = get_implied_isos(&mesh);

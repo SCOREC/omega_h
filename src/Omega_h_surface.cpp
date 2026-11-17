@@ -79,6 +79,7 @@ Reals get_hinge_angles_tmpl(Mesh* mesh, Reals surf_side_normals,
 }  // end anonymous namespace
 
 Reals get_side_vectors(Mesh* mesh, LOs surf_side2side) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) return get_triangle_normals(mesh, surf_side2side);
   if (mesh->dim() == 2) return get_edge_normals(mesh, surf_side2side);
   OMEGA_H_NORETURN(Reals());
@@ -104,6 +105,7 @@ Reals get_curv_edge_tangents_dim(Mesh* mesh, LOs curv_edge2edge) {
 }
 
 Reals get_curv_edge_tangents(Mesh* mesh, LOs curv_edge2edge) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3)
     return get_curv_edge_tangents_dim<3>(mesh, curv_edge2edge);
   if (mesh->dim() == 2)
@@ -113,6 +115,7 @@ Reals get_curv_edge_tangents(Mesh* mesh, LOs curv_edge2edge) {
 
 Reals get_hinge_angles(Mesh* mesh, Reals surf_side_normals,
     LOs surf_hinge2hinge, LOs side2surf_side) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   switch (mesh->dim()) {
     case 3:
       return get_hinge_angles_tmpl<3>(
@@ -196,6 +199,7 @@ static Reals side_vert_normal_weights(
 
 Reals get_side_vert_normals(Mesh* mesh, LOs surf_side2side,
     Reals surf_side_normals, LOs surf_vert2vert) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   auto dim = mesh->dim();
   auto verts2sides = mesh->ask_up(VERT, dim - 1);
@@ -294,6 +298,7 @@ Reals get_curv_vert_tangents_dim(Mesh* mesh, LOs curv_edge2edge,
 
 Reals get_curv_vert_tangents(Mesh* mesh, LOs curv_edge2edge,
     Reals curv_edge_tangents, LOs curv_vert2vert) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) {
     return get_curv_vert_tangents_dim<3>(
         mesh, curv_edge2edge, curv_edge_tangents, curv_vert2vert);
@@ -313,6 +318,7 @@ Reals get_curv_vert_tangents(Mesh* mesh, LOs curv_edge2edge,
 
 Reals get_surf_tri_IIs(Mesh* mesh, LOs surf_tri2tri, Reals surf_tri_normals,
     LOs surf_vert2vert, Reals surf_vert_normals) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto vert2surf_vert = invert_injective_map(surf_vert2vert, mesh->nverts());
   auto tris2verts = mesh->ask_verts_of(FACE);
   auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
@@ -406,6 +412,7 @@ OMEGA_H_INLINE Matrix<3, 3> rotate_to_plane(Vector<3> n, Matrix<3, 3> tnuv) {
 
 Reals get_surf_vert_IIs(Mesh* mesh, LOs surf_tri2tri, Reals surf_tri_normals,
     Reals surf_tri_IIs, LOs surf_vert2vert, Reals surf_vert_normals) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto nsurf_verts = surf_vert2vert.size();
   auto verts2tris = mesh->ask_up(VERT, FACE);
   auto tri2surf_tri = invert_injective_map(surf_tri2tri, mesh->nfaces());
@@ -511,6 +518,7 @@ Reals get_curv_edge_curvatures_dim(Mesh* mesh, LOs curv_edge2edge,
 
 Reals get_curv_edge_curvatures(Mesh* mesh, LOs curv_edge2edge,
     Reals curv_edge_tangents, LOs curv_vert2vert, Reals curv_vert_tangents) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) {
     return get_curv_edge_curvatures_dim<3>(mesh, curv_edge2edge,
         curv_edge_tangents, curv_vert2vert, curv_vert_tangents);
@@ -568,6 +576,7 @@ Reals get_curv_vert_curvatures_dim(Mesh* mesh, LOs curv_edge2edge,
 
 Reals get_curv_vert_curvatures(Mesh* mesh, LOs curv_edge2edge,
     Reals curv_edge_curvatures, LOs curv_vert2vert) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) {
     return get_curv_vert_curvatures_dim<3>(
         mesh, curv_edge2edge, curv_edge_curvatures, curv_vert2vert);
@@ -580,6 +589,7 @@ Reals get_curv_vert_curvatures(Mesh* mesh, LOs curv_edge2edge,
 }
 
 SurfaceInfo get_surface_info(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   SurfaceInfo out;
   if (mesh->dim() == 1) return out;
   auto sdim = mesh->dim() - 1;
@@ -622,6 +632,7 @@ SurfaceInfo get_surface_info(Mesh* mesh) {
 }
 
 Reals get_vert_curvatures(Mesh* mesh, SurfaceInfo surface_info) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   Write<Real> out(mesh->nverts(), 0.0);
   if (mesh->dim() >= 3) {
     auto surf_vert_curvatures =

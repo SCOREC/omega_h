@@ -125,6 +125,7 @@ static Reals evaluate_coeffs(Mesh* mesh, Reals v_coeffs, Int ncomps) {
 }
 
 bool has_interior_verts(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto dim = mesh->dim();
   auto class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto interior = each_eq_to(class_dim, I8(dim));
@@ -134,6 +135,7 @@ bool has_interior_verts(Mesh* mesh) {
 }
 
 Reals project_by_fit(Mesh* mesh, Reals e_data) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   OMEGA_H_CHECK(e_data.size() % mesh->nelems() == 0);
   OMEGA_H_CHECK(has_interior_verts(mesh));
@@ -149,6 +151,7 @@ Reals project_by_fit(Mesh* mesh, Reals e_data) {
 }
 
 Reals project_by_average(Mesh* mesh, Reals e_data) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   OMEGA_H_CHECK(e_data.size() % mesh->nelems() == 0);
   auto ncomps = e_data.size() / mesh->nelems();
@@ -215,6 +218,7 @@ Reals derive_element_hessians_dim(Mesh* mesh, Reals vert_gradients) {
 }
 
 Reals derive_element_gradients(Mesh* mesh, Reals vert_values) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(vert_values.size() == mesh->nverts());
   if (mesh->dim() == 3) {
     return derive_element_gradients_dim<3>(mesh, vert_values);
@@ -227,6 +231,7 @@ Reals derive_element_gradients(Mesh* mesh, Reals vert_values) {
 }
 
 Reals derive_element_hessians(Mesh* mesh, Reals vert_gradients) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(vert_gradients.size() == mesh->nverts() * mesh->dim());
   if (mesh->dim() == 3) {
     return derive_element_hessians_dim<3>(mesh, vert_gradients);
@@ -239,16 +244,19 @@ Reals derive_element_hessians(Mesh* mesh, Reals vert_gradients) {
 }
 
 Reals recover_gradients(Mesh* mesh, Reals vert_values) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto e_grad = derive_element_gradients(mesh, vert_values);
   return project_by_fit(mesh, e_grad);
 }
 
 Reals recover_hessians_from_gradients(Mesh* mesh, Reals vert_gradients) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto e_hess = derive_element_hessians(mesh, vert_gradients);
   return project_by_fit(mesh, e_hess);
 }
 
 Reals recover_hessians(Mesh* mesh, Reals vert_values) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto v_grad = recover_gradients(mesh, vert_values);
   return recover_hessians_from_gradients(mesh, v_grad);
 }

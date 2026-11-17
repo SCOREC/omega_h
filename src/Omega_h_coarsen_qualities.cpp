@@ -63,6 +63,7 @@ Reals coarsen_qualities_tmpl(
 }
 
 Reals coarsen_qualities(Mesh* mesh, LOs cands2edges, Read<I8> cand_codes) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_CHECK(mesh->parting() == OMEGA_H_GHOSTED);
   auto metrics = mesh->get_array<Real>(VERT, "metric");
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
@@ -110,6 +111,7 @@ Read<I8> filter_coarsen_min_qual(
 
 Read<I8> filter_coarsen_improve(
     Mesh* mesh, LOs cands2edges, Read<I8> cand_codes, Reals cand_quals) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto elem_quals = mesh->ask_qualities();
   auto verts2elems = mesh->ask_up(VERT, mesh->dim());
   auto vert_old_quals = graph_reduce(verts2elems, elem_quals, 1, OMEGA_H_MIN);

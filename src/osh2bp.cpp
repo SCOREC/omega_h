@@ -21,6 +21,7 @@ int main(int argc, char** argv)
   OMEGA_H_CHECK(argc == 3);
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
   Omega_h::adios::write(argv[2], &mesh);
   return 0;
 }

@@ -33,6 +33,7 @@ int main(int argc, char** argv) {
 
   auto mesh = Omega_h::Mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
+  OMEGA_H_GATE_EMBEDDED(&mesh);
 
   auto dim = mesh.dim();
   auto nverts = mesh.nverts();

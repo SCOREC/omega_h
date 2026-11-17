@@ -28,6 +28,7 @@ Int get_metrics_dim(LO nmetrics, Reals metrics) {
 }
 
 Int get_metric_dim(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto ncomps = mesh->get_tagbase(VERT, "metric")->ncomps();
   return get_metric_dim(ncomps);
 }
@@ -72,6 +73,7 @@ template <Int mdim, Int edim>
 
 Reals get_mident_metrics(
     Mesh* mesh, Int ent_dim, LOs entities, Reals v2m, bool has_degen) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (entities.size() == 0) return Reals({});
   auto metrics_dim = get_metrics_dim(mesh->nverts(), v2m);
   if (metrics_dim == 3 && ent_dim == 3) {
@@ -99,6 +101,7 @@ Reals get_mident_metrics(
 }
 
 Reals get_mident_metrics(Mesh* mesh, Int ent_dim, Reals v2m, bool has_degen) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   LOs e2e(mesh->nents(ent_dim), 0, 1);
   return get_mident_metrics(mesh, ent_dim, e2e, v2m, has_degen);
 }
@@ -198,6 +201,7 @@ static Reals limit_gradation_once(Mesh* mesh, Reals values, Real max_rate) {
 
 Reals limit_metric_gradation(
     Mesh* mesh, Reals values, Real max_rate, Real tol, bool verbose) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_TIME_FUNCTION;
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   OMEGA_H_CHECK(max_rate > 0.0);
@@ -240,6 +244,7 @@ Reals project_metrics_dim(Mesh* mesh, Reals e2m) {
 }
 
 Reals project_metrics(Mesh* mesh, Reals e2m) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto metric_dim = get_metrics_dim(mesh->nelems(), e2m);
   if (metric_dim == 3)
     return project_metrics_dim<3>(mesh, e2m);
@@ -252,6 +257,7 @@ Reals project_metrics(Mesh* mesh, Reals e2m) {
 }
 
 Reals smooth_metric_once(Mesh* mesh, Reals v2m, bool has_degen) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   return project_metrics(
       mesh, get_mident_metrics(mesh, mesh->dim(), v2m, has_degen));
 }
@@ -273,6 +279,7 @@ Reals element_implied_length_metrics_dim(Mesh* mesh) {
 }
 
 Reals get_element_implied_length_metrics(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) return element_implied_length_metrics_dim<3>(mesh);
   if (mesh->dim() == 2) return element_implied_length_metrics_dim<2>(mesh);
   if (mesh->dim() == 1) return element_implied_length_metrics_dim<1>(mesh);
@@ -280,6 +287,7 @@ Reals get_element_implied_length_metrics(Mesh* mesh) {
 }
 
 Reals get_pure_implied_metrics(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   return project_metrics(mesh, get_element_implied_length_metrics(mesh));
 }
 
@@ -302,6 +310,7 @@ static Reals get_element_implied_size_metrics(Mesh* mesh) {
 }
 
 Reals get_implied_metrics(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   begin_code("get_implied_metrics");
   auto out = project_metrics(mesh, get_element_implied_size_metrics(mesh));
   end_code();
@@ -309,11 +318,13 @@ Reals get_implied_metrics(Mesh* mesh) {
 }
 
 Reals get_pure_implied_isos(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto metrics = get_pure_implied_metrics(mesh);
   return apply_isotropy(mesh->nverts(), metrics, OMEGA_H_ISO_SIZE);
 }
 
 Reals get_implied_isos(Mesh* mesh) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   OMEGA_H_TIME_FUNCTION;
   auto metrics = get_implied_metrics(mesh);
   metrics = apply_isotropy(mesh->nverts(), metrics, OMEGA_H_ISO_SIZE);
@@ -417,6 +428,7 @@ void get_curve_curvature_metrics(
 }
 
 Reals get_curvature_metrics(Mesh* mesh, Real segment_angle) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto surface_info = get_surface_info(mesh);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(mesh->dim()), 0.0);
   if (mesh->dim() == 3) {
@@ -482,6 +494,7 @@ Reals get_complexity_per_elem_tmpl(Mesh* mesh, Reals v2m) {
 }
 
 Reals get_complexity_per_elem(Mesh* mesh, Reals v2m) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (v2m.size() == 0) return Reals({});
   auto metric_dim = get_metrics_dim(mesh->nverts(), v2m);
   if (mesh->dim() == 3 && metric_dim == 3) {
@@ -499,12 +512,14 @@ Reals get_complexity_per_elem(Mesh* mesh, Reals v2m) {
 }
 
 Reals get_nelems_per_elem(Mesh* mesh, Reals v2m) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto complexity = get_complexity_per_elem(mesh, v2m);
   return multiply_each_by(
       complexity, 1.0 / typical_unit_simplex_size(mesh->dim()));
 }
 
 Real get_complexity(Mesh* mesh, Reals v2m) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto complexity_per_elem = get_complexity_per_elem(mesh, v2m);
   return repro_sum_owned(mesh, mesh->dim(), complexity_per_elem);
 }
@@ -514,6 +529,7 @@ Real get_expected_nelems_from_complexity(Real complexity, Int dim) {
 }
 
 Real get_expected_nelems(Mesh* mesh, Reals v2m) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto complexity = get_complexity(mesh, v2m);
   return get_expected_nelems_from_complexity(complexity, mesh->dim());
 }
@@ -526,6 +542,7 @@ Real get_metric_scalar_for_nelems(
 }
 
 Real get_metric_scalar_for_nelems(Mesh* mesh, Reals v2m, Real target_nelems) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   auto nelems = get_expected_nelems(mesh, v2m);
   auto metric_scal =
       get_metric_scalar_for_nelems(mesh->dim(), nelems, target_nelems);

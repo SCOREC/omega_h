@@ -138,6 +138,7 @@ Bytes prevent_coarsen_flip_dim(
 }
 
 Bytes prevent_coarsen_flip(Mesh* mesh, LOs cands2edges, Bytes cand_codes) {
+  OMEGA_H_GATE_EMBEDDED(mesh);
   if (mesh->dim() == 3) {
     return prevent_coarsen_flip_dim<3>(mesh, cands2edges, cand_codes);
   }
