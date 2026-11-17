@@ -94,6 +94,33 @@ Whether to use the Exodus subpackage of the SEACAS toolkit.
 This allows reading and writing Exodus files from Omega\_h.
 By default, it will look for this dependency in `SEACASExodus_PREFIX`.
 
+## Embedded meshes
+
+The existing `Mesh` supports edges in 2D/3D and triangles in 3D.
+`dim()` (also `tdim()`) describes topology; `space_dim()` describes coordinates
+and defaults to `dim()` for ordinary meshes.
+
+```cpp
+Omega_h::Mesh mesh(&library);
+Omega_h::build_from_elems_and_coords(
+    &mesh, OMEGA_H_SIMPLEX, 2, triangle_vertices, xyz_coordinates, 3);
+auto xyz = mesh.coords_view<3>(); // owns storage; checks the dimension on the host
+// In an Omega_h device kernel: xyz(vertex, component)
+```
+
+`coords_view()` provides a dynamic extent; `coords_view<N>()` checks a static
+extent, including in Release builds. `CoordsWriteView<N>` wraps writable
+coordinate arrays, and `set_coords(CoordsView<>)` validates mesh extents.
+The deprecated raw `coords()` and `set_coords(Reals)` methods work only for
+ordinary meshes. `OMEGA_H_SUPPRESS_DEPRECATION` silences their warnings while
+retaining the embedded-mesh checks.
+
+Embedded meshes support real element measures and edge lengths, nonpredictive
+and weighted balancing, migration/ghosting, osh I/O, and VTK output. Surface
+areas are unsigned. Adaptation, metrics, quality, recovery, conservation, and
+AMR reject embedded meshes. Unported tools also reject them. Topological
+classification is supported; distributed classification needs a ghosted partition.
+
 ## Contributing
 
 Please open a Github issue to ask a question, report a bug,

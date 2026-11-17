@@ -91,16 +91,21 @@ Reals measure_elements_real(Mesh* mesh) {
   return measure_elements_real(mesh, LOs(mesh->nelems(), 0, 1));
 }
 
+template <Int sdim>
+static Reals measure_edges_real_tmpl(Mesh* mesh, LOs a2e) {
+  RealEdgeLengths<sdim> measurer(mesh);
+  auto ev2v = mesh->ask_verts_of(EDGE);
+  Write<Real> lengths(a2e.size());
+  auto f = OMEGA_H_LAMBDA(LO a) {
+    lengths[a] = measurer.measure(gather_verts<2>(ev2v, a2e[a]));
+  };
+  parallel_for(a2e.size(), f, "measure_edges_real");
+  return lengths;
+}
+
 Reals measure_edges_real(Mesh* mesh, LOs a2e) {
   return detail::dispatch_sdim_edim(mesh->space_dim(), EDGE, [&](auto sdim, auto) {
-    RealEdgeLengths<sdim.value> measurer(mesh);
-    auto ev2v = mesh->ask_verts_of(EDGE);
-    Write<Real> lengths(a2e.size());
-    auto f = OMEGA_H_LAMBDA(LO a) {
-      lengths[a] = measurer.measure(gather_verts<2>(ev2v, a2e[a]));
-    };
-    parallel_for(a2e.size(), f, "measure_edges_real");
-    return Reals(lengths);
+    return measure_edges_real_tmpl<sdim.value>(mesh, a2e);
   });
 }
 

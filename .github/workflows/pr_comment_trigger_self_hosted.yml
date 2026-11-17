@@ -183,6 +183,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
@@ -219,6 +220,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_Kokkos=on \
             -DOmega_h_CUDA_ARCH="80" \
@@ -249,6 +251,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
@@ -280,6 +283,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
@@ -312,6 +316,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Release \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \
             -DOmega_h_USE_SimDiscrete=on \
@@ -344,6 +349,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS='-Wall -Werror' \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=off \
             -DOmega_h_USE_Kokkos=on \
@@ -374,6 +380,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=$bdir/install \
             -DCMAKE_BUILD_TYPE=Debug \
             -DBUILD_TESTING=on  \
+            -DOmega_h_THROW=ON \
             -DOmega_h_USE_pybind11=on \
             -DOmega_h_USE_MPI=on  \
             -DOmega_h_USE_SimModSuite=on \

@@ -21,6 +21,19 @@ The CUDA build and all 51 registered tests passed on 2026-11-16, including
 2-rank and 4-rank MPI cases. See [validation.txt](validation.txt) for the
 source revision, configuration, commands, and result.
 
+The completed embedded-mesh implementation was also validated in `build-cuda`
+(with exceptions enabled), with a workspace install under `build-cuda/install`.
+Its full 62-test CUDA suite passes. To iterate on that validation build:
+
+```sh
+spack -e ./spack build-env omega-h -- cmake --build build-cuda -j 4
+spack -e ./spack build-env omega-h -- env LD_PRELOAD="$PWD/build-cuda/src/libomega_h.so" ctest --test-dir build-cuda --output-on-failure -j 1
+```
+
+Selecting the build's library explicitly avoids the installed root package's
+runtime search path taking precedence. The commands below describe the
+standard Spack-managed development build and installation.
+
 From the checkout root, review and concretize without building:
 
 ```sh

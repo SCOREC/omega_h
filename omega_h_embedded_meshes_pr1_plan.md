@@ -293,7 +293,7 @@ Implement Steps 1 to 5, then write and exercise Step 7 tests before the Step 6 p
 
 Later PRs, not this one: the audit of the gated coordinate reads (the L5 backlog) and the bare-`dim` ban; opt-in readers that create embedded meshes (gmsh, VTK) and boundary extraction into an embedded mesh; porting bounding boxes, Hilbert reordering, `classify_by_angles` and centroids; `MixedMesh`; downstream migrations (PUMI-Tally, and meshFields' `SetCoordFieldFunctor`, which strides coordinates by the mesh dimension). Adaptation on embedded meshes is expected to come from a separate adaptation library, not from Omega_h.
 
-## Defaults pending review
+## Reviewed defaults
 
 Use the defaults below, including the file-version and test-coverage decisions confirmed in review.
 
@@ -305,3 +305,16 @@ Use the defaults below, including the file-version and test-coverage decisions c
 | 1D in 2D: add an edge-in-2D case to T4? | Yes; also test a folded, nonplanar triangulation with known areas |
 | Python: expose a typed `coords_view()` too? | Expose `space_dim()` only |
 | GPU CI: is a CUDA or HIP runner available for C4? | Skip C4 if none; say so in the PR |
+
+
+## Implementation validation (2026-11-17)
+
+Steps 1–8 are implemented as separate commits on `embedded-meshes-pr1`;
+the final step includes lint/CI integration and the CUDA portability fixes. The working implementation passes C1
+(63 tests), C2 (49), actual Kokkos 4.4 Serial/MPI (62), and CUDA 4.7.04/MPI
+(62). Configure-time version/feature rejection checks pass. Full details,
+local coverage limits, and the rough GPU performance comparison are recorded
+in `spack/validation.txt`. The gated-read backlog is 66, listed by file in
+`tools/lint/tdim_only_backlog.txt`. Existing self-hosted GPU CI now enables
+THROW; no new runner or workflow is introduced. Merge remains subject to
+review.

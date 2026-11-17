@@ -29,8 +29,7 @@ Tests (run through spack -e ./spack build-env omega-h --):
 
 Build and tests ran outside the Codex sandbox for cache/store and GPU access.
 Python, Exodus, Gmsh, proprietary interfaces, and optional omega_h-data
-tests were not enabled. This establishes the current CUDA baseline;
-the plan's non-Kokkos C1/C2 baselines remain to be run before implementation.
+tests were not enabled. This establishes the original CUDA baseline.
 
 CPU baselines before implementation (same source revision):
   C1: Debug, MPI ON, Kokkos OFF, THROW ON: 51/51 passed (34.25s).
@@ -39,3 +38,71 @@ CPU baselines before implementation (same source revision):
   Test through Spack with LD_PRELOAD=<absolute build dir>/src/libomega_h.so
   to override the installed CUDA root's RPATH injected by Spack.
   Detailed baseline logs retained as baseline-LastTest.log in each build.
+
+Final embedded-mesh validation — 2026-11-17
+
+Configuration                              Passed / total     Seconds
+C1 Debug, MPI, no Kokkos, THROW ON             63 / 63          38.41
+C2 Release, serial, no Kokkos, THROW OFF       49 / 49           4.44
+C3 Release, MPI, Kokkos 4.4.0 Serial, THROW ON 62 / 62          18.95
+C4 RelWithDebInfo, MPI, Kokkos 4.7.04 CUDA,
+   sm_75, THROW ON                            62 / 62         168.13
+
+These totals include the registered coordinate API lint check. The new MPI
+checks require positive completion output because the site's MPI launcher
+was observed returning zero after an abnormal process exit.
+
+The geometry/MPI tests were exercised before porting: the geometry case
+failed at the coordinate gate, and both MPI cases failed at balancing.
+After porting they pass, including exact coordinate preservation by global
+vertex ID, ghosting, weighted balancing, serial-to-MPI osh reading, rotated
+1D-in-2D/3D and 2D-in-3D geometry, and folded-surface VTK Points decoding.
+
+Configure-time rejection checks:
+  - An isolated Kokkos package fixture reporting version 4.3.0 was rejected
+    by the required-version check. Actual Kokkos 4.3 was not built.
+  - A Kokkos 4.4 fixture with KOKKOS_ENABLE_IMPL_MDSPAN absent was rejected
+    with the feature-specific diagnostic.
+Actual Kokkos 4.4.00 was built with bundled mdspan and PIC enabled and used
+for the complete C3 suite above. The Spack environment remains on 4.7.04.
+
+Installed consumers compiled and ran against workspace installation prefixes
+for both serial/vendored-mdspan and CUDA/Kokkos-mdspan builds. Current CUDA
+build/install: build-cuda and build-cuda/install. Serial: build-c2/install.
+Detailed logs: build-<configuration>/final-ctest.log and
+Testing/Temporary/LastTest.log within the corresponding build directory.
+
+Rough GPU performance comparison (RTX 2060 SUPER):
+  Baseline source: 7647c8a52547a737f06de91d3f47952643ca5b64.
+  Same GCC 12.3, CUDA 12.1, Kokkos 4.7.04, sm_75, RelWithDebInfo.
+  Baseline THROW OFF; final validation build THROW ON.
+  One process; interleaved coordinate storage retained in both versions.
+  Coordinate kernel computes x*x+y*y+z*z; library operation calls
+  measure_elements_real. Times include launch/synchronization and, for the
+  measures operation, output allocation. Five warmups; median of seven
+  samples, each averaging 100 coordinate or 20 measure operations.
+
+  Mesh subdivisions      Vertices       Tetrahedra
+  32 x 32 x 32             35,937          196,608
+  64 x 64 x 64            274,625        1,572,864
+
+  Microseconds/op        Baseline       Final       Change (positive=slower)
+  Coordinates, n=32       8.88133        8.64873       -2.62%
+  Measures, n=32        248.10790      240.31365       -3.14%
+  Coordinates, n=64      28.96801       29.81679       +2.93%
+  Measures, n=64        688.66835      691.39075       +0.40%
+
+  Both versions produced total volume 1 and matching coordinate checksums.
+  This rough check found no large regression; it is not a full application
+  performance study. Benchmark source and raw results remain locally in
+  build-perf-source/bench.cpp and build-perf-source/results.txt. The loop
+  uses parallel_for's three-argument overload because its two-argument
+  forwarding overload moves the passed kernel.
+
+Remaining gated coordinate reads: 66. See tools/lint/tdim_only_backlog.txt.
+CI YAML parses; CPU matrix and existing self-hosted GPU workflow were updated.
+Hosted CI was not executed from this session. Local optional interfaces
+(Python, Gmsh, Exodus, ADIOS2, proprietary geometry) and external omega_h-data
+remain outside these local configurations. HIP and OpenMP were not tested.
+The now-unreachable Kokkos <4.1 CUDA-lambda and <4.3 sort guards are retained
+for later cleanup, as planned.

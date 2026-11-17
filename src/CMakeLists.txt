@@ -194,9 +194,10 @@ if(Omega_h_USE_Kokkos)
 endif()
 
 # Apply to this directory's library, tools, and tests, not to downstream targets.
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|IntelLLVM")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|IntelLLVM|NVIDIA")
   if(Kokkos_ENABLE_CUDA)
-    add_compile_options(-Xcompiler=-Werror=deprecated-declarations)
+    # nvcc_wrapper accepts the two-token spelling; nvcc also supports it.
+    add_compile_options("SHELL:-Xcompiler -Werror=deprecated-declarations")
   else()
     add_compile_options(-Werror=deprecated-declarations)
   endif()
@@ -357,6 +358,10 @@ osh_add_util(ascii_vtk2osh)
 set(ENABLE_CTEST_MEMPOOL OFF CACHE BOOL "Run tests with the Kokkos mempool enabled")
 
 if(BUILD_TESTING)
+  if(UNIX)
+    add_test(NAME coords_api_lint COMMAND sh ${PROJECT_SOURCE_DIR}/tools/lint/check_coords.sh)
+    set_tests_properties(coords_api_lint PROPERTIES LABELS lint)
+  endif()
   # Create test output directory in build tree to avoid polluting source tree
   set(TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/test_output)
   file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
