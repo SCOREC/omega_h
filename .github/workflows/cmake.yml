@@ -30,7 +30,7 @@ jobs:
              kokkos: on
              mempool: on
              mpi: off
-             kokkos_version: 4.3.00
+             kokkos_version: 4.4.00
            #run one config with g++ and C++20
            - compiler: g++
              kokkos: on

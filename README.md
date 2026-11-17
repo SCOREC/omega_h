@@ -57,6 +57,15 @@ Omega\_h provides at least the following:
 
 ## Configuration
 
+Kokkos builds require Kokkos 4.4 or newer with bundled mdspan enabled
+(`Kokkos_ENABLE_IMPL_MDSPAN` in Kokkos 4.x). Builds without Kokkos use
+an installed, vendored mdspan copy through `Omega_h_mdspan.hpp`; avoid
+including another mdspan distribution in the same translation unit because
+these distributions share internal include guards and namespaces.
+
+New osh outputs use format version 12. Existing older osh files remain
+readable; older Omega_h versions cannot read the new outputs.
+
 Below we document some key CMake configuration options:
 
 #### Omega\_h\_USE\_MPI

@@ -5,6 +5,7 @@
 #include "Omega_h_build.hpp"
 #include "Omega_h_compare.hpp"
 #include "Omega_h_file.hpp"
+#include "Omega_h_mdspan.hpp"
 
 using namespace Omega_h;
 
@@ -22,6 +23,10 @@ template <class F> static void rejects(F f) {
 
 int main(int argc, char** argv) {
   Library lib(&argc, &argv);
+  Real storage[6] = {};
+  mdspan<Real, extents<LO, 2, 3>> span(storage);
+  span(1, 2) = 7;
+  require(storage[5] == 7);
   for (Int dim = 1; dim <= 3; ++dim) {
     auto ordinary = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 1,
         2, dim >= 2 ? 2 : 0, dim == 3 ? 2 : 0);

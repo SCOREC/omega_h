@@ -205,6 +205,13 @@ endif()
 
 bob_library_includes(omega_h)
 
+if(NOT Omega_h_USE_Kokkos)
+  target_include_directories(omega_h PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tpl/mdspan>)
+  install(FILES ${PROJECT_SOURCE_DIR}/tpl/mdspan/mdspan/mdspan.hpp DESTINATION include/mdspan)
+  install(FILES ${PROJECT_SOURCE_DIR}/tpl/mdspan/LICENSE DESTINATION share/Omega_h/licenses/mdspan)
+endif()
+
+
 get_filename_component(TPL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../tpl" ABSOLUTE)
 target_include_directories(omega_h PRIVATE $<BUILD_INTERFACE:${TPL_PATH}>)
 
@@ -759,6 +766,7 @@ endif()
 
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h")
 set(Omega_h_HEADERS
+  Omega_h_mdspan.hpp
   "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h"
   Omega_h_adapt.hpp
   Omega_h_adj.hpp
