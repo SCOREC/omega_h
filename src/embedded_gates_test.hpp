@@ -120,6 +120,12 @@ static void check_embedded_gates(Mesh& mesh, Mesh& ordinary) {
   expect_embedded_gate([&] { find_bridge_edges(&mesh); }, "find_bridge_edges");
   expect_embedded_gate([&] { get_pad_dists(&mesh, Int{}, Read<I8>{}); }, "get_pad_dists");
   expect_embedded_gate([&] { get_pinched_angles(&mesh, Int{}); }, "get_pinched_angles");
+  expect_embedded_gate([&] { measure_edges_metric(&mesh, LOs{}, Reals{}); }, "measure_edges_metric");
+  expect_embedded_gate([&] { measure_edges_metric(&mesh, LOs{}); }, "measure_edges_metric");
+  expect_embedded_gate([&] { measure_edges_metric(&mesh, Reals{}); }, "measure_edges_metric");
+  expect_embedded_gate([&] { measure_edges_metric(&mesh); }, "measure_edges_metric");
+  expect_embedded_gate([&] { MetricElementQualities<2,2> q(&mesh); }, "default MetricElementQualities");
+  expect_embedded_gate([&] { MetricEdgeLengths<2,2> q(&mesh); }, "default MetricEdgeLengths");
   expect_embedded_gate([&] { mesh.ask_qualities(); }, "ask_qualities");
   expect_embedded_gate([&] { mesh.balance(true); }, "balance predictive");
   expect_embedded_gate([&] { classify_by_angles(&mesh, 0.5); }, "classify_by_angles");

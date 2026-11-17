@@ -430,13 +430,34 @@ if(BUILD_TESTING)
   osh_add_exe(reprosum_test)
   osh_add_exe(arrayops_test)
   osh_add_exe(sort_test)
+  if(Omega_h_USE_MPI)
+    osh_add_exe(embedded_mpi_test)
+    test_func(embedded_mpi_2 2 ./embedded_mpi_test 2)
+    test_func(embedded_mpi_4 4 ./embedded_mpi_test 4)
+    set_tests_properties(embedded_mpi_2 embedded_mpi_4 PROPERTIES
+      PASS_REGULAR_EXPRESSION "embedded MPI checks passed"
+      FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  endif()
   osh_add_exe(unit_embedded)
   test_func(run_unit_embedded 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh)
-  test_func(embedded_reject_static_extent 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_static)
-  set_tests_properties(embedded_reject_static_extent PROPERTIES WILL_FAIL TRUE)
+  test_func(embedded_geometry 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh geometry)
+  set_tests_properties(run_unit_embedded PROPERTIES
+    PASS_REGULAR_EXPRESSION "embedded unit checks passed"
+    FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  set_tests_properties(embedded_geometry PROPERTIES
+    PASS_REGULAR_EXPRESSION "embedded geometry checks passed"
+    FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  # Run negative checks as singleton processes: cmake -E env turns signals
+  # into nonzero exit codes, without relying on MPI launcher exit handling.
+  foreach(mode bad_static bad_dimension bad_length bad_space_dim bad_set_extent bad_tag_width)
+    add_test(NAME embedded_reject_${mode} COMMAND ${CMAKE_COMMAND} -E env
+      $<TARGET_FILE:unit_embedded> ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh ${mode})
+    set_tests_properties(embedded_reject_${mode} PROPERTIES WILL_FAIL TRUE LABELS mesh)
+  endforeach()
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    test_func(embedded_reject_index 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_index)
-    set_tests_properties(embedded_reject_index PROPERTIES WILL_FAIL TRUE)
+    add_test(NAME embedded_reject_index COMMAND ${CMAKE_COMMAND} -E env
+      $<TARGET_FILE:unit_embedded> ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_index)
+    set_tests_properties(embedded_reject_index PROPERTIES WILL_FAIL TRUE LABELS mesh)
   endif()
   osh_add_exe(unit_math)
 
