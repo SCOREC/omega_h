@@ -434,6 +434,12 @@ void Mesh::set_coords(Reals const& array) {
   set_tag<Real>(VERT, "coordinates", array);
 }
 
+void Mesh::set_coords(CoordsView<> const& coords) {
+  if (coords.extent(0) != nverts() || coords.extent(1) != space_dim())
+    Omega_h_fail("set_coords: coordinate extents do not match mesh\n");
+  set_tag<Real>(VERT, "coordinates", coords.raw());
+}
+
 Read<GO> Mesh::globals(Int ent_dim) const {
   return get_array<GO>(ent_dim, "global");
 }

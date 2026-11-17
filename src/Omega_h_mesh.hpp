@@ -3,6 +3,7 @@
 
 #include <Omega_h_adj.hpp>
 #include <Omega_h_comm.hpp>
+#include <Omega_h_coords_view.hpp>
 #include <Omega_h_dist.hpp>
 #include <Omega_h_library.hpp>
 #include <Omega_h_tag.hpp>
@@ -279,6 +280,15 @@ protected:
 
  public:
   void add_coords(Reals array);
+  template <std::size_t N = dynamic_extent>
+  CoordsView<N> coords_view() const {
+    auto array = get_array<Real>(VERT, "coordinates");
+    if (get_tagbase(VERT, "coordinates")->ncomps() != space_dim() ||
+        array.size() != nverts() * space_dim())
+      Omega_h_fail("coords_view: coordinates do not match nverts and space_dim (%d)\n", space_dim());
+    return CoordsView<N>(array, space_dim());
+  }
+  void set_coords(CoordsView<> const& coords);
   Reals coords() const;
   void set_coords(Reals const& array);
   Read<GO> globals(Int dim) const;

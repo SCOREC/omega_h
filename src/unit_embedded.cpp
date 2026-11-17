@@ -6,6 +6,7 @@
 #include "Omega_h_compare.hpp"
 #include "Omega_h_file.hpp"
 #include "Omega_h_mdspan.hpp"
+#include "Omega_h_for.hpp"
 
 using namespace Omega_h;
 
@@ -23,6 +24,15 @@ template <class F> static void rejects(F f) {
 
 int main(int argc, char** argv) {
   Library lib(&argc, &argv);
+  if (argc > 2 && std::string(argv[2]) == "bad_static") {
+    CoordsView<2> invalid(Reals({1, 2, 3}), 3);
+    return 0;
+  }
+  if (argc > 2 && std::string(argv[2]) == "bad_index") {
+    CoordsView<3> invalid(Reals({1, 2, 3}), 3);
+    (void)invalid(0, 3);
+    return 0;
+  }
   Real storage[6] = {};
   mdspan<Real, extents<LO, 2, 3>> span(storage);
   span(1, 2) = 7;
@@ -37,6 +47,28 @@ int main(int argc, char** argv) {
   build_from_elems_and_coords(&embedded, OMEGA_H_SIMPLEX, 2,
       LOs({0, 1, 2}), coords, 3);
   require(embedded.space_dim() == 3);
+  auto fixed = embedded.coords_view<3>();
+  CoordsView<> dynamic = fixed;
+  auto roundtrip = dynamic.as<3>();
+  require(dynamic.extent(0) == 3 && dynamic.extent(1) == 3);
+  Write<Real> output(coords.size());
+  auto check_indexing = OMEGA_H_LAMBDA(LO v) {
+    auto gathered = gather_vectors<1>(fixed, Few<LO, 1>{v});
+    for (Int d = 0; d < 3; ++d) {
+      output[v * 3 + d] = gathered[0][d];
+      OMEGA_H_CHECK(dynamic(v, d) == roundtrip(v, d));
+    }
+  };
+  parallel_for(embedded.nverts(), check_indexing);
+  require(Reals(output) == coords);
+  CoordsWriteView<3> writable(output, 3);
+  auto write_coords = OMEGA_H_LAMBDA(LO v) {
+    for (Int d = 0; d < 3; ++d) writable(v, d) = fixed(v, d);
+  };
+  parallel_for(embedded.nverts(), write_coords);
+  embedded.set_coords(CoordsView<>(writable));
+  require(embedded.coords_view().raw() == coords);
+
   auto copied = embedded.copy_meta();
   require(copied.space_dim() == 3);
   copied.set_space_dim(2);
@@ -50,6 +82,10 @@ int main(int argc, char** argv) {
   auto old = binary::read(argv[1], lib.self());
   require(old.space_dim() == old.dim());
 #ifdef OMEGA_H_THROW
+  rejects([&] { embedded.coords_view<2>(); });
+  rejects([&] { CoordsView<3> bad(Reals({1, 2, 3, 4}), 3); });
+  rejects([&] { embedded.set_coords(CoordsView<>(Reals({1, 2, 3}), 3)); });
+  rejects([&] { embedded.set_coords(CoordsView<>(Reals({1, 2, 3, 4, 5, 6}), 2)); });
   rejects([&] { embedded.set_space_dim(1); });
   rejects([&] { embedded.set_space_dim(4); });
   rejects([&] { embedded.set_space_dim(2); });

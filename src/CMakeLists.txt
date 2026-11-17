@@ -423,6 +423,12 @@ if(BUILD_TESTING)
   osh_add_exe(sort_test)
   osh_add_exe(unit_embedded)
   test_func(run_unit_embedded 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh)
+  test_func(embedded_reject_static_extent 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_static)
+  set_tests_properties(embedded_reject_static_extent PROPERTIES WILL_FAIL TRUE)
+  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    test_func(embedded_reject_index 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_index)
+    set_tests_properties(embedded_reject_index PROPERTIES WILL_FAIL TRUE)
+  endif()
   osh_add_exe(unit_math)
 
   osh_add_exe(test_patches)
@@ -767,6 +773,7 @@ endif()
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h")
 set(Omega_h_HEADERS
   Omega_h_mdspan.hpp
+  Omega_h_coords_view.hpp
   "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h"
   Omega_h_adapt.hpp
   Omega_h_adj.hpp
