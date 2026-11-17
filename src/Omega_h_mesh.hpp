@@ -289,7 +289,9 @@ protected:
     return CoordsView<N>(array, space_dim());
   }
   void set_coords(CoordsView<> const& coords);
+  OMEGA_H_DEPRECATED("use coords_view(); raw coordinates require dim == space_dim")
   Reals coords() const;
+  OMEGA_H_DEPRECATED("use set_coords(CoordsView)")
   void set_coords(Reals const& array);
   Read<GO> globals(Int dim) const;
   Reals ask_lengths();

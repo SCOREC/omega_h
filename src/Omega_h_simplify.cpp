@@ -232,7 +232,7 @@ LOs tets_from_hexes(LOs hv2v) {
 void tris_from_quads_symmetric(Mesh* mesh) {
   auto nold_verts = mesh->nverts();
   auto nquads = mesh->nfaces();
-  auto old_coords = mesh->coords();
+  auto old_coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto quad_center_coords = average_field(mesh, 2, 2, old_coords);
   auto nverts = nold_verts + nquads;
   auto coords = Write<Real>(nverts * 2);
@@ -264,7 +264,7 @@ void tets_from_hexes_symmetric(Mesh* mesh) {
   auto nold_verts = mesh->nverts();
   auto nquads = mesh->nfaces();
   auto nhexes = mesh->nregions();
-  auto old_coords = mesh->coords();
+  auto old_coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto quad_center_coords = average_field(mesh, 2, 3, old_coords);
   auto hex_center_coords = average_field(mesh, 3, 3, old_coords);
   auto nverts = nold_verts + nquads + nhexes;

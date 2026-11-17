@@ -75,5 +75,15 @@ OMEGA_H_INLINE Matrix<static_cast<Int>(N), n> gather_vectors(
   return result;
 }
 
+class Mesh;
+namespace detail {
+void gate_embedded(Mesh const& mesh, char const* caller);
+Reals coords_tdim_only(Mesh const& mesh, char const* caller);
+void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller);
+}
+
 }  // namespace Omega_h
+
+#define OMEGA_H_COORDS_TDIM_ONLY(mesh) ::Omega_h::detail::coords_tdim_only(mesh, __func__)
+#define OMEGA_H_GATE_EMBEDDED(mesh) ::Omega_h::detail::gate_embedded(*(mesh), __func__)
 #endif

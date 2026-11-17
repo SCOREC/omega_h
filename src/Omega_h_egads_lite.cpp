@@ -368,7 +368,7 @@ Reals egads_lite_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
   auto t0 = now();
   auto class_dims = mesh->get_array<I8>(VERT, "class_dim");
   auto class_ids = mesh->get_array<ClassId>(VERT, "class_id");
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto closePts = Write<Real>(mesh->nverts() * 3);
   auto warp = Write<Real>(mesh->nverts() * 3);
   GOs egEnts_d{egoPtrToGo(eg->entities_d[0]),

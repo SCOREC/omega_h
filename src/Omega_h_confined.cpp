@@ -33,7 +33,7 @@ Bytes find_bridge_edges(Mesh* mesh) {
 
 template <Int dim>
 Reals get_edge_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto edges2verts = mesh->ask_verts_of(EDGE);
   auto out = Write<Real>(mesh->nedges(), -1.0);
   auto f = OMEGA_H_LAMBDA(LO edge) {
@@ -49,7 +49,7 @@ Reals get_edge_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 
 template <Int dim>
 Reals get_tri_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto tris2verts = mesh->ask_verts_of(FACE);
   auto tris2edges = mesh->ask_down(FACE, EDGE).ab2b;
   auto out = Write<Real>(mesh->nfaces(), -1.0);
@@ -79,7 +79,7 @@ Reals get_tri_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 }
 
 Reals get_tet_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto tets2verts = mesh->ask_verts_of(REGION);
   auto tets2edges = mesh->ask_down(REGION, EDGE).ab2b;
   auto out = Write<Real>(mesh->nregions(), -1.0);
@@ -187,7 +187,7 @@ Reals get_pinched_tri_angles_dim(Mesh* mesh) {
   auto edges2class_dim = mesh->get_array<I8>(EDGE, "class_dim");
   auto tris2edges = mesh->ask_down(FACE, EDGE).ab2b;
   auto tris2verts = mesh->ask_down(FACE, VERT).ab2b;
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto tri_angles_w = Write<Real>(mesh->nfaces());
   auto f = OMEGA_H_LAMBDA(LO tri) {
     auto ttv2v = gather_down<3>(tris2verts, tri);
@@ -220,7 +220,7 @@ Reals get_pinched_tet_angles(Mesh* mesh) {
   auto tets2edges = mesh->ask_down(REGION, EDGE).ab2b;
   auto tets2tris = mesh->ask_down(REGION, FACE).ab2b;
   auto edges2verts = mesh->ask_down(EDGE, VERT).ab2b;
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto tet_angles_w = Write<Real>(mesh->nregions());
   auto f = OMEGA_H_LAMBDA(LO tet) {
     auto kke2e = gather_down<6>(tets2edges, tet);

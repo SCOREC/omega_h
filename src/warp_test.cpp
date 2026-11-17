@@ -13,7 +13,7 @@ using namespace Omega_h;
 
 void add_dye(Mesh* mesh) {
   auto dye_w = Write<Real>(mesh->nverts());
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view().raw();
   auto dye_fun = OMEGA_H_LAMBDA(LO vert) {
     auto x = get_vector<3>(coords, vert);
     auto left_cen = vector_3(.25, .5, .5);
@@ -35,7 +35,7 @@ void add_dye(Mesh* mesh) {
 Reals form_pointwise(Mesh* mesh) {
   auto dim = mesh->dim();
   auto ecoords =
-      average_field(mesh, dim, LOs(mesh->nelems(), 0, 1), dim, mesh->coords());
+      average_field(mesh, dim, LOs(mesh->nelems(), 0, 1), dim, mesh->coords_view().raw());
   auto pw_w = Write<Real>(mesh->nelems());
   auto pw_fun = OMEGA_H_LAMBDA(LO elem) { pw_w[elem] = ecoords[elem * dim]; };
   parallel_for(mesh->nelems(), pw_fun);
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   mid[0] = mid[1] = .5;
   Now t0 = now();
   for (Int i = 0; i < 8; ++i) {
-    auto coords = mesh.coords();
+    auto coords = mesh.coords_view().raw();
     Write<Real> warp_w(mesh.nverts() * dim);
     auto warp_fun = OMEGA_H_LAMBDA(LO vert) {
       auto x0 = get_vector<3>(coords, vert);

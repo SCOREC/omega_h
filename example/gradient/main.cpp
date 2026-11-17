@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   const auto world = lib.world();
   auto mesh = Omega_h::gmsh::read("square.msh", world);
   const auto tris2verts = mesh.ask_elem_verts();
-  const auto coords = mesh.coords();
+  const auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
 
   // synchronized parallel print of the number of vertices on each proc
   const auto rank = mesh.comm()->rank();

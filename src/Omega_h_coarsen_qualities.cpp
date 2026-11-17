@@ -25,7 +25,7 @@ Reals coarsen_qualities_tmpl(
   auto vc_codes = v2c.codes;
   auto ncands = cands2edges.size();
   auto qualities = Write<Real>(ncands * 2, -1.0);
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto is_bad_w = Write<Byte>(mesh->nelems(), Byte(0));
   auto f = OMEGA_H_LAMBDA(LO cand) {
     auto e = cands2edges[cand];

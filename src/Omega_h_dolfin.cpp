@@ -95,7 +95,7 @@ void to_dolfin(dolfin::Mesh& mesh_dolfin, Mesh* mesh_osh) {
   editor.init_vertices_global(nverts, nverts_global);
   auto d_vert_globals = mesh_osh->globals(VERT);
   auto h_vert_globals = HostRead<GO>(d_vert_globals);
-  auto d_coords = mesh_osh->coords();
+  auto d_coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh_osh);
   auto h_coords = HostRead<Real>(d_coords);
   for (LO i_osh = 0; i_osh < nverts; ++i_osh) {
     editor.add_vertex_global(i_osh, h_vert_globals[i_osh],

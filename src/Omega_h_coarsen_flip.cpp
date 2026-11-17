@@ -20,7 +20,7 @@ Reals compute_flip_normals_dim(Mesh* mesh, Bytes sides_are_exposed,
   auto v2s = mesh->ask_up(VERT, side_dim);
   auto sv2v = mesh->ask_verts_of(side_dim);
   auto verts_that_matter = collect_marked(verts_matter);
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto out = Write<Real>(mesh->nverts() * dim, 0.0);
   auto const threshold_copy = simple_algorithm_threshold;
   auto sides_are_exposed_copy = sides_are_exposed;
@@ -76,7 +76,7 @@ Bytes prevent_coarsen_flip2_dim(Mesh* mesh,
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto sv2v = mesh->ask_verts_of(side_dim);
   auto v2s = mesh->ask_up(VERT, side_dim);
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto ncands = cands2edges.size();
   auto out = Write<Byte>(ncands);
   auto f = OMEGA_H_LAMBDA(LO cand) {

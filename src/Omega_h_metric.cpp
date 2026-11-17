@@ -156,7 +156,7 @@ template <Int mesh_dim, Int metric_dim>
 Reals limit_gradation_once_tmpl(
     Mesh* mesh, Reals values, Real max_rate) {
   auto v2v = mesh->ask_star(VERT);
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(metric_dim));
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto m = get_symm<metric_dim>(values, v);
@@ -259,7 +259,7 @@ Reals smooth_metric_once(Mesh* mesh, Reals v2m, bool has_degen) {
 template <Int dim>
 Reals element_implied_length_metrics_dim(Mesh* mesh) {
   auto ev2v = mesh->ask_elem_verts();
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto sizes = mesh->ask_sizes();
   auto out = Write<Real>(mesh->nelems() * symm_ncomps(dim));
   auto f = OMEGA_H_LAMBDA(LO e) {
@@ -464,7 +464,7 @@ Reals get_curvature_metrics(Mesh* mesh, Real segment_angle) {
 template <Int mesh_dim, Int metric_dim>
 Reals get_complexity_per_elem_tmpl(Mesh* mesh, Reals v2m) {
   auto const elems2verts = mesh->ask_elem_verts();
-  auto const coords = mesh->coords();
+  auto const coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto const out_w = Write<Real>(mesh->nelems());
   auto const elem_metrics = get_mident_metrics(mesh, mesh->dim(), v2m);
   auto f = OMEGA_H_LAMBDA(LO const e) {

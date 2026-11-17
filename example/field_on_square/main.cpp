@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   // create a distributed mesh object, calls mesh.balance() and then returns it
   auto mesh = Omega_h::gmsh::read("square.msh", world);
   // return type Omega_h::Reals derived from Omega_h::Read<Omega_h::Real>
-  const auto coords = mesh.coords();
+  const auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
   // array of type Omega_h::Write must be used when modified as below
   const Omega_h::Write<Omega_h::Real> u_w(mesh.nverts());
   // Omega_h::LO is a 32 bits int for local indexes on each proc

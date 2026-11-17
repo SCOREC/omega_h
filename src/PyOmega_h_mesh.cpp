@@ -58,6 +58,8 @@ void pybind11_mesh(py::module& m) {
 
     .def("nedges", &Omega_h::Mesh::nedges, "Get number of edges")
 
+    .def("space_dim", &Omega_h::Mesh::space_dim, "Get coordinate dimension")
+
     .def("nfaces", &Omega_h::Mesh::nfaces, "Get number of faces")
 
     .def("nregions", &Omega_h::Mesh::nregions, "Get number of regions")
@@ -73,7 +75,7 @@ void pybind11_mesh(py::module& m) {
     .def(
       "coords",
       [](const Omega_h::Mesh& mesh) {
-        auto coords = mesh.coords();
+        auto coords = mesh.coords_view().raw();
         return omega_h_read_to_numpy(coords);
       },
       "Get mesh coordinates as numpy array")
@@ -82,7 +84,7 @@ void pybind11_mesh(py::module& m) {
       "set_coords",
       [](Omega_h::Mesh& mesh, py::array_t<Omega_h::Real> coords) {
         auto coords_write = numpy_to_omega_h_write<Omega_h::Real>(coords);
-        mesh.set_coords(Omega_h::Reals(coords_write));
+        mesh.set_coords(Omega_h::CoordsView<>(Omega_h::Reals(coords_write), mesh.space_dim()));
       },
       py::arg("coords"), "Set mesh coordinates from numpy array")
 

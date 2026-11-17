@@ -832,7 +832,7 @@ void write(
       nelem_blocks, nnode_sets, nside_sets));
   Few<Write<Real>, 3> coord_blk;
   for (Int i = 0; i < dim; ++i) coord_blk[i] = Write<Real>(mesh->nverts());
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto f0 = OMEGA_H_LAMBDA(LO i) {
     for (Int j = 0; j < dim; ++j) coord_blk[j][i] = coords[i * dim + j];
   };

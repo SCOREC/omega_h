@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   auto mesh = build_box(world, OMEGA_H_SIMPLEX, orig_width, orig_width,
       orig_height, orig_width * orig_resolution, orig_width * orig_resolution,
       orig_height * orig_resolution);
-  mesh.add_tag(VERT, "orig_coords", mesh.dim(), mesh.coords());
+  mesh.add_tag(VERT, "orig_coords", mesh.dim(), mesh.coords_view().raw());
   mesh.add_tag<Real>(VERT, "metric", 1);
   vtk::Writer writer("bend", &mesh, mesh.dim());
   auto first_bend_radius = 5.0;
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     auto full_angle = orig_height / bend_radius;
     mesh.set_parting(OMEGA_H_GHOSTED);
     auto orig_coords = mesh.get_array<Real>(VERT, "orig_coords");
-    auto coords = mesh.coords();
+    auto coords = mesh.coords_view().raw();
     auto warp_w = Write<Real>(mesh.nverts() * dim);
     auto f = OMEGA_H_LAMBDA(LO v) {
       auto op = get_vector<dim>(orig_coords, v);

@@ -13,7 +13,7 @@ using namespace Omega_h;
 
 template <Int dim>
 void set_target_metric(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view().raw();
   auto target_metrics_w = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto z = coords[v * dim + (dim - 1)];

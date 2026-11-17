@@ -136,7 +136,7 @@ OMEGA_H_DEVICE Real metric_edge_length(
 template <Int space_dim>
 struct RealEdgeLengths {
   Reals coords;
-  RealEdgeLengths(Mesh const* mesh) : coords(mesh->coords()) {}
+  RealEdgeLengths(Mesh const* mesh) : coords(OMEGA_H_COORDS_TDIM_ONLY(*mesh)) {}
   OMEGA_H_DEVICE Real measure(Few<LO, 2> v) const {
     auto p = gather_vectors<2, space_dim>(coords, v);
     return norm(p[1] - p[0]);
@@ -148,7 +148,7 @@ struct MetricEdgeLengths {
   Reals coords;
   Reals metrics;
   MetricEdgeLengths(Mesh const* mesh, Reals metrics_in)
-      : coords(mesh->coords()), metrics(metrics_in) {}
+      : coords(OMEGA_H_COORDS_TDIM_ONLY(*mesh)), metrics(metrics_in) {}
   MetricEdgeLengths(Mesh const* mesh)
       : MetricEdgeLengths(mesh, mesh->get_array<Real>(VERT, "metric")) {}
   OMEGA_H_DEVICE Real measure(Few<LO, 2> v) const {

@@ -11,7 +11,7 @@
 bool is_ccw_oriented(Omega_h::Mesh& mesh) {
   OMEGA_H_CHECK_PRINTF(mesh.dim() == 2, "ERROR: Mesh is not 2D. Found Dim = %d\n", mesh.dim());
   const auto& face2nodes = mesh.ask_down(Omega_h::FACE, Omega_h::VERT).ab2b;
-  const auto& coords = mesh.coords();
+  const auto& coords = mesh.coords_view().raw();
 
   Omega_h::LO ccw;
   Kokkos::Sum<Omega_h::LO> sum_reducer(ccw);

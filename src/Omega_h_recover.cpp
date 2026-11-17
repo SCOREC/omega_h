@@ -33,7 +33,7 @@ Reals get_interior_coeffs_dim(Mesh* mesh, Reals e_data, Int ncomps) {
   auto v2ve = v2e.a2ab;
   auto ve2e = v2e.ab2b;
   auto ev2v = mesh->ask_elem_verts();
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto owned = mesh->owned(VERT);
   auto class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto out = Write<Real>(mesh->nverts() * ncomps * (dim + 1));
@@ -99,7 +99,7 @@ void diffuse_to_exterior(
 
 template <Int dim>
 Reals evaluate_coeffs_dim(Mesh* mesh, Reals v_coeffs, Int ncomps) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto out = Write<Real>(mesh->nverts() * ncomps);
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto x = get_vector<dim>(coords, v);
@@ -172,7 +172,7 @@ OMEGA_H_INLINE Matrix<dim, dim> get_simplex_jacobian(
 
 template <Int dim>
 Reals derive_element_gradients_dim(Mesh* mesh, Reals vert_values) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto ev2v = mesh->ask_elem_verts();
   auto out = Write<Real>(mesh->nelems() * dim);
   auto f = OMEGA_H_LAMBDA(LO e) {
@@ -192,7 +192,7 @@ Reals derive_element_gradients_dim(Mesh* mesh, Reals vert_values) {
 
 template <Int dim>
 Reals derive_element_hessians_dim(Mesh* mesh, Reals vert_gradients) {
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto ev2v = mesh->ask_elem_verts();
   auto out = Write<Real>(mesh->nelems() * symm_ncomps(dim));
   auto f = OMEGA_H_LAMBDA(LO e) {

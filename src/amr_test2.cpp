@@ -23,7 +23,7 @@ OMEGA_H_INLINE double eval_rc<3>(Omega_h::Vector<3> c) {
 
 template <int dim>
 Omega_h::Bytes mark(Omega_h::Mesh* m, int level) {
-  auto coords = m->coords();
+  auto coords = m->coords_view().raw();
   auto mids = Omega_h::average_field(m, dim, dim, coords);
   auto is_leaf = m->ask_leaves(dim);
   auto leaf_elems = Omega_h::collect_marked(is_leaf);

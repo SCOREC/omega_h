@@ -400,9 +400,9 @@ void transfer_by_intersection_dim(Mesh* old_mesh, Mesh* new_mesh,
   auto old_tag = as<Real>(tagbase);
   auto old_data = old_tag->array();
   auto old_ev2v = old_mesh->ask_elem_verts();
-  auto old_coords = old_mesh->coords();
+  auto old_coords = OMEGA_H_COORDS_TDIM_ONLY(*old_mesh);
   auto new_ev2v = new_mesh->ask_elem_verts();
-  auto new_coords = new_mesh->coords();
+  auto new_coords = OMEGA_H_COORDS_TDIM_ONLY(*new_mesh);
   auto nkeys = cavs.size();
   auto f = OMEGA_H_LAMBDA(LO key) {
     for (auto kne = keys2new_elems.a2ab[key];

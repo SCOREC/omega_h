@@ -103,7 +103,7 @@ template BBox<3> find_bounding_box<3>(Reals coords);
 
 template <Int dim>
 BBox<dim> get_bounding_box(Mesh* mesh) {
-  auto bb = find_bounding_box<dim>(mesh->coords());
+  auto bb = find_bounding_box<dim>(OMEGA_H_COORDS_TDIM_ONLY(*mesh));
   for (Int i = 0; i < dim; ++i) {
     bb.min[i] = mesh->comm()->allreduce(bb.min[i], OMEGA_H_MIN);
     bb.max[i] = mesh->comm()->allreduce(bb.max[i], OMEGA_H_MAX);

@@ -128,7 +128,7 @@ static void write_meshb_version(Mesh* mesh, GmfFile file, int dim) {
   using GmfReal = typename VersionTypes<version>::RealOut;
   auto nverts = mesh->nverts();
   GmfSetKwd(file, GmfVertices, GmfLine(nverts));
-  auto coords = HostRead<Real>(mesh->coords());
+  auto coords = HostRead<Real>(OMEGA_H_COORDS_TDIM_ONLY(*mesh));
   LOs vert_refs;
   if (mesh->has_tag(VERT, "class_id")) {
     vert_refs = mesh->get_array<ClassId>(VERT, "class_id");

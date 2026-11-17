@@ -81,7 +81,7 @@ Reals measure_ents_real(Mesh* mesh, Int ent_dim, LOs a2e, Reals coords) {
 }
 
 Reals measure_elements_real(Mesh* mesh, LOs a2e) {
-  return measure_ents_real(mesh, mesh->dim(), a2e, mesh->coords());
+  return measure_ents_real(mesh, mesh->dim(), a2e, OMEGA_H_COORDS_TDIM_ONLY(*mesh));
 }
 
 Reals measure_elements_real(Mesh* mesh) {
@@ -89,7 +89,7 @@ Reals measure_elements_real(Mesh* mesh) {
 }
 
 Reals measure_edges_real(Mesh* mesh, LOs a2e) {
-  return measure_ents_real(mesh, EDGE, a2e, mesh->coords());
+  return measure_ents_real(mesh, EDGE, a2e, OMEGA_H_COORDS_TDIM_ONLY(*mesh));
 }
 
 Reals measure_edges_real(Mesh* mesh) {

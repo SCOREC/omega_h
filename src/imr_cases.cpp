@@ -61,7 +61,7 @@ struct RotateBall : public Case {
     return static_motion(m, ov2v);
   }
   static Reals static_motion(Mesh* m, LOs ov2v) {
-    auto coords = m->coords();
+    auto coords = OMEGA_H_COORDS_TDIM_ONLY(*m);
     auto out = Write<Real>(ov2v.size() * 3);
     auto rot = rotate(PI / 16, vector_3(0, 0, 1));
     auto f = OMEGA_H_LAMBDA(LO ov) {
@@ -164,7 +164,7 @@ struct TwinRotor : public Case {
     return static_motion(m, ov2v, center, dir);
   }
   static Reals static_motion(Mesh* m, LOs ov2v, Vector<3> center, Real dir) {
-    auto coords = m->coords();
+    auto coords = OMEGA_H_COORDS_TDIM_ONLY(*m);
     auto out = Write<Real>(ov2v.size() * 3);
     auto rm = rotate(dir * PI / 32, vector_3(0, 0, 1));
     auto f = OMEGA_H_LAMBDA(LO ov) {

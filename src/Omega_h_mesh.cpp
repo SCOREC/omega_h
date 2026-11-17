@@ -426,9 +426,29 @@ void Mesh::add_coords(Reals array) {
   add_tag<Real>(0, "coordinates", space_dim(), array);
 }
 
-Reals Mesh::coords() const { return get_array<Real>(0, "coordinates"); }
+namespace detail {
+void gate_embedded(Mesh const& mesh, char const* caller) {
+  if (mesh.space_dim() != mesh.dim())
+    Omega_h_fail("%s: meshes with space_dim (%d) != dim (%d) are not supported\n",
+        caller, mesh.space_dim(), mesh.dim());
+}
+Reals coords_tdim_only(Mesh const& mesh, char const* caller) {
+  gate_embedded(mesh, caller);
+  return mesh.coords_view().raw();
+}
+void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller) {
+  gate_embedded(mesh, caller);
+  mesh.set_coords(CoordsView<>(coords, mesh.space_dim()));
+}
+}
+
+Reals Mesh::coords() const {
+  detail::gate_embedded(*this, __func__);
+  return get_array<Real>(VERT, "coordinates");
+}
 
 void Mesh::set_coords(Reals const& array) {
+  detail::gate_embedded(*this, __func__);
   if (array.size() != nverts() * space_dim())
     Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
   set_tag<Real>(VERT, "coordinates", array);
@@ -640,7 +660,7 @@ void Mesh::balance(bool predictive) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), coords());
+      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), OMEGA_H_COORDS_TDIM_ONLY(*this));
   if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
   Reals masses;
   Real abs_tol;
@@ -718,7 +738,7 @@ void Mesh::balance(Reals weights) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), coords());
+      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), OMEGA_H_COORDS_TDIM_ONLY(*this));
   if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
   Real abs_tol;
   abs_tol = max2(0.0, get_max(comm_, weights));

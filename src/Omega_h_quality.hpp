@@ -40,7 +40,7 @@ struct MetricElementQualities {
   Reals coords;
   Reals metrics;
   MetricElementQualities(Mesh const* mesh, Reals metrics_in)
-      : coords(mesh->coords()), metrics(metrics_in) {}
+      : coords(OMEGA_H_COORDS_TDIM_ONLY(*mesh)), metrics(metrics_in) {}
   MetricElementQualities(Mesh const* mesh)
       : MetricElementQualities(mesh, mesh->get_array<Real>(VERT, "metric")) {}
   OMEGA_H_DEVICE Real measure(Few<LO, space_dim + 1> v) const {

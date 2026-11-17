@@ -28,7 +28,7 @@ int main(int argc, char** argv) {
   // very important to call partitioning with ghost layer first 
   mesh.set_parting(OMEGA_H_GHOSTED);
   const auto tris2verts = mesh.ask_elem_verts();
-  const auto coords = mesh.coords();
+  const auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
   const auto area = measure_elements_real(&mesh);
 
   // computing global and local information on number and area of triangles

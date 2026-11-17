@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
   mesh.set_parting(OMEGA_H_ELEM_BASED);
   mesh.add_tag(mesh.dim(), "density", 1, Reals(mesh.nelems(), 1.0));
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
-  auto coords = mesh.coords();
+  auto coords = mesh.coords_view().raw();
   auto f = OMEGA_H_LAMBDA(LO vert) {
     auto x = get_vector<3>(coords, vert);
     set_vector(velocity, vert, vector_3(0, 0, 1) * std::sqrt(std::abs(x[2])));

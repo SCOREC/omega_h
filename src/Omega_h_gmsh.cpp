@@ -753,7 +753,7 @@ void write(std::ostream& stream, Mesh* mesh) {
   auto nverts = mesh->nverts();
   stream << nverts << '\n';
   auto dim = mesh->dim();
-  auto d_coords = mesh->coords();
+  auto d_coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto h_coords = HostRead<Real>(d_coords);
   stream << std::scientific << std::setprecision(17);
   for (LO i = 0; i < nverts; ++i) {
@@ -814,7 +814,7 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh) {
   const auto nnodes = mesh.nverts();
   const auto globals_v = mesh.globals(VERT);
   const auto h_globals_v = HostRead<GO>(globals_v);
-  const auto coords = mesh.coords();
+  const auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
   const auto h_coords = HostRead<Real>(coords);
   const auto gmsh_dims = 3;
 

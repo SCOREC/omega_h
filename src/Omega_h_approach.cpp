@@ -37,9 +37,9 @@ bool warp_to_limit(
     Mesh* mesh, AdaptOpts const& opts, bool exit_on_stall, Int max_niters) {
   if (!mesh->has_tag(VERT, "warp")) return false;
   check_okay(mesh, opts);
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto warp = mesh->get_array<Real>(VERT, "warp");
-  mesh->set_coords(add_each(coords, warp));
+  ::Omega_h::detail::set_coords_tdim_only(*mesh, add_each(coords, warp), __func__);
   if (okay(mesh, opts)) {
     if (opts.verbosity >= EACH_REBUILD && can_print(mesh)) {
       std::cout << "warp_to_limit completed in one step\n";
@@ -73,7 +73,7 @@ bool warp_to_limit(
     factor /= 2.0;
     warp = half_warp;
     remainder = add_each(remainder, half_warp);
-    mesh->set_coords(add_each(coords, warp));
+    ::Omega_h::detail::set_coords_tdim_only(*mesh, add_each(coords, warp), __func__);
   } while (!okay(mesh, opts));
   if (opts.verbosity >= EACH_REBUILD && can_print(mesh)) {
     std::cout << "warp_to_limit moved by factor " << factor << '\n';

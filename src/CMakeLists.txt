@@ -193,6 +193,15 @@ if(Omega_h_USE_Kokkos)
   list(APPEND Omega_h_SOURCES Omega_h_pool_kokkos.cpp)
 endif()
 
+# Apply to this directory's library, tools, and tests, not to downstream targets.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|IntelLLVM")
+  if(Kokkos_ENABLE_CUDA)
+    add_compile_options(-Xcompiler=-Werror=deprecated-declarations)
+  else()
+    add_compile_options(-Werror=deprecated-declarations)
+  endif()
+endif()
+
 add_library(omega_h ${Omega_h_SOURCES})
 add_library(Omega_h::omega_h ALIAS omega_h)
 

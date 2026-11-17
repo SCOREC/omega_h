@@ -22,6 +22,19 @@ template <class F> static void rejects(F f) {
 }
 #endif
 
+OMEGA_H_ALLOW_DEPRECATED_BEGIN
+static void check_deprecated(Mesh& ordinary, Mesh& embedded) {
+  require(ordinary.coords() == ordinary.coords_view().raw());
+  ordinary.set_coords(ordinary.coords_view().raw());
+#ifdef OMEGA_H_THROW
+  rejects([&] { (void)embedded.coords(); });
+  rejects([&] { embedded.set_coords(embedded.coords_view().raw()); });
+#else
+  (void)embedded;
+#endif
+}
+OMEGA_H_ALLOW_DEPRECATED_END
+
 int main(int argc, char** argv) {
   Library lib(&argc, &argv);
   if (argc > 2 && std::string(argv[2]) == "bad_static") {
@@ -47,6 +60,8 @@ int main(int argc, char** argv) {
   build_from_elems_and_coords(&embedded, OMEGA_H_SIMPLEX, 2,
       LOs({0, 1, 2}), coords, 3);
   require(embedded.space_dim() == 3);
+  auto ordinary = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 0, 2, 2, 0);
+  check_deprecated(ordinary, embedded);
   auto fixed = embedded.coords_view<3>();
   CoordsView<> dynamic = fixed;
   auto roundtrip = dynamic.as<3>();
@@ -78,7 +93,7 @@ int main(int argc, char** argv) {
   Mesh loaded(&lib);
   loaded.set_comm(lib.self());
   binary::read(stream, &loaded, binary::latest_version);
-  require(loaded.space_dim() == 3 && loaded.coords() == coords);
+  require(loaded.space_dim() == 3 && loaded.coords_view().raw() == coords);
   auto old = binary::read(argv[1], lib.self());
   require(old.space_dim() == old.dim());
 #ifdef OMEGA_H_THROW

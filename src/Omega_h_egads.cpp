@@ -220,7 +220,7 @@ Reals egads_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
   auto t0 = now();
   auto class_dims = mesh->get_array<I8>(VERT, "class_dim");
   auto class_ids = mesh->get_array<ClassId>(VERT, "class_id");
-  auto coords = mesh->coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
   auto host_class_dims = HostRead<I8>(class_dims);
   auto host_class_ids = HostRead<LO>(class_ids);
   auto host_coords = HostRead<Real>(coords);

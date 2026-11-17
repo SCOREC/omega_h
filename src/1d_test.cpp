@@ -21,7 +21,7 @@ Reals logistic_function(Reals x, Real x0, Real L, Real k) {
 }
 
 static void add_solution(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view().raw();
   auto sol = logistic_function(coords, 0.5, 1.0, 20.0);
   mesh->add_tag(VERT, "solution", 1, sol);
 }

@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 
   auto dim = mesh.dim();
   auto nverts = mesh.nverts();
-  auto coords = mesh.coords();
+  auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
   Omega_h::Write<Omega_h::Real> scaled_coords(coords.size());
   OMEGA_H_CHECK(coords.size() == dim * nverts);
 
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
       });
   Omega_h::fence();
 
-  mesh.set_coords(scaled_coords);
+  ::Omega_h::detail::set_coords_tdim_only(mesh, scaled_coords, __func__);
   Omega_h::fence();
   Omega_h::binary::write(mesh_out, &mesh);
 
