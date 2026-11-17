@@ -1,3 +1,4 @@
+#include "coords_test.hpp"
 #include "Omega_h_align.hpp"
 #include "Omega_h_array_ops.hpp"
 #include "Omega_h_bbox.hpp"
@@ -478,7 +479,7 @@ void test_recover_hessians_dim(Library* lib) {
   auto mesh = build_box(
       lib->world(), OMEGA_H_SIMPLEX, 1., 1., one_if_3d, 4, 4, 4 * one_if_3d);
   auto u_w = Write<Real>(mesh.nverts());
-  auto coords = mesh.coords_view().raw();
+  auto coords = mesh.coords_view<dim>();
   // attach a field = x^2 + y^2 (+ z^2)
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto x = get_vector<dim>(coords, v);
@@ -758,12 +759,11 @@ void test_copy_constructor(Library* lib)
   fprintf(stderr, "after build_box mesh_a at %p\n", &mesh_a);
   auto mesh_b = mesh_a;
   fprintf(stderr, "mesh_b = mesh_a, mesh_b at %p\n", &mesh_b);
-  OMEGA_H_CHECK(mesh_a.coords_view().raw() == mesh_b.coords_view().raw());
-  Write<Real> two_coords_w(mesh_a.coords_view().raw().size());
-  Omega_h::parallel_for(two_coords_w.size(), OMEGA_H_LAMBDA(LO i){ two_coords_w[i]=2.0; });
+  OMEGA_H_CHECK(test::coords_equal(mesh_a.coords_view<3>(), mesh_b.coords_view<3>()));
+  Write<Real> two_coords_w(mesh_a.nverts() * 3, 2.0);
   Read<Real> two_coords(two_coords_w);
   mesh_b.set_coords(Omega_h::CoordsView<>(two_coords, mesh_b.space_dim()));
-  OMEGA_H_CHECK(!(mesh_a.coords_view().raw() == mesh_b.coords_view().raw()));
+  OMEGA_H_CHECK(!(test::coords_equal(mesh_a.coords_view<3>(), mesh_b.coords_view<3>())));
 }
 
 int main(int argc, char** argv) {

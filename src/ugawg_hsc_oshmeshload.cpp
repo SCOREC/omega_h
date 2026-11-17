@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
   auto mesh_path = cmdline.get<std::string>("mesh_in.osh");
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(mesh_path.c_str(), lib.world(), &mesh);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
 
   auto hasOrigMetric = mesh.has_tag(0,"original_metric");
   auto hasTgtMetric = mesh.has_tag(0,"target_metric");

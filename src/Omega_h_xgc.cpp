@@ -114,7 +114,7 @@ void write(filesystem::path const& basename, Mesh* mesh) {
   auto nverts = mesh->nverts();
   auto nelems = mesh->nelems();
   auto dim = mesh->dim();
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto e2v = mesh->ask_elem_verts();
 
   auto exposed_sides = mark_exposed_sides(mesh);

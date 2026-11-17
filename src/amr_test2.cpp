@@ -1,3 +1,4 @@
+#include "coords_test.hpp"
 #include <Omega_h_amr.hpp>
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_build.hpp>
@@ -23,14 +24,13 @@ OMEGA_H_INLINE double eval_rc<3>(Omega_h::Vector<3> c) {
 
 template <int dim>
 Omega_h::Bytes mark(Omega_h::Mesh* m, int level) {
-  auto coords = m->coords_view().raw();
-  auto mids = Omega_h::average_field(m, dim, dim, coords);
+  auto mids = Omega_h::test::element_centroids<dim>(*m);
   auto is_leaf = m->ask_leaves(dim);
   auto leaf_elems = Omega_h::collect_marked(is_leaf);
   Omega_h::Write<Omega_h::Byte> marks(m->nelems(), 0);
   auto f = OMEGA_H_LAMBDA(Omega_h::LO e) {
     auto elem = leaf_elems[e];
-    auto c = Omega_h::get_vector<dim, Omega_h::Reals>(mids, elem);
+    auto c = Omega_h::get_vector<dim>(mids, elem);
     auto rc = eval_rc<dim>(c);
     auto r = 0.25;
     auto tol = 0.314 / static_cast<double>(level);

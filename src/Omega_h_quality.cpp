@@ -20,7 +20,7 @@ Reals measure_qualities_tmpl(Mesh* mesh, LOs a2e, Reals metrics) {
 }
 
 Reals measure_qualities(Mesh* mesh, LOs a2e, Reals metrics) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   if (a2e.size() == 0) return Reals({});
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
   if (mesh->dim() == 3 && metric_dim == 3) {
@@ -42,17 +42,17 @@ Reals measure_qualities(Mesh* mesh, LOs a2e, Reals metrics) {
 }
 
 Reals measure_qualities(Mesh* mesh, LOs a2e) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   return measure_qualities(mesh, a2e, mesh->get_array<Real>(VERT, "metric"));
 }
 
 Reals measure_qualities(Mesh* mesh) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   return measure_qualities(mesh, LOs(mesh->nelems(), 0, 1));
 }
 
 Reals measure_qualities(Mesh* mesh, Reals metrics) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   return measure_qualities(mesh, LOs(mesh->nelems(), 0, 1), metrics);
 }
 
@@ -78,7 +78,7 @@ Reals measure_qualities(Mesh* mesh, Reals metrics) {
  */
 
 Reals get_1d_cavity_qualities(Mesh* mesh, Int key_dim, LOs keys2kds) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   auto kd_globals = mesh->globals(key_dim);
   auto nkeys = keys2kds.size();
   Write<Real> out(nkeys);

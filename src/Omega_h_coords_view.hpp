@@ -64,6 +64,37 @@ using CoordsView = BasicCoordsView<const Real, N>;
 template <std::size_t N = dynamic_extent>
 using CoordsWriteView = BasicCoordsView<Real, N>;
 
+// Owns a host mirror so coordinate inspection also works with device storage.
+template <std::size_t N = dynamic_extent>
+class HostCoordsView {
+ public:
+  using extents_type = extents<LO, dynamic_extent, N>;
+  explicit HostCoordsView(CoordsView<N> const& coords)
+      : data_(coords.raw()),
+        span_(data_.data(), extents_type(coords.extent(0), coords.extent(1))) {}
+  Real const& operator()(LO v, Int d) const {
+    OMEGA_H_CHECK(v >= 0 && v < extent(0));
+    OMEGA_H_CHECK(d >= 0 && d < extent(1));
+    return span_(v, d);
+  }
+  LO extent(Int r) const {
+    OMEGA_H_CHECK(r >= 0 && r < 2);
+    return span_.extent(r);
+  }
+ private:
+  HostRead<Real> data_;
+  mdspan<const Real, extents_type, layout_right> span_;
+};
+
+template <Int n, std::size_t N>
+OMEGA_H_INLINE Vector<n> get_vector(CoordsView<N> const& coords, LO v) {
+  static_assert(N != dynamic_extent && N == n,
+      "get_vector requires a matching static coordinate extent");
+  Vector<n> result;
+  for (Int d = 0; d < n; ++d) result[d] = coords(v, d);
+  return result;
+}
+
 template <Int n, std::size_t N>
 OMEGA_H_INLINE Matrix<static_cast<Int>(N), n> gather_vectors(
     CoordsView<N> const& coords, Few<LO, n> vertices) {
@@ -77,13 +108,11 @@ OMEGA_H_INLINE Matrix<static_cast<Int>(N), n> gather_vectors(
 
 class Mesh;
 namespace detail {
-void gate_embedded(Mesh const& mesh, char const* caller);
+void require_same_tdim_sdim(Mesh const& mesh, char const* caller);
 Reals coords_tdim_only(Mesh const& mesh, char const* caller);
 void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller);
 }
 
 }  // namespace Omega_h
 
-#define OMEGA_H_COORDS_TDIM_ONLY(mesh) ::Omega_h::detail::coords_tdim_only(mesh, __func__)
-#define OMEGA_H_GATE_EMBEDDED(mesh) ::Omega_h::detail::gate_embedded(*(mesh), __func__)
 #endif

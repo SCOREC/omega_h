@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
   Omega_h::Mesh mesh(&lib);
   std::cout << "reading in " << path_in << '\n';
   Omega_h::binary::read(path_in, lib.world(), &mesh);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
 #ifdef OMEGA_H_USE_EGADS
   Omega_h::Egads* eg = nullptr;
   if (cmdline.parsed("--model")) {

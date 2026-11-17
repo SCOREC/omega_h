@@ -1,3 +1,4 @@
+#include "coords_test.hpp"
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -47,17 +48,17 @@ static void check_geometry(Library& lib) {
     for (Int sdim = tdim + 1; sdim <= 3; ++sdim) {
       Mesh embedded(&lib);
       build_from_elems_and_coords(&embedded, OMEGA_H_SIMPLEX, tdim,
-          base.ask_verts_of(tdim), embedded_test::embed(base.coords_view().raw(), tdim, sdim), sdim);
+          base.ask_verts_of(tdim), embedded_test::embed(base.coords_view(), sdim), sdim);
       embedded_test::classify(embedded);
       require(are_close(embedded.ask_sizes(), base.ask_sizes(), 1e-12));
       auto lengths = measure_edges_real(&embedded);
-      HostRead<Real> original(base.coords_view().raw());
+      HostCoordsView<> original(base.coords_view());
       HostRead<Real> actual(lengths);
       HostRead<LO> edges(embedded.ask_verts_of(EDGE));
       for (LO e = 0; e < embedded.nedges(); ++e) {
         Real squared = 0;
         for (Int d = 0; d < tdim; ++d) {
-          auto delta = original[edges[e * 2] * tdim + d] - original[edges[e * 2 + 1] * tdim + d];
+          auto delta = original(edges[e * 2], d) - original(edges[e * 2 + 1], d);
           squared += delta * delta;
         }
         require(std::abs(actual[e] - std::sqrt(squared)) < 1e-12);
@@ -92,8 +93,9 @@ static void check_geometry(Library& lib) {
   std::vector<Real> decoded(folded.nverts() * 3);
   base64::decode(encoded.substr(header_size), decoded.data(), bytes);
   if (!is_little_endian_cpu()) for (auto& value : decoded) binary::swap_bytes(value);
-  HostRead<Real> expected(folded.coords_view().raw());
-  for (LO i = 0; i < expected.size(); ++i) require(decoded[i] == expected[i]);
+  HostCoordsView<3> expected(folded.coords_view<3>());
+  for (LO v = 0; v < expected.extent(0); ++v)
+    for (Int d = 0; d < 3; ++d) require(decoded[v * 3 + d] == expected(v, d));
 }
 
 int main(int argc, char** argv) {
@@ -133,7 +135,11 @@ int main(int argc, char** argv) {
     CoordsView<3> fixed(Reals(values), 3);
     return CoordsView<>(fixed);
   }();
-  require(get_sum(owned.raw()) == 42.0);
+  HostCoordsView<> owned_host(owned);
+  Real sum = 0;
+  for (LO v = 0; v < owned_host.extent(0); ++v)
+    for (Int d = 0; d < owned_host.extent(1); ++d) sum += owned_host(v, d);
+  require(sum == 42.0);
   Real storage[6] = {};
   mdspan<Real, extents<LO, 2, 3>> span(storage);
   span(1, 2) = 7;
@@ -177,7 +183,7 @@ int main(int argc, char** argv) {
   };
   parallel_for(embedded.nverts(), write_coords);
   embedded.set_coords(CoordsView<>(writable));
-  require(embedded.coords_view().raw() == coords);
+  require(test::coords_equal(embedded.coords_view<3>(), CoordsView<3>(coords, 3)));
 
   auto copied = embedded.copy_meta();
   require(copied.space_dim() == 3);
@@ -188,7 +194,7 @@ int main(int argc, char** argv) {
   Mesh loaded(&lib);
   loaded.set_comm(lib.self());
   binary::read(stream, &loaded, binary::latest_version);
-  require(loaded.space_dim() == 3 && loaded.coords_view().raw() == coords);
+  require(loaded.space_dim() == 3 && test::coords_equal(loaded.coords_view<3>(), CoordsView<3>(coords, 3)));
   auto old = binary::read(argv[1], lib.self());
   require(old.space_dim() == old.dim());
 #ifdef OMEGA_H_THROW

@@ -90,7 +90,7 @@ static void compute_typical_metric(Mesh* mesh, Omega_h_Isotropy isotropy) {
 
 void fix_for_given_metric(
     Mesh* mesh, AdaptOpts const& adapt_opts, bool verbose) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   if (verbose) std::cout << "computing minimum quality\n";
   auto minqual = mesh->min_quality();
   auto maxlen = mesh->max_length();
@@ -121,7 +121,7 @@ void fix_for_given_metric(
 
 void fix(Mesh* mesh, AdaptOpts const& adapt_opts, Omega_h_Isotropy isotropy,
     bool verbose) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   verbose = verbose && can_print(mesh);
   if (verbose) std::cout << "Computing bad-mesh \"implied\" metric\n";
   compute_ill_metric(mesh, adapt_opts, isotropy);
@@ -137,7 +137,7 @@ void fix(Mesh* mesh, AdaptOpts const& adapt_opts, Omega_h_Isotropy isotropy,
 
 void grade_fix_adapt(
     Mesh* mesh, AdaptOpts const& opts, Reals target_metric, bool verbose) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   verbose = verbose && can_print(mesh);
   auto metric_dim = get_metrics_dim(mesh->nverts(), target_metric);
   if (verbose) std::cout << "Limiting target metric gradation...\n";

@@ -111,6 +111,8 @@ auto xyz = mesh.coords_view<3>(); // owns storage; checks the dimension on the h
 `coords_view()` provides a dynamic extent; `coords_view<N>()` checks a static
 extent, including in Release builds. `CoordsWriteView<N>` wraps writable
 coordinate arrays, and `set_coords(CoordsView<>)` validates mesh extents.
+`HostCoordsView<N>` owns a host mirror for inspecting coordinates from device
+storage with the same `(vertex, component)` indexing.
 The deprecated raw `coords()` and `set_coords(Reals)` methods work only for
 ordinary meshes. `OMEGA_H_SUPPRESS_DEPRECATION` silences their warnings while
 retaining the embedded-mesh checks.

@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
       cmdline.get<std::string>("--metric-in", metric_doc);
   std::cout << "Loading mesh from " << mesh_in << "\n";
   auto mesh = Omega_h::gmsh::read(mesh_in, comm);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
   Omega_h::Reals target_metric;
   std::cout << "Loading target metric from " << metric_in << "\n";
   auto const dim = mesh.dim();

@@ -13,16 +13,17 @@ inline void check(bool value, char const* message) {
   if (!value) Omega_h_fail("embedded test: %s\n", message);
 }
 
-inline Reals embed(Reals input, Int tdim, Int sdim) {
-  HostRead<Real> src(input);
-  HostWrite<Real> dst(input.size() / tdim * sdim);
+inline Reals embed(CoordsView<> input, Int sdim) {
+  HostCoordsView<> src(input);
+  auto tdim = input.extent(1);
+  HostWrite<Real> dst(input.extent(0) * sdim);
   // Rx(30), Ry(45), Rz(60), followed by a translation.
   auto const a = OMEGA_H_PI / 6;
   auto const b = OMEGA_H_PI / 4;
   auto const c = OMEGA_H_PI / 3;
-  for (LO v = 0; v < input.size() / tdim; ++v) {
-    Real x = src[v * tdim];
-    Real y = tdim == 2 ? src[v * tdim + 1] : 0;
+  for (LO v = 0; v < input.extent(0); ++v) {
+    Real x = src(v, 0);
+    Real y = tdim == 2 ? src(v, 1) : 0;
     if (sdim == 2) {
       dst[v * 2] = std::cos(c) * x + 0.3;
       dst[v * 2 + 1] = std::sin(c) * x - 1.2;
@@ -42,7 +43,7 @@ inline Mesh plane(Library& lib, LO n = 8) {
   auto base = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 0, n, n, 0);
   Mesh result(&lib);
   build_from_elems_and_coords(&result, OMEGA_H_SIMPLEX, 2,
-      base.ask_verts_of(2), embed(base.coords_view().raw(), 2, 3), 3);
+      base.ask_verts_of(2), embed(base.coords_view(), 3), 3);
   return result;
 }
 

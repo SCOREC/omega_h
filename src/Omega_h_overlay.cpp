@@ -29,7 +29,7 @@ Overlay::Overlay(
   for (int i = 0; i < mesh.nfaces(); ++i) silly_faces.push_back(size_t(i));
   for (int i = 0; i < mesh.nedges(); ++i) silly_edges.push_back(size_t(i));
   for (int i = 0; i < mesh.nverts(); ++i) silly_nodes.push_back(size_t(i));
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
   auto new_coords = Write<double>(mesh.nverts() * 3);
   auto diff = overlayGridCenter - vector_3(Nx * cellSize / 2.0,
                                       Ny * cellSize / 2.0, Nz * cellSize / 2.0);
@@ -105,13 +105,13 @@ std::array<size_t, 2> Overlay::get_edge_nodes(size_t edge) const {
 }
 
 Omega_h::Vector<3> Overlay::get_node_coordinates(size_t node) const {
-  auto nodes2coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
+  auto nodes2coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
   return get_vector<3>(nodes2coords, LO(node));
 }
 
 Omega_h::Vector<3> Overlay::get_cell_center_location(size_t cell) const {
   auto cells2nodes = mesh.get_adj(REGION, VERT).ab2b;
-  auto nodes2coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
+  auto nodes2coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
   auto cell_nodes2nodes = gather_verts<8>(cells2nodes, LO(cell));
   auto cell_nodes2coords = gather_vectors<8, 3>(nodes2coords, cell_nodes2nodes);
   return average(cell_nodes2coords);

@@ -5,6 +5,6 @@ int main(int argc, char** argv) {
   OMEGA_H_CHECK(argc == 3);
   auto world = lib.world();
   auto mesh = Omega_h::gmsh::read(argv[1], world);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
   Omega_h::binary::write(argv[2], &mesh);
 }

@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
   auto verts_are_bdry = mark_class_closures(&mesh, VERT, 1, ids);
   auto bv2v = collect_marked(verts_are_bdry);
   auto initial_w = Write<Real>(mesh.nverts(), 0.0);
-  auto coords = mesh.coords_view().raw();
+  auto coords = mesh.coords_view<2>();
   auto f = OMEGA_H_LAMBDA(LO bv) {
     auto v = bv2v[bv];
     auto x = get_vector<2>(coords, v);

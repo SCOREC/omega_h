@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   }
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
   Omega_h::meshb::read_sol(&mesh, argv[2], argv[3]);
   Omega_h::binary::write(argv[4], &mesh);
   return 0;

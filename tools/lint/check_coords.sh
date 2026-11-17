@@ -19,7 +19,6 @@ for path in paths:
     rel = path.relative_to(root).as_posix()
     text = path.read_text()
     code = re.sub(r'//[^\n]*|/\*.*?\*/', '', text, flags=re.S)
-    is_test = 'test' in path.name.lower() or path.name.startswith('unit_')
     if rel not in legacy:
         if re.search(r'(?:\.|->)\s*coords\s*\(', code) or re.search(r'&\s*(?:Omega_h::)?Mesh::coords\b', code):
             errors.append(f'L1 {rel}: deprecated coordinate access')
@@ -30,12 +29,16 @@ for path in paths:
                 errors.append(f'L1 {rel}: setter requires an explicit CoordsView')
     if '"coordinates"' in code and rel not in allowed_literals:
         errors.append(f'L2 {rel}: new direct coordinates-tag access')
-    if re.search(r'\.\s*raw\s*\(', code) and rel not in allowed_raw and not is_test:
+    raw_code = code
+    if rel == 'src/unit_embedded.cpp':
+        raw_code = re.sub(r'OMEGA_H_ALLOW_DEPRECATED_BEGIN.*?OMEGA_H_ALLOW_DEPRECATED_END', '', code, flags=re.S)
+    if re.search(r'\.\s*raw\s*\(', raw_code) and rel not in allowed_raw:
         errors.append(f'L3 {rel}: coordinate raw access outside approved files')
     if 'OMEGA_H_ALLOW_DEPRECATED_BEGIN' in code and rel not in ('src/Omega_h_macros.h', 'src/unit_embedded.cpp'):
         errors.append(f'L4 {rel}: deprecation suppression outside compatibility test')
     if rel != 'src/Omega_h_coords_view.hpp':
-        count = len(re.findall(r'\bOMEGA_H_COORDS_TDIM_ONLY\s*\(', code))
+        calls = re.sub(r'\bReals\s+coords_tdim_only\s*\([^)]*\)\s*\{', '', code)
+        count = len(re.findall(r'\bcoords_tdim_only\s*\(', calls))
         if count:
             backlog[rel] = count
 

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   auto outpath = cmdline.get<std::string>("output.osh");
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(inpath, world, &mesh);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
   Omega_h::reorder_by_hilbert(&mesh);
   Omega_h::binary::write(outpath, &mesh);
 }

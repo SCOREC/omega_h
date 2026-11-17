@@ -25,7 +25,7 @@ Reals coarsen_qualities_tmpl(
   auto vc_codes = v2c.codes;
   auto ncands = cands2edges.size();
   auto qualities = Write<Real>(ncands * 2, -1.0);
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto is_bad_w = Write<Byte>(mesh->nelems(), Byte(0));
   auto f = OMEGA_H_LAMBDA(LO cand) {
     auto e = cands2edges[cand];
@@ -63,7 +63,7 @@ Reals coarsen_qualities_tmpl(
 }
 
 Reals coarsen_qualities(Mesh* mesh, LOs cands2edges, Read<I8> cand_codes) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   OMEGA_H_CHECK(mesh->parting() == OMEGA_H_GHOSTED);
   auto metrics = mesh->get_array<Real>(VERT, "metric");
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
@@ -111,7 +111,7 @@ Read<I8> filter_coarsen_min_qual(
 
 Read<I8> filter_coarsen_improve(
     Mesh* mesh, LOs cands2edges, Read<I8> cand_codes, Reals cand_quals) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   auto elem_quals = mesh->ask_qualities();
   auto verts2elems = mesh->ask_up(VERT, mesh->dim());
   auto vert_old_quals = graph_reduce(verts2elems, elem_quals, 1, OMEGA_H_MIN);

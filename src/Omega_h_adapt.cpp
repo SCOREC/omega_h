@@ -98,7 +98,7 @@ static Reals get_fixable_qualities(Mesh* mesh, AdaptOpts const&) {
 }
 
 Real min_fixable_quality(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   return get_min(mesh->comm(), get_fixable_qualities(mesh, opts));
 }
 
@@ -114,7 +114,7 @@ static void adapt_summary(Mesh* mesh, AdaptOpts const& opts,
 }
 
 bool print_adapt_status(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   OMEGA_H_TIME_FUNCTION;
   auto qualstats = get_minmax(mesh->comm(), get_fixable_qualities(mesh, opts));
   auto lenstats = get_minmax(mesh->comm(), mesh->ask_lengths());
@@ -127,7 +127,7 @@ bool print_adapt_status(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 void print_adapt_histograms(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   auto qh = get_histogram(mesh, mesh->dim(), opts.nquality_histogram_bins, 0.0,
       1.0, mesh->ask_qualities());
   auto lh = get_histogram(mesh, EDGE, opts.nlength_histogram_bins,
@@ -290,7 +290,7 @@ static void post_adapt(
 }
 
 bool adapt(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   ScopedTimer adapt_timer("adapt");
   OMEGA_H_CHECK(mesh->family() == OMEGA_H_SIMPLEX);
   auto t0 = now();

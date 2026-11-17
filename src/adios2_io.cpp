@@ -50,10 +50,10 @@ int main(int argc, char *argv[])
 
   Omega_h::Mesh mesh1(&lib);
   Omega_h::binary::read(inpath1, world, &mesh1);
-  OMEGA_H_GATE_EMBEDDED(&mesh1);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh1, __func__);
   Omega_h::Mesh mesh2(&lib);
   Omega_h::binary::read(inpath2, world, &mesh2);
-  OMEGA_H_GATE_EMBEDDED(&mesh2);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh2, __func__);
 
   Omega_h::binary::write("omegah1.osh", &mesh1);
   Omega_h::binary::write("omegah2.osh", &mesh2);

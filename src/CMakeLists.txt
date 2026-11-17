@@ -570,7 +570,10 @@ if(BUILD_TESTING)
 
   osh_add_exe(load_2d)
   list(APPEND TEST_EXES load_2d)
-  will_fail_test_func(load_2d_box_100 1 ./load_2d box_100.osh)
+  add_test(NAME load_2d_box_100
+    COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:load_2d> box_100.osh)
+  set_tests_properties(load_2d_box_100 PROPERTIES
+    WILL_FAIL TRUE LABELS mesh FIXTURES_REQUIRED smoke_test_osh_scale)
 
   osh_add_exe(osh_scale2d)
   list(APPEND TEST_EXES osh_scale2d)

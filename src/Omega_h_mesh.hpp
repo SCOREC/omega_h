@@ -280,6 +280,7 @@ protected:
 
  public:
   void add_coords(Reals array);
+  void add_coords(CoordsView<> const& coords);
   template <std::size_t N = dynamic_extent>
   CoordsView<N> coords_view() const {
     auto array = get_array<Real>(VERT, "coordinates");

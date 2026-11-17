@@ -15,18 +15,18 @@ int main(int argc, char** argv) {
   check(argc == 2 && comm->size() == std::stoi(argv[1]), "MPI rank count differs from requested count");
   auto reference = embedded_test::plane(lib);
   HostRead<GO> ref_globals(reference.globals(VERT));
-  HostRead<Real> ref_coords(reference.coords_view().raw());
+  HostCoordsView<3> ref_coords(reference.coords_view<3>());
   std::map<GO, std::array<Real, 3>> expected;
   for (LO v = 0; v < reference.nverts(); ++v)
-    expected[ref_globals[v]] = {{ref_coords[v * 3], ref_coords[v * 3 + 1], ref_coords[v * 3 + 2]}};
+    expected[ref_globals[v]] = {{ref_coords(v, 0), ref_coords(v, 1), ref_coords(v, 2)}};
 
   auto verify = [&](Mesh& mesh) {
     check(mesh.space_dim() == 3, "lost spatial dimension on an MPI rank");
     HostRead<GO> globals(mesh.globals(VERT));
-    HostRead<Real> coords(mesh.coords_view().raw());
+    HostCoordsView<3> coords(mesh.coords_view<3>());
     for (LO v = 0; v < mesh.nverts(); ++v)
       for (Int d = 0; d < 3; ++d)
-        check(coords[v * 3 + d] == expected.at(globals[v])[d], "migration changed coordinates");
+        check(coords(v, d) == expected.at(globals[v])[d], "migration changed coordinates");
     auto area = get_sum(comm, mesh.owned_array(mesh.dim(), mesh.ask_sizes(), 1));
     check(std::abs(area - 1.0) < 1e-12, "parallel area sum differs");
   };
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
       root ? reference.ask_verts_of(2) : LOs({}),
       root ? reference.globals(VERT) : GOs({}));
   mesh.set_space_dim(3);
-  mesh.add_coords(root ? reference.coords_view().raw() : Reals({}));
+  mesh.add_coords(root ? reference.coords_view() : CoordsView<>(Reals({}), 3));
   mesh.set_parting(OMEGA_H_GHOSTED);
   embedded_test::classify(mesh);
   mesh.balance(false);

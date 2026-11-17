@@ -143,9 +143,9 @@ void classify_box(Mesh* mesh, Real x, Real y, Real z, LO nx, LO ny, LO nz) {
     Reals centroids;
     if (ent_dim) {
       centroids = average_field(mesh, ent_dim, LOs(mesh->nents(ent_dim), 0, 1),
-          mesh->dim(), OMEGA_H_COORDS_TDIM_ONLY(*mesh));
+          mesh->dim(), ::Omega_h::detail::coords_tdim_only(*mesh, __func__));
     } else {
-      centroids = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+      centroids = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
     }
     Read<LO> class_ids;
     if (mesh->dim() == 3)

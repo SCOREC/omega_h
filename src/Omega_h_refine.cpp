@@ -83,7 +83,7 @@ static void refine_element_based(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 static bool refine(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
 
   mesh->set_parting(OMEGA_H_GHOSTED);
   if (!refine_ghosted(mesh, opts)) return false;
@@ -93,7 +93,7 @@ static bool refine(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 bool refine_by_size(Mesh* mesh, AdaptOpts const& opts) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   OMEGA_H_TIME_FUNCTION;
   auto comm = mesh->comm();
   auto lengths = mesh->ask_lengths();

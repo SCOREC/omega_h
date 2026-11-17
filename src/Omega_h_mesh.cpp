@@ -420,6 +420,12 @@ Adj Mesh::ask_adj(Int from, Int to) {
   return derived;
 }
 
+void Mesh::add_coords(CoordsView<> const& coords) {
+  if (coords.extent(0) != nverts() || coords.extent(1) != space_dim())
+    Omega_h_fail("add_coords: coordinate extents differ from mesh dimensions\n");
+  add_coords(coords.raw());
+}
+
 void Mesh::add_coords(Reals array) {
   if (array.size() != nverts() * space_dim())
     Omega_h_fail("add_coords: coordinate count differs from nverts * space_dim\n");
@@ -427,28 +433,28 @@ void Mesh::add_coords(Reals array) {
 }
 
 namespace detail {
-void gate_embedded(Mesh const& mesh, char const* caller) {
+void require_same_tdim_sdim(Mesh const& mesh, char const* caller) {
   if (mesh.space_dim() != mesh.dim())
     Omega_h_fail("%s: meshes with space_dim (%d) != dim (%d) are not supported\n",
         caller, mesh.space_dim(), mesh.dim());
 }
 Reals coords_tdim_only(Mesh const& mesh, char const* caller) {
-  gate_embedded(mesh, caller);
+  require_same_tdim_sdim(mesh, caller);
   return mesh.coords_view().raw();
 }
 void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller) {
-  gate_embedded(mesh, caller);
+  require_same_tdim_sdim(mesh, caller);
   mesh.set_coords(CoordsView<>(coords, mesh.space_dim()));
 }
 }
 
 Reals Mesh::coords() const {
-  detail::gate_embedded(*this, __func__);
+  detail::require_same_tdim_sdim(*this, __func__);
   return get_array<Real>(VERT, "coordinates");
 }
 
 void Mesh::set_coords(Reals const& array) {
-  detail::gate_embedded(*this, __func__);
+  detail::require_same_tdim_sdim(*this, __func__);
   if (array.size() != nverts() * space_dim())
     Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
   set_tag<Real>(VERT, "coordinates", array);
@@ -466,7 +472,7 @@ Read<GO> Mesh::globals(Int ent_dim) const {
 
 Reals Mesh::ask_lengths() {
   bool const metric = has_tag(VERT, "metric");
-  if (metric) OMEGA_H_GATE_EMBEDDED(this);
+  if (metric) ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
   if (!has_tag(EDGE, "length")) {
     auto lengths = metric ? measure_edges_metric(this) : measure_edges_real(this);
     add_tag(EDGE, "length", 1, lengths);
@@ -475,7 +481,7 @@ Reals Mesh::ask_lengths() {
 }
 
 Reals Mesh::ask_qualities() {
-  OMEGA_H_GATE_EMBEDDED(this);
+  ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
   if (!has_tag(dim(), "quality")) {
     auto qualities = measure_qualities(this);
     add_tag(dim(), "quality", 1, qualities);
@@ -657,7 +663,7 @@ void Mesh::set_parting(Omega_h_Parting parting_in, bool verbose) {
 /* this is a member function mainly because it
    modifies the RIB hints */
 void Mesh::balance(bool predictive) {
-  if (predictive) OMEGA_H_GATE_EMBEDDED(this);
+  if (predictive) ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
   OMEGA_H_TIME_FUNCTION;
   if (comm_->size() == 1) return;
   set_parting(OMEGA_H_ELEM_BASED);

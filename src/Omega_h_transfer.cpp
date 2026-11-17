@@ -525,9 +525,9 @@ void transfer_pointwise_tmpl(Mesh* old_mesh, Mesh* new_mesh, Int key_dim,
   auto kds2kd_elems = kds2elems.a2ab;
   auto kd_elems2elems = kds2elems.ab2b;
   auto old_elem_verts2verts = old_mesh->ask_verts_of(dim);
-  auto old_coords = OMEGA_H_COORDS_TDIM_ONLY(*old_mesh);
+  auto old_coords = ::Omega_h::detail::coords_tdim_only(*old_mesh, __func__);
   auto new_elem_verts2verts = new_mesh->ask_verts_of(dim);
-  auto new_coords = OMEGA_H_COORDS_TDIM_ONLY(*new_mesh);
+  auto new_coords = ::Omega_h::detail::coords_tdim_only(*new_mesh, __func__);
   auto nkeys = keys2kds.size();
   auto nprods = keys2prods.last();
   auto prod_data_w = Write<Real>(nprods * ncomps);

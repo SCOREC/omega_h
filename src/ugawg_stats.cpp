@@ -14,7 +14,7 @@ using namespace Omega_h;
 constexpr Int dim = 3;
 
 static Reals get_cube_linear_metric(Mesh* mesh) {
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto z = coords[v * dim + (dim - 1)];
@@ -29,7 +29,7 @@ static Reals get_cube_linear_metric(Mesh* mesh) {
 }
 
 static Reals get_cube_cylinder_shock_metric(Mesh* mesh) {
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   auto f = OMEGA_H_LAMBDA(LO v) {
@@ -44,7 +44,7 @@ static Reals get_cube_cylinder_shock_metric(Mesh* mesh) {
 }
 
 static Reals get_cube_cylinder_layer_metric(Mesh* mesh) {
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   constexpr Real h_z = 1.0 / 10.0;
@@ -66,7 +66,7 @@ static Reals get_cube_cylinder_layer_metric(Mesh* mesh) {
 }
 
 static Reals get_cube_cylinder_quality_layer_metric(Mesh* mesh) {
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   constexpr Real h_z = 1.0 / 10.0;

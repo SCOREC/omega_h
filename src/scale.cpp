@@ -33,11 +33,11 @@ int main(int argc, char** argv) {
 
   auto mesh = Omega_h::Mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
-  OMEGA_H_GATE_EMBEDDED(&mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
 
   auto dim = mesh.dim();
   auto nverts = mesh.nverts();
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
   Omega_h::Write<Omega_h::Real> scaled_coords(coords.size());
   OMEGA_H_CHECK(coords.size() == dim * nverts);
 

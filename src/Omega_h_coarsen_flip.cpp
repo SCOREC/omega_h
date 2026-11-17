@@ -20,7 +20,7 @@ Reals compute_flip_normals_dim(Mesh* mesh, Bytes sides_are_exposed,
   auto v2s = mesh->ask_up(VERT, side_dim);
   auto sv2v = mesh->ask_verts_of(side_dim);
   auto verts_that_matter = collect_marked(verts_matter);
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto out = Write<Real>(mesh->nverts() * dim, 0.0);
   auto const threshold_copy = simple_algorithm_threshold;
   auto sides_are_exposed_copy = sides_are_exposed;
@@ -76,7 +76,7 @@ Bytes prevent_coarsen_flip2_dim(Mesh* mesh,
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto sv2v = mesh->ask_verts_of(side_dim);
   auto v2s = mesh->ask_up(VERT, side_dim);
-  auto coords = OMEGA_H_COORDS_TDIM_ONLY(*mesh);
+  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
   auto ncands = cands2edges.size();
   auto out = Write<Byte>(ncands);
   auto f = OMEGA_H_LAMBDA(LO cand) {
@@ -138,7 +138,7 @@ Bytes prevent_coarsen_flip_dim(
 }
 
 Bytes prevent_coarsen_flip(Mesh* mesh, LOs cands2edges, Bytes cand_codes) {
-  OMEGA_H_GATE_EMBEDDED(mesh);
+  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
   if (mesh->dim() == 3) {
     return prevent_coarsen_flip_dim<3>(mesh, cands2edges, cand_codes);
   }
