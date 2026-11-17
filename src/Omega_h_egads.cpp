@@ -175,7 +175,7 @@ void egads_free(Egads* eg) {
 }
 
 void egads_reclassify(Mesh* mesh, Egads* eg) {
-  OMEGA_H_CHECK(mesh->dim() == 3);
+  OMEGA_H_ALWAYS_CHECK(mesh->dim() == 3);
   auto face_class_dims = mesh->get_array<I8>(FACE, "class_dim");
   auto face_class_ids = mesh->get_array<ClassId>(FACE, "class_id");
   for (Int dim = 0; dim < 2; ++dim) {
@@ -215,7 +215,7 @@ static Vector<3> get_closest_point(ego g, Vector<3> in) {
 }
 
 Reals egads_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
-  OMEGA_H_CHECK(mesh->dim() == 3);
+  OMEGA_H_ALWAYS_CHECK(mesh->dim() == 3);
   if (verbose) std::cout << "Querying closest points for surface vertices...\n";
   auto t0 = now();
   auto class_dims = mesh->get_array<I8>(VERT, "class_dim");

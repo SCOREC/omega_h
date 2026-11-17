@@ -1163,31 +1163,31 @@ static void test_file_components(bool is_compressed, bool needs_swapping) {
   write(stream, s, needs_swapping);
   I8 a2;
   read_value(stream, a2, needs_swapping);
-  OMEGA_H_CHECK(a == a2);
+  OMEGA_H_ALWAYS_CHECK(a == a2);
   I32 b2;
   read_value(stream, b2, needs_swapping);
-  OMEGA_H_CHECK(b == b2);
+  OMEGA_H_ALWAYS_CHECK(b == b2);
   I64 c2;
   read_value(stream, c2, needs_swapping);
-  OMEGA_H_CHECK(c == c2);
+  OMEGA_H_ALWAYS_CHECK(c == c2);
   Real d2;
   read_value(stream, d2, needs_swapping);
-  OMEGA_H_CHECK(d == d2);
+  OMEGA_H_ALWAYS_CHECK(d == d2);
   Read<I8> aa2;
   read_array(stream, aa2, is_compressed, needs_swapping);
-  OMEGA_H_CHECK(aa2 == aa);
+  OMEGA_H_ALWAYS_CHECK(aa2 == aa);
   Read<I32> ab2;
   read_array(stream, ab2, is_compressed, needs_swapping);
-  OMEGA_H_CHECK(ab2 == ab);
+  OMEGA_H_ALWAYS_CHECK(ab2 == ab);
   Read<I64> ac2;
   read_array(stream, ac2, is_compressed, needs_swapping);
-  OMEGA_H_CHECK(ac2 == ac);
+  OMEGA_H_ALWAYS_CHECK(ac2 == ac);
   Read<Real> ad2;
   read_array(stream, ad2, is_compressed, needs_swapping);
-  OMEGA_H_CHECK(ad2 == ad);
+  OMEGA_H_ALWAYS_CHECK(ad2 == ad);
   std::string s2;
   read(stream, s2, needs_swapping);
-  OMEGA_H_CHECK(s == s2);
+  OMEGA_H_ALWAYS_CHECK(s == s2);
 }
 
 static void test_file_components() {
@@ -1212,7 +1212,7 @@ static void test_file(Library* lib, Mesh* mesh0) {
   mesh1.set_comm(lib->world());
   auto opts = MeshCompareOpts::init(mesh0, VarCompareOpts::zero_tolerance());
   compare_meshes(mesh0, &mesh1, opts, true, true);
-  OMEGA_H_CHECK(*mesh0 == mesh1);
+  OMEGA_H_ALWAYS_CHECK(*mesh0 == mesh1);
 }
 
 static void test_file(Library* lib) {
@@ -1243,8 +1243,8 @@ std::ostream& operator<<(std::ostream& ostr, const Omega_h::HostRead<T>& array) 
 
 #ifdef OMEGA_H_USE_GMSH
 Omega_h_Comparison light_compare_meshes(Mesh& a, Mesh& b) {
-  OMEGA_H_CHECK(a.comm()->size() == b.comm()->size());
-  OMEGA_H_CHECK(a.comm()->rank() == b.comm()->rank());
+  OMEGA_H_ALWAYS_CHECK(a.comm()->size() == b.comm()->size());
+  OMEGA_H_ALWAYS_CHECK(a.comm()->rank() == b.comm()->rank());
   const auto comm = a.comm();
   const auto should_print = comm->rank() == 0;
   if (a.family() != b.family()) {
@@ -1345,7 +1345,7 @@ static void check_entities_global_ordering(Mesh& mesh) {
     if (mesh.comm()->rank() == 0) {
       std::sort(all_globals.begin(), all_globals.end());
       for (int i = 0; i < all_globals.size(); ++i) {
-        OMEGA_H_CHECK(all_globals[i] == i);
+        OMEGA_H_ALWAYS_CHECK(all_globals[i] == i);
       }
     }
   }
@@ -1370,7 +1370,7 @@ static void test_gmsh_parallel(Library* lib) {
     Omega_h::gmsh::write_parallel("square_parallel", mesh);
 
     auto pmesh = Omega_h::gmsh::read_parallel("square_parallel", lib->world());
-    OMEGA_H_CHECK(light_compare_meshes(mesh, pmesh) == OMEGA_H_SAME);
+    OMEGA_H_ALWAYS_CHECK(light_compare_meshes(mesh, pmesh) == OMEGA_H_SAME);
     check_entities_global_ordering(pmesh);
   }
 
@@ -1399,13 +1399,13 @@ static void test_gmsh(Library* lib) {
     for (const auto& msh : meshes) {
       std::istringstream iss(msh);
       const auto& mesh = Omega_h::gmsh::read(iss, lib->world());
-      OMEGA_H_CHECK(mesh.dim() == 2);
-      OMEGA_H_CHECK(mesh.nelems() == 40 / nranks);
+      OMEGA_H_ALWAYS_CHECK(mesh.dim() == 2);
+      OMEGA_H_ALWAYS_CHECK(mesh.nelems() == 40 / nranks);
       if (nranks == 1) {
-        OMEGA_H_CHECK(mesh.nedges() == 68);
-        OMEGA_H_CHECK(mesh.nverts() == 29);
+        OMEGA_H_ALWAYS_CHECK(mesh.nedges() == 68);
+        OMEGA_H_ALWAYS_CHECK(mesh.nverts() == 29);
       }
-      OMEGA_H_CHECK(mesh.class_sets.empty());
+      OMEGA_H_ALWAYS_CHECK(mesh.class_sets.empty());
     }
   }
   {
@@ -1414,37 +1414,37 @@ static void test_gmsh(Library* lib) {
     for (const auto& msh : meshes) {
       std::istringstream iss(msh);
       const auto& mesh = Omega_h::gmsh::read(iss, lib->world());
-      OMEGA_H_CHECK(mesh.dim() == 2);
+      OMEGA_H_ALWAYS_CHECK(mesh.dim() == 2);
       if (nranks == 1) {
-        OMEGA_H_CHECK(mesh.nedges() == 102);
-        OMEGA_H_CHECK(mesh.nverts() == 43);
-        OMEGA_H_CHECK(mesh.nelems() == 60);
+        OMEGA_H_ALWAYS_CHECK(mesh.nedges() == 102);
+        OMEGA_H_ALWAYS_CHECK(mesh.nverts() == 43);
+        OMEGA_H_ALWAYS_CHECK(mesh.nelems() == 60);
       } else {
         auto nelems = mesh.nelems();
-        OMEGA_H_CHECK(nelems >= 60 / nranks - 2);
-        OMEGA_H_CHECK(nelems <= 60 / nranks + 2);
-        OMEGA_H_CHECK(lib->world()->allreduce(nelems, OMEGA_H_SUM) == 60);
+        OMEGA_H_ALWAYS_CHECK(nelems >= 60 / nranks - 2);
+        OMEGA_H_ALWAYS_CHECK(nelems <= 60 / nranks + 2);
+        OMEGA_H_ALWAYS_CHECK(lib->world()->allreduce(nelems, OMEGA_H_SUM) == 60);
       }
 
       const auto num_class_sets = mesh.class_sets.size();
-      OMEGA_H_CHECK(num_class_sets == 2);
+      OMEGA_H_ALWAYS_CHECK(num_class_sets == 2);
       const auto left = 10;
       const auto right = 11;
       {
         const auto& classes = mesh.class_sets.find("Left");
-        OMEGA_H_CHECK(classes != mesh.class_sets.end());
-        OMEGA_H_CHECK(classes->second.size() == 1);
+        OMEGA_H_ALWAYS_CHECK(classes != mesh.class_sets.end());
+        OMEGA_H_ALWAYS_CHECK(classes->second.size() == 1);
         const auto clazz = classes->second.front();
-        OMEGA_H_CHECK(clazz.dim == mesh.dim());
-        OMEGA_H_CHECK(clazz.id == left);
+        OMEGA_H_ALWAYS_CHECK(clazz.dim == mesh.dim());
+        OMEGA_H_ALWAYS_CHECK(clazz.id == left);
       }
       {
         const auto classes = mesh.class_sets.find("Right");
-        OMEGA_H_CHECK(classes != mesh.class_sets.end());
-        OMEGA_H_CHECK(classes->second.size() == 1);
+        OMEGA_H_ALWAYS_CHECK(classes != mesh.class_sets.end());
+        OMEGA_H_ALWAYS_CHECK(classes->second.size() == 1);
         const auto clazz = classes->second.front();
-        OMEGA_H_CHECK(clazz.dim == mesh.dim());
-        OMEGA_H_CHECK(clazz.id == right);
+        OMEGA_H_ALWAYS_CHECK(clazz.dim == mesh.dim());
+        OMEGA_H_ALWAYS_CHECK(clazz.id == right);
       }
     }
   }
@@ -1452,22 +1452,22 @@ static void test_gmsh(Library* lib) {
 
 static void test_xml() {
   xml_lite::Tag tag;
-  OMEGA_H_CHECK(!xml_lite::parse_tag("AQAAAAAAAADABg", &tag));
-  OMEGA_H_CHECK(!xml_lite::parse_tag("   <Foo bar=\"qu", &tag));
-  OMEGA_H_CHECK(!xml_lite::parse_tag("   <Foo bar=", &tag));
-  OMEGA_H_CHECK(xml_lite::parse_tag("   <Foo bar=\"quux\"   >", &tag));
-  OMEGA_H_CHECK(tag.elem_name == "Foo");
-  OMEGA_H_CHECK(tag.attribs["bar"] == "quux");
-  OMEGA_H_CHECK(tag.type == xml_lite::Tag::START);
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(!xml_lite::parse_tag("AQAAAAAAAADABg", &tag));
+  OMEGA_H_ALWAYS_CHECK(!xml_lite::parse_tag("   <Foo bar=\"qu", &tag));
+  OMEGA_H_ALWAYS_CHECK(!xml_lite::parse_tag("   <Foo bar=", &tag));
+  OMEGA_H_ALWAYS_CHECK(xml_lite::parse_tag("   <Foo bar=\"quux\"   >", &tag));
+  OMEGA_H_ALWAYS_CHECK(tag.elem_name == "Foo");
+  OMEGA_H_ALWAYS_CHECK(tag.attribs["bar"] == "quux");
+  OMEGA_H_ALWAYS_CHECK(tag.type == xml_lite::Tag::START);
+  OMEGA_H_ALWAYS_CHECK(
       xml_lite::parse_tag("   <Elem att=\"val\"  answer=\"42\" />", &tag));
-  OMEGA_H_CHECK(tag.elem_name == "Elem");
-  OMEGA_H_CHECK(tag.attribs["att"] == "val");
-  OMEGA_H_CHECK(tag.attribs["answer"] == "42");
-  OMEGA_H_CHECK(tag.type == xml_lite::Tag::SELF_CLOSING);
-  OMEGA_H_CHECK(xml_lite::parse_tag("</Foo>", &tag));
-  OMEGA_H_CHECK(tag.elem_name == "Foo");
-  OMEGA_H_CHECK(tag.type == xml_lite::Tag::END);
+  OMEGA_H_ALWAYS_CHECK(tag.elem_name == "Elem");
+  OMEGA_H_ALWAYS_CHECK(tag.attribs["att"] == "val");
+  OMEGA_H_ALWAYS_CHECK(tag.attribs["answer"] == "42");
+  OMEGA_H_ALWAYS_CHECK(tag.type == xml_lite::Tag::SELF_CLOSING);
+  OMEGA_H_ALWAYS_CHECK(xml_lite::parse_tag("</Foo>", &tag));
+  OMEGA_H_ALWAYS_CHECK(tag.elem_name == "Foo");
+  OMEGA_H_ALWAYS_CHECK(tag.type == xml_lite::Tag::END);
 }
 
 static void test_read_vtu(Mesh* mesh0) {
@@ -1477,7 +1477,7 @@ static void test_read_vtu(Mesh* mesh0) {
   Mesh mesh1(mesh0->library());
   vtk::read_vtu(stream, mesh0->comm(), &mesh1);
   auto opts = MeshCompareOpts::init(mesh0, VarCompareOpts::zero_tolerance());
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       OMEGA_H_SAME == compare_meshes(mesh0, &mesh1, opts, true, false));
 }
 
@@ -1488,7 +1488,7 @@ static void test_read_vtu(Library* lib) {
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  OMEGA_H_CHECK(std::string(lib.version()) == OMEGA_H_SEMVER);
+  OMEGA_H_ALWAYS_CHECK(std::string(lib.version()) == OMEGA_H_SEMVER);
   if (lib.world()->size() == 1) {
     test_file_components();
     test_file(&lib);

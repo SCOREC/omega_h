@@ -15,7 +15,7 @@ namespace Omega_h {
 template <Int mesh_dim, Int metric_dim>
 Reals coarsen_qualities_tmpl(
     Mesh* mesh, LOs cands2edges, Read<I8> cand_codes) {
-  OMEGA_H_CHECK(mesh->dim() == mesh_dim);
+  OMEGA_H_ALWAYS_CHECK(mesh->dim() == mesh_dim);
   MetricElementQualities<mesh_dim, metric_dim> measure(mesh);
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto cv2v = mesh->ask_elem_verts();
@@ -63,7 +63,7 @@ Reals coarsen_qualities_tmpl(
 }
 
 Reals coarsen_qualities(Mesh* mesh, LOs cands2edges, Read<I8> cand_codes) {
-  OMEGA_H_CHECK(mesh->parting() == OMEGA_H_GHOSTED);
+  OMEGA_H_ALWAYS_CHECK(mesh->parting() == OMEGA_H_GHOSTED);
   auto metrics = mesh->get_array<Real>(VERT, "metric");
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
   auto cand_quals = Reals();

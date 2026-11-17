@@ -39,24 +39,24 @@ static bool check_rc_tags(Mesh* mesh) {
 
 template <Int dim>
 void run_adapt(Mesh* mesh, char const* vtk_path) {
-  OMEGA_H_CHECK(check_rc_tags(mesh));
+  OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
   mesh->set_parting(OMEGA_H_GHOSTED);
-  OMEGA_H_CHECK(check_rc_tags(mesh));
+  OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
   auto implied_metrics = get_implied_metrics(mesh);
   mesh->add_tag(0, "metric", symm_ncomps(dim), implied_metrics);
   mesh->add_tag<Real>(VERT, "target_metric", symm_ncomps(dim));
-  OMEGA_H_CHECK(check_rc_tags(mesh));
+  OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
   set_target_metric<dim>(mesh);
   mesh->set_parting(OMEGA_H_ELEM_BASED);
   mesh->ask_lengths();
   mesh->ask_qualities();
-  OMEGA_H_CHECK(check_rc_tags(mesh));
+  OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
   vtk::FullWriter writer;
   if (vtk_path) {
     writer = vtk::FullWriter(vtk_path, mesh);
     writer.write();
   }
-  OMEGA_H_CHECK(check_rc_tags(mesh));
+  OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
 
   auto opts = AdaptOpts(mesh);
   opts.verbosity = EXTRA_STATS;
@@ -67,10 +67,10 @@ void run_adapt(Mesh* mesh, char const* vtk_path) {
   Now t0 = now();
   while (approach_metric(mesh, opts)) {
     adapt(mesh, opts);
-    OMEGA_H_CHECK(check_rc_tags(mesh));
+    OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
     if (mesh->has_tag(VERT, "target_metric")) set_target_metric<dim>(mesh);
     if (vtk_path) writer.write();
-    OMEGA_H_CHECK(check_rc_tags(mesh));
+    OMEGA_H_ALWAYS_CHECK(check_rc_tags(mesh));
   }
   Now t1 = now();
   std::cout << "total time: " << (t1 - t0) << " seconds\n";
@@ -88,12 +88,12 @@ void test_3d(Library *lib, const std::string &mesh_file, const char* vtk_file,
   auto vtx_rc = mesh.ask_revClass(0);
   auto vert_rc_ids = (mesh.ask_revClass(0)).ab2b;
   auto nbvert = vert_rc_ids.size();
-  OMEGA_H_CHECK (nbvert < mesh.nverts());
+  OMEGA_H_ALWAYS_CHECK (nbvert < mesh.nverts());
   auto edge_rc_ids = (mesh.ask_revClass(1)).ab2b;
   auto nbedge = edge_rc_ids.size();
   auto face_rc = mesh.ask_revClass(2);
   auto face_a2abSize = face_rc.a2ab.size();
-  OMEGA_H_CHECK(face_a2abSize);
+  OMEGA_H_ALWAYS_CHECK(face_a2abSize);
   auto face_rc_ids = (mesh.ask_revClass(2)).ab2b;
   auto nbface = face_rc_ids.size();
   auto reg_rc_ids = (mesh.ask_revClass(3)).ab2b;

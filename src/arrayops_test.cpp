@@ -10,41 +10,41 @@ int main(int argc, char** argv) {
   {
     Reals a = {1,0,2};
     bool res = is_sorted(a);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
   }
   {
     const int n = 1'000'000;
     Write<LO> a(n);
     parallel_for(n, OMEGA_H_LAMBDA(int i) { a[i] = i; }, "setVals");
     bool res = is_sorted(read(a));
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
     a.set(42,0);
     res = is_sorted(read(a));
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
   }
   {
     Reals a = {1,0,1,2};
     LO res = find_last(a,1.0);
-    OMEGA_H_CHECK(res == 2);
+    OMEGA_H_ALWAYS_CHECK(res == 2);
   }
   {
     const int n = 1'000'000;
     const int val = 42;
     Write<LO> a(n,val);
     auto res = find_last(read(a),val);
-    OMEGA_H_CHECK(res == n-1);
+    OMEGA_H_ALWAYS_CHECK(res == n-1);
     a.set(42,1337);
     res = find_last(read(a),1337);
-    OMEGA_H_CHECK(res == 42);
+    OMEGA_H_ALWAYS_CHECK(res == 42);
   }
   {
     Reals a = {1,0.0,1,2};
     Reals b = {1,0.1,1,2};
     bool res = are_close_abs(a,b,1e-3);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
     Reals c = {1,0.000001,1,2};
     res = are_close_abs(a,c,1e-3);
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
   }
   {
     const int n = 1'000'000;
@@ -52,10 +52,10 @@ int main(int argc, char** argv) {
     Reals a(n,val);
     Write<Real> b(n,val);
     bool res = are_close_abs(a,read(b),1e-3);
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
     b.set(42,0.0);
     res = are_close_abs(a,read(b),1e-3);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
   }
   {
     const auto tol = 1e-3;
@@ -63,12 +63,12 @@ int main(int argc, char** argv) {
     Reals a = {1,0.0,1,2};
     Reals b = {1,0.1,1,2};
     bool res = are_close(a,b,tol,floor);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
     const auto small = 0.000001;
     Reals c = {1,small,1,2};
     res = are_close(a,c,tol,floor);
     const auto expected = are_close(0.1,small,tol,floor);
-    OMEGA_H_CHECK(res == expected);
+    OMEGA_H_ALWAYS_CHECK(res == expected);
   }
   {
     const auto tol = 1e-3;
@@ -78,15 +78,15 @@ int main(int argc, char** argv) {
     Reals a(n,val);
     Write<Real> b(n,val);
     bool res = are_close(a,read(b),tol,floor);
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
     b.set(42,0.0);
     res = are_close(a,read(b),tol,floor);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
   }
   {
     Reals a = {1,0.1,1,2};
     auto const res = get_max(a);
-    OMEGA_H_CHECK(res == 2);
+    OMEGA_H_ALWAYS_CHECK(res == 2);
   }
   {
     const int n = 1'000'000;
@@ -95,12 +95,12 @@ int main(int argc, char** argv) {
     a.set(42,n);
     auto const res = get_max(read(a));
     if(res != n) fprintf(stderr, "res %d != n %d\n", res, n);
-    OMEGA_H_CHECK(res == n);
+    OMEGA_H_ALWAYS_CHECK(res == n);
   }
   {
     Reals a = {1,0.1,1,2};
     auto const res = get_min(a);
-    OMEGA_H_CHECK(res == 0.1);
+    OMEGA_H_ALWAYS_CHECK(res == 0.1);
   }
   {
     const int n = 100'000;
@@ -108,12 +108,12 @@ int main(int argc, char** argv) {
     parallel_for(n, OMEGA_H_LAMBDA(int i) { a[i] = i+1; }, "setVals");
     a.set(42,0.1);
     auto const res = get_min(read(a));
-    OMEGA_H_CHECK(res == 0.1);
+    OMEGA_H_ALWAYS_CHECK(res == 0.1);
   }
   {
     Reals a = {1,0.1,1,2};
     auto const res = get_sum(a);
-    OMEGA_H_CHECK(res == 4.1);
+    OMEGA_H_ALWAYS_CHECK(res == 4.1);
   }
   {
     const int n = 1000;
@@ -123,25 +123,25 @@ int main(int argc, char** argv) {
     const int expected = (n-1)*(n)/2;
     if( expected != res )
       fprintf(stderr, "expected %d res %d\n", expected, res);
-    OMEGA_H_CHECK(res == expected);
+    OMEGA_H_ALWAYS_CHECK(res == expected);
   }
   {
     LOs a = {1,5,1,2};
     LOs b = {1,5,1,2};
     LOs c = {1,5,2,2};
     auto res = (a==b);
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
     res = (a==c);
-    OMEGA_H_CHECK(res == false);
+    OMEGA_H_ALWAYS_CHECK(res == false);
   }
   {
     Write<LO> a = {1,2,0};
     LOs b = {1,2,3};
     a.set(2,3);
     auto res = (read(a)==b);
-    OMEGA_H_CHECK(res == true);
+    OMEGA_H_ALWAYS_CHECK(res == true);
     auto val = a.get(1);
-    OMEGA_H_CHECK(val == 2);
+    OMEGA_H_ALWAYS_CHECK(val == 2);
   }
   {
     Read<I32> a = {45,2,0,3};
@@ -151,9 +151,9 @@ int main(int argc, char** argv) {
     LOs perm, fan;
     Read<I32> uniq;
     sort_small_range(a,&perm,&fan,&uniq);
-    OMEGA_H_CHECK(perm == expectedPerm);
-    OMEGA_H_CHECK(fan == expectedFan);
-    OMEGA_H_CHECK(uniq == expectedUniq);
+    OMEGA_H_ALWAYS_CHECK(perm == expectedPerm);
+    OMEGA_H_ALWAYS_CHECK(fan == expectedFan);
+    OMEGA_H_ALWAYS_CHECK(uniq == expectedUniq);
   }
   return 0;
 }

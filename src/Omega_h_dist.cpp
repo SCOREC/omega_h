@@ -224,7 +224,7 @@ void Dist::copy(Dist const& other) {
 Dist create_dist_for_variable_sized(Dist copies2owners, LOs copies2data) {
   auto nactors = copies2owners.nitems();
   // a proper fan contains (n+1) entries
-  OMEGA_H_CHECK(copies2data.size() == nactors + 1);
+  OMEGA_H_ALWAYS_CHECK(copies2data.size() == nactors + 1);
   // Dist which sends data from owners back to copies
   auto owners2copies = copies2owners.invert();
   // receive, for each actor, the copies2data offset of its owner
@@ -249,7 +249,7 @@ Dist create_dist_for_variable_sized(Dist copies2owners, LOs copies2data) {
       data_copies2owner_idxs[data_i] = owner_offsets[actor] + (data_i - begin);
     }
   });
-  OMEGA_H_CHECK(data_copies2owner_ranks.size() == data_copies2owner_idxs.size());
+  OMEGA_H_ALWAYS_CHECK(data_copies2owner_ranks.size() == data_copies2owner_idxs.size());
   // now we have a Remotes map from data item copies to data item owners
   Remotes data_copies2owners(data_copies2owner_ranks, data_copies2owner_idxs);
   // That Remotes map is sufficient to construct the remainder of the Dist

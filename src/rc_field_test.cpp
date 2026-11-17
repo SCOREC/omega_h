@@ -37,9 +37,9 @@ void run_adapt(Mesh* mesh, char const* vtk_path) {
   mesh->add_tag<Real>(VERT, "target_metric", symm_ncomps(dim));
   set_target_metric<dim>(mesh);
 
-  OMEGA_H_CHECK(mesh->has_tag(0, "metric"));
+  OMEGA_H_ALWAYS_CHECK(mesh->has_tag(0, "metric"));
   mesh->set_parting(OMEGA_H_ELEM_BASED);
-  OMEGA_H_CHECK(mesh->has_tag(0, "metric"));
+  OMEGA_H_ALWAYS_CHECK(mesh->has_tag(0, "metric"));
 
   mesh->ask_lengths();
   mesh->ask_qualities();
@@ -109,14 +109,14 @@ void test_3d(Library* lib, const std::string& mesh_file, const char* out_file) {
   mesh.add_rcField<Real>(LOs({22}), 2, "face_22", 1);
   mesh.set_rcField_array(2, "face_22", Reals(vals_f_22));
   auto array0 = mesh.get_rcField_array<Real>(2, "face_22");
-  OMEGA_H_CHECK(array0.exists());
+  OMEGA_H_ALWAYS_CHECK(array0.exists());
   binary::write("box3d_withFace22Field.osh", &mesh);
   auto array = mesh.get_rcField_array<Real>(2, "face_22");
-  OMEGA_H_CHECK(array.exists());
+  OMEGA_H_ALWAYS_CHECK(array.exists());
   auto new_mesh = Mesh(lib);
   binary::read("box3d_withFace22Field.osh", lib->world(), &new_mesh);
   auto vals_f_22_read = new_mesh.get_rcField_array<Real>(2, "face_22");
-  OMEGA_H_CHECK(vals_f_22_read == Reals(vals_f_22));
+  OMEGA_H_ALWAYS_CHECK(vals_f_22_read == Reals(vals_f_22));
 
   auto vert_rc_ids = (mesh.ask_revClass(0)).ab2b;
   auto nbvert = vert_rc_ids.size();

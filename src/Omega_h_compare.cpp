@@ -178,8 +178,8 @@ static Read<GO> get_local_conn(Mesh* mesh, Int dim, Int low_dim) {
 
 Omega_h_Comparison compare_meshes(
     Mesh* a, Mesh* b, MeshCompareOpts const& opts, bool verbose, bool full) {
-  OMEGA_H_CHECK(a->comm()->size() == b->comm()->size());
-  OMEGA_H_CHECK(a->comm()->rank() == b->comm()->rank());
+  OMEGA_H_ALWAYS_CHECK(a->comm()->size() == b->comm()->size());
+  OMEGA_H_ALWAYS_CHECK(a->comm()->rank() == b->comm()->rank());
   auto comm = a->comm();
   auto should_print = verbose && (comm->rank() == 0);
   if (a->family() != b->family()) {

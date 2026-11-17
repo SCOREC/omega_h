@@ -12,7 +12,7 @@
 using namespace Omega_h;
 
 static void test_one_rank(CommPtr comm) {
-  OMEGA_H_CHECK(comm->size() == 1);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 1);
   {  // make sure we can operate on zero-length data
     Dist dist;
     dist.set_parent_comm(comm);
@@ -28,7 +28,7 @@ static void test_one_rank(CommPtr comm) {
     Read<GO> a({0, 1, 2, 3});
     {
       auto b = dist.exch(a, 1);
-      OMEGA_H_CHECK(b == Read<GO>({3, 2, 1, 0}));
+      OMEGA_H_ALWAYS_CHECK(b == Read<GO>({3, 2, 1, 0}));
     }
   }
   {
@@ -41,19 +41,19 @@ static void test_one_rank(CommPtr comm) {
       Read<GO> a({0, 1, 2, 3});
       auto const vdist = create_dist_for_variable_sized(copies2owners, {0, 1, 2, 3, 4});
       auto b = vdist.exch(a, 1);
-      OMEGA_H_CHECK(b == Read<GO>({0, 1, 2, 3}));
+      OMEGA_H_ALWAYS_CHECK(b == Read<GO>({0, 1, 2, 3}));
     }
     { // test variable sized array where actors have size 1 but actors 2 and 3 which have size 2
       Read<GO> a({0, 1, 2, 3, 4, 5});
       auto const vdist = create_dist_for_variable_sized(copies2owners, {0, 1, 3, 4, 6});
       auto b = vdist.exch(a, 1);
-      OMEGA_H_CHECK(b == Read<GO>({0, 1, 2, 3, 4, 5}));
+      OMEGA_H_ALWAYS_CHECK(b == Read<GO>({0, 1, 2, 3, 4, 5}));
     }
   }
 }
 
 static void test_two_ranks_dist(CommPtr comm) {
-  OMEGA_H_CHECK(comm->size() == 2);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 2);
   Dist dist;
   dist.set_parent_comm(comm);
   /* partition is {0,1,2}{3,4},
@@ -101,20 +101,20 @@ static void test_two_ranks_dist(CommPtr comm) {
   //Exchange data using the dist, and check that a global reversal occured
   auto b = dist.exch(a, 1);
   if (comm->rank() == 0) {
-    OMEGA_H_CHECK(b == Reals({4., 3., 2.}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({4., 3., 2.}));
   } else {
-    OMEGA_H_CHECK(b == Reals({1., 0.}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({1., 0.}));
   }
   /* Invert the Dist graph, swapping the forward and reverse relationship of
    * graph nodes. Then perform an exchange, effectively reversing the earlier
    * exchange operation
    */
   auto c = dist.invert().exch(b, 1);
-  OMEGA_H_CHECK(c == a);
+  OMEGA_H_ALWAYS_CHECK(c == a);
 }
 
 static void test_two_ranks_dist_for_two_variable_sized_actors(CommPtr comm) {
-  OMEGA_H_CHECK(comm->size() == 2);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 2);
   Dist copies2owners;
   copies2owners.set_parent_comm(comm);
   /* partition is {0,1,2}{3,4},
@@ -143,12 +143,12 @@ static void test_two_ranks_dist_for_two_variable_sized_actors(CommPtr comm) {
     }
     auto b = dist.exch(a, 1);
     if (comm->rank() == 0) {
-      OMEGA_H_CHECK(b == Reals({13, 15, 17, 19, 9, 11}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({13, 15, 17, 19, 9, 11}));
     } else {
-      OMEGA_H_CHECK(b == Reals({1, 3, 5, 7}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({1, 3, 5, 7}));
     }
     auto c = dist.invert().exch(b, 1);
-    OMEGA_H_CHECK(c == a);
+    OMEGA_H_ALWAYS_CHECK(c == a);
   }
   { // size of the first actor is 0
     LOs copies2data;
@@ -166,12 +166,12 @@ static void test_two_ranks_dist_for_two_variable_sized_actors(CommPtr comm) {
     }
     auto b = dist.exch(a, 1);
     if (comm->rank() == 0) {
-      OMEGA_H_CHECK(b == Reals({15, 17, 19, 9, 11}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({15, 17, 19, 9, 11}));
     } else {
-      OMEGA_H_CHECK(b == Reals({3, 5, 7}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({3, 5, 7}));
     }
     auto c = dist.invert().exch(b, 1);
-    OMEGA_H_CHECK(c == a);
+    OMEGA_H_ALWAYS_CHECK(c == a);
   }
   { // size of the second actor is 0
     LOs copies2data;
@@ -189,17 +189,17 @@ static void test_two_ranks_dist_for_two_variable_sized_actors(CommPtr comm) {
     }
     auto b = dist.exch(a, 1);
     if (comm->rank() == 0) {
-      OMEGA_H_CHECK(b == Reals({13, 9, 11}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({13, 9, 11}));
     } else {
-      OMEGA_H_CHECK(b == Reals({1}));
+      OMEGA_H_ALWAYS_CHECK(b == Reals({1}));
     }
     auto c = dist.invert().exch(b, 1);
-    OMEGA_H_CHECK(c == a);
+    OMEGA_H_ALWAYS_CHECK(c == a);
   }
 }
 
 static void test_two_rank_for_four_variable_sized_actors(CommPtr comm) {
-  OMEGA_H_CHECK(comm->size() == 2);
+  OMEGA_H_ALWAYS_CHECK(comm->size() == 2);
   Dist copies2owners;
   copies2owners.set_parent_comm(comm);
   /* partition is {0,1,2,3}{4,5,6,7},
@@ -227,12 +227,12 @@ static void test_two_rank_for_four_variable_sized_actors(CommPtr comm) {
   }
   auto b = dist.exch(a, 1);
   if (comm->rank() == 0) {
-    OMEGA_H_CHECK(b == Reals({-13, 9, 11, 13, -9, -11, 15}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({-13, 9, 11, 13, -9, -11, 15}));
   } else {
-    OMEGA_H_CHECK(b == Reals({-1, -3, -5, 5, 7, -7, 3}));
+    OMEGA_H_ALWAYS_CHECK(b == Reals({-1, -3, -5, 5, 7, -7, 3}));
   }
   auto c = dist.invert().exch(b, 1);
-  OMEGA_H_CHECK(c == a);
+  OMEGA_H_ALWAYS_CHECK(c == a);
 }
 
 static void test_two_ranks_eq_owners(CommPtr comm) {
@@ -241,12 +241,12 @@ static void test_two_ranks_eq_owners(CommPtr comm) {
      will go to smallest rank, rank 0. */
   if (comm->rank() == 0) {
     auto owners = owners_from_globals(comm, Read<GO>({0, 1, 2}), Read<I32>());
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({0, 1, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({0, 1, 2}));
   } else {
     auto owners = owners_from_globals(comm, Read<GO>({2, 3, 4}), Read<I32>());
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 1, 1}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({2, 1, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 1, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({2, 1, 2}));
   }
 }
 
@@ -256,12 +256,12 @@ static void test_two_ranks_uneq_owners(CommPtr comm) {
      will be deemed the owner */
   if (comm->rank() == 0) {
     auto owners = owners_from_globals(comm, Read<GO>({0, 1, 2}), Read<I32>());
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 0, 1}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({0, 1, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 0, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({0, 1, 0}));
   } else {
     auto owners = owners_from_globals(comm, Read<GO>({2, 3}), Read<I32>());
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({1, 1}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({0, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({1, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({0, 1}));
   }
 }
 
@@ -273,13 +273,13 @@ static void test_two_ranks_forced_owners(CommPtr comm) {
   if (comm->rank() == 0) {
     auto owners =
         owners_from_globals(comm, Read<GO>({0, 1, 2}), Read<I32>({0, 0, 0}));
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({0, 1, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({0, 1, 2}));
   } else {
     auto owners =
         owners_from_globals(comm, Read<GO>({2, 3}), Read<I32>({0, 1}));
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 1}));
-    OMEGA_H_CHECK(owners.idxs == Read<I32>({2, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<I32>({2, 1}));
   }
 }
 
@@ -287,11 +287,11 @@ static void test_two_ranks_bipart(CommPtr comm) {
   if (comm->rank() == 0) {
     auto dist = bi_partition(comm, Read<I8>{0, 1, 0, 1});
     auto out = dist.exch(LOs({0, 1, 2, 3}), 1);
-    OMEGA_H_CHECK(out == LOs({0, 2, 4}));
+    OMEGA_H_ALWAYS_CHECK(out == LOs({0, 2, 4}));
   } else {
     auto dist = bi_partition(comm, Read<I8>{0, 1, 1});
     auto out = dist.exch(LOs({4, 5, 6}), 1);
-    OMEGA_H_CHECK(out == LOs({1, 3, 5, 6}));
+    OMEGA_H_ALWAYS_CHECK(out == LOs({1, 3, 5, 6}));
   }
 }
 
@@ -309,9 +309,9 @@ static void test_two_ranks_exch_sum(CommPtr comm) {
   }
   auto recvd = dist.exch_reduce(LOs({1, 1, 1}), 1, OMEGA_H_SUM);
   if (comm->rank() == 0) {
-    OMEGA_H_CHECK(recvd == LOs({1, 2, 2}));
+    OMEGA_H_ALWAYS_CHECK(recvd == LOs({1, 2, 2}));
   } else {
-    OMEGA_H_CHECK(recvd == LOs({1}));
+    OMEGA_H_ALWAYS_CHECK(recvd == LOs({1}));
   }
 }
 
@@ -333,13 +333,13 @@ static void test_resolve_derived(CommPtr comm) {
   resolve_derived_copies(comm, verts2globs, 2, &ev2v, &owners);
   /* in both cases, the last edge is flipped since it goes
      from high global number to low. */
-  OMEGA_H_CHECK(ev2v == LOs({0, 1, 1, 2, 0, 2}));
+  OMEGA_H_ALWAYS_CHECK(ev2v == LOs({0, 1, 1, 2, 0, 2}));
   if (comm->rank() == 0) {
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
-    OMEGA_H_CHECK(owners.idxs == Read<LO>({0, 1, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<LO>({0, 1, 2}));
   } else {
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({1, 1, 0}));
-    OMEGA_H_CHECK(owners.idxs == Read<LO>({0, 1, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({1, 1, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<LO>({0, 1, 1}));
   }
 }
 
@@ -355,13 +355,13 @@ static void test_construct(Library* lib, CommPtr comm) {
   build_from_elems2verts(&mesh, comm, OMEGA_H_SIMPLEX, 2, tv2v, verts2globs);
   auto ev2v = mesh.ask_verts_of(EDGE);
   auto owners = mesh.ask_owners(EDGE);
-  OMEGA_H_CHECK(ev2v == LOs({0, 1, 0, 2, 1, 2}));
+  OMEGA_H_ALWAYS_CHECK(ev2v == LOs({0, 1, 0, 2, 1, 2}));
   if (comm->rank() == 0) {
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
-    OMEGA_H_CHECK(owners.idxs == Read<LO>({0, 1, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({0, 0, 0}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<LO>({0, 1, 2}));
   } else {
-    OMEGA_H_CHECK(owners.ranks == Read<I32>({1, 0, 1}));
-    OMEGA_H_CHECK(owners.idxs == Read<LO>({0, 2, 2}));
+    OMEGA_H_ALWAYS_CHECK(owners.ranks == Read<I32>({1, 0, 1}));
+    OMEGA_H_ALWAYS_CHECK(owners.idxs == Read<LO>({0, 2, 2}));
   }
 }
 
@@ -373,7 +373,7 @@ static void test_read_vtu(Library* lib, CommPtr comm) {
   Mesh mesh1(lib);
   vtk::read_vtu(stream, comm, &mesh1);
   auto opts = MeshCompareOpts::init(&mesh0, VarCompareOpts::zero_tolerance());
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       OMEGA_H_SAME == compare_meshes(&mesh0, &mesh1, opts, true, false));
 }
 
@@ -384,13 +384,13 @@ static void test_binary_io(Library* lib, CommPtr comm) {
   Mesh mesh1(lib);
   binary::read("mpi_test_elem_based.osh", comm, &mesh1);
   auto opts = MeshCompareOpts::init(&mesh0, VarCompareOpts::zero_tolerance());
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       OMEGA_H_SAME == compare_meshes(&mesh0, &mesh1, opts, true, true));
   mesh0.set_parting(OMEGA_H_GHOSTED);
   binary::write("mpi_test_ghosted.osh", &mesh0);
   Mesh mesh2(lib);
   binary::read("mpi_test_ghosted.osh", comm, &mesh2);
-  OMEGA_H_CHECK(
+  OMEGA_H_ALWAYS_CHECK(
       OMEGA_H_SAME == compare_meshes(&mesh0, &mesh2, opts, true, true));
 }
 
@@ -423,18 +423,18 @@ void test_rib(CommPtr comm) {
   inertia::recursively_bisect(comm, 1.1, &coords, &masses, &owners, &hints);
   I32 size2 = 1;
   for (auto axis : hints.axes) {
-    OMEGA_H_CHECK(are_close(axis, vector_3(1, 0, 0)));
+    OMEGA_H_ALWAYS_CHECK(are_close(axis, vector_3(1, 0, 0)));
     size2 *= 2;
   }
-  OMEGA_H_CHECK(size2 == size);
+  OMEGA_H_ALWAYS_CHECK(size2 == size);
   auto check_coords = OMEGA_H_LAMBDA(LO i) {
     auto v = get_vector<3>(coords, i);
-    OMEGA_H_CHECK(rank * n <= v[0]);
-    OMEGA_H_CHECK(v[0] < (rank + 1) * n);
-    OMEGA_H_CHECK(v[1] == 0 && v[2] == 0);
+    OMEGA_H_ALWAYS_CHECK(rank * n <= v[0]);
+    OMEGA_H_ALWAYS_CHECK(v[0] < (rank + 1) * n);
+    OMEGA_H_ALWAYS_CHECK(v[1] == 0 && v[2] == 0);
   };
   parallel_for(n, check_coords);
-  OMEGA_H_CHECK(masses == Reals(n, 1));
+  OMEGA_H_ALWAYS_CHECK(masses == Reals(n, 1));
 }
 
 int main(int argc, char** argv) {

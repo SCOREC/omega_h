@@ -33,9 +33,9 @@ int main(int argc, char** argv) {
     mesh.migrate(owners);
   }
   if(!rank) {
-    OMEGA_H_CHECK(mesh.nelems()==5);
+    OMEGA_H_ALWAYS_CHECK(mesh.nelems()==5);
   } else {
-    OMEGA_H_CHECK(mesh.nelems()==3);
+    OMEGA_H_ALWAYS_CHECK(mesh.nelems()==3);
   }
   Omega_h::vtk::write_parallel("box_after.vtk", &mesh, mesh.dim());
   return 0;

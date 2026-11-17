@@ -10,7 +10,7 @@ using namespace Omega_h;
 
 int main(int argc, char** argv) {
   auto lib = Library(&argc, &argv);
-  OMEGA_H_CHECK(argc == 2);
+  OMEGA_H_ALWAYS_CHECK(argc == 2);
   auto world = lib.world();
   auto mesh = gmsh::read(argv[1], world);
   auto ids = std::vector<LO>({6, 7, 8, 9});
