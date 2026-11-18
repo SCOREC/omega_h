@@ -10,8 +10,10 @@ namespace test {
 template <std::size_t A, std::size_t B>
 bool coords_equal(CoordsView<A> const& a, CoordsView<B> const& b) {
   if (a.extent(0) != b.extent(0) || a.extent(1) != b.extent(1)) return false;
-  HostCoordsView<A> ha(a);
-  HostCoordsView<B> hb(b);
+  auto ha_storage = copy_coords_to_host(a);
+  auto ha = make_coords_view<A>(ha_storage, a.extent(1));
+  auto hb_storage = copy_coords_to_host(b);
+  auto hb = make_coords_view<B>(hb_storage, b.extent(1));
   for (LO v = 0; v < a.extent(0); ++v)
     for (Int d = 0; d < a.extent(1); ++d)
       if (ha(v, d) != hb(v, d)) return false;
@@ -19,7 +21,7 @@ bool coords_equal(CoordsView<A> const& a, CoordsView<B> const& b) {
 }
 
 template <Int sdim>
-CoordsView<sdim> element_centroids(Mesh& mesh) {
+Reals element_centroids(Mesh& mesh) {
   return average_coords(&mesh, mesh.dim(), mesh.coords_view<sdim>());
 }
 }  // namespace test

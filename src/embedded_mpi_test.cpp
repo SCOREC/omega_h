@@ -15,7 +15,8 @@ int main(int argc, char** argv) {
   check(argc == 2 && comm->size() == std::stoi(argv[1]), "MPI rank count differs from requested count");
   auto reference = embedded_test::plane(lib);
   HostRead<GO> ref_globals(reference.globals(VERT));
-  HostCoordsView<3> ref_coords(reference.coords_view<3>());
+  auto ref_coords_storage = copy_coords_to_host(reference.coords_view<3>());
+  auto ref_coords = make_coords_view<3>(ref_coords_storage);
   std::map<GO, std::array<Real, 3>> expected;
   for (LO v = 0; v < reference.nverts(); ++v)
     expected[ref_globals[v]] = {{ref_coords(v, 0), ref_coords(v, 1), ref_coords(v, 2)}};
@@ -23,7 +24,8 @@ int main(int argc, char** argv) {
   auto verify = [&](Mesh& mesh) {
     check(mesh.space_dim() == 3, "lost spatial dimension on an MPI rank");
     HostRead<GO> globals(mesh.globals(VERT));
-    HostCoordsView<3> coords(mesh.coords_view<3>());
+    auto coords_storage = copy_coords_to_host(mesh.coords_view<3>());
+    auto coords = make_coords_view<3>(coords_storage);
     for (LO v = 0; v < mesh.nverts(); ++v)
       for (Int d = 0; d < 3; ++d)
         check(coords(v, d) == expected.at(globals[v])[d], "migration changed coordinates");
@@ -37,7 +39,7 @@ int main(int argc, char** argv) {
       root ? reference.ask_verts_of(2) : LOs({}),
       root ? reference.globals(VERT) : GOs({}));
   mesh.set_space_dim(3);
-  mesh.add_coords(root ? reference.coords_view() : CoordsView<>(Reals({}), 3));
+  mesh.add_coords(root ? reference.retain_coords_storage() : Reals({}));
   mesh.set_parting(OMEGA_H_GHOSTED);
   embedded_test::classify(mesh);
   mesh.balance(false);

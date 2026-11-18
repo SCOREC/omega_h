@@ -224,7 +224,8 @@ Reals egads_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
   auto coords = mesh->coords_view<3>();
   auto host_class_dims = HostRead<I8>(class_dims);
   auto host_class_ids = HostRead<LO>(class_ids);
-  auto host_coords = HostCoordsView<3>(coords);
+  auto host_coords_storage = HostRead<Real>(mesh->retain_coords_storage());
+  auto host_coords = make_coords_view<3>(host_coords_storage);
   auto host_warp = HostWrite<Real>(mesh->nverts() * 3);
   for (LO i = 0; i < mesh->nverts(); ++i) {
     auto a = vector_3(host_coords(i, 0), host_coords(i, 1), host_coords(i, 2));

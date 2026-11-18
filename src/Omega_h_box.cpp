@@ -140,14 +140,15 @@ void classify_box(Mesh* mesh, Real x, Real y, Real z, LO nx, LO ny, LO nz) {
   Few<LO, 3> nel({nx, ny, nz});
   Vector<3> l({x, y, z});
   for (Int ent_dim = 0; ent_dim <= mesh->dim(); ++ent_dim) {
-    auto centroids = average_coords(mesh, ent_dim, mesh->coords_view());
+    auto storage = average_coords(mesh, ent_dim, mesh->coords_view());
+    auto centroids = make_coords_view(storage, mesh->space_dim());
     Read<LO> class_ids;
     if (mesh->dim() == 3)
-      classify_box_dim<3>(mesh, ent_dim, centroids.as<3>(), nel, l);
+      classify_box_dim<3>(mesh, ent_dim, as_coords<3>(centroids), nel, l);
     else if (mesh->dim() == 2)
-      classify_box_dim<2>(mesh, ent_dim, centroids.as<2>(), nel, l);
+      classify_box_dim<2>(mesh, ent_dim, as_coords<2>(centroids), nel, l);
     else if (mesh->dim() == 1)
-      classify_box_dim<1>(mesh, ent_dim, centroids.as<1>(), nel, l);
+      classify_box_dim<1>(mesh, ent_dim, as_coords<1>(centroids), nel, l);
     else
       Omega_h_fail("classify_box: dimension isn't 1, 2, or 3!");
   }

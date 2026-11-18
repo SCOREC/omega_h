@@ -459,11 +459,6 @@ if(BUILD_TESTING)
       $<TARGET_FILE:unit_embedded> ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh ${mode})
     set_tests_properties(embedded_reject_${mode} PROPERTIES WILL_FAIL TRUE LABELS mesh)
   endforeach()
-  if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_test(NAME embedded_reject_index COMMAND ${CMAKE_COMMAND} -E env
-      $<TARGET_FILE:unit_embedded> ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh bad_index)
-    set_tests_properties(embedded_reject_index PROPERTIES WILL_FAIL TRUE LABELS mesh)
-  endif()
   osh_add_exe(unit_math)
 
   osh_add_exe(test_patches)

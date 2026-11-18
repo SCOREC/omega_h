@@ -121,7 +121,9 @@ void write(filesystem::path const& basename, Mesh* mesh) {
   auto exposed_sides = mark_exposed_sides(mesh);
   auto exposed_nodes = mark_down(mesh, dim - 1, 0, exposed_sides);
 
-  HostCoordsView<2> h_coords(coords);
+  auto h_coords_storage = HostRead<Real>(mesh->retain_coords_storage());
+
+  auto h_coords = make_coords_view<2>(h_coords_storage);
   HostRead<LO> h_e2v(e2v);
   HostRead<I8> h_exposed(exposed_nodes);
 

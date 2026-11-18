@@ -755,7 +755,8 @@ void write(std::ostream& stream, Mesh* mesh) {
   stream << nverts << '\n';
   auto dim = mesh->dim();
   auto d_coords = mesh->coords_view();
-  auto h_coords = HostCoordsView<>(d_coords);
+  auto h_coords_storage = HostRead<Real>(mesh->retain_coords_storage());
+  auto h_coords = make_coords_view<>(h_coords_storage, d_coords.extent(1));
   stream << std::scientific << std::setprecision(17);
   for (LO i = 0; i < nverts; ++i) {
     stream << (i + 1);
@@ -817,7 +818,8 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh) {
   const auto globals_v = mesh.globals(VERT);
   const auto h_globals_v = HostRead<GO>(globals_v);
   const auto coords = mesh.coords_view();
-  const auto h_coords = HostCoordsView<>(coords);
+  const auto h_coords_storage = HostRead<Real>(mesh.retain_coords_storage());
+  auto h_coords = make_coords_view<>(h_coords_storage, coords.extent(1));
   const auto gmsh_dims = 3;
 
   std::vector<std::size_t> node_tags(static_cast<size_t>(nnodes));

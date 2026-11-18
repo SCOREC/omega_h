@@ -14,7 +14,8 @@ using namespace Omega_h;
 
 void add_density_tag(Mesh* mesh) {
   auto density = Write<Real>(mesh->nelems());
-  auto elem_coords = test::element_centroids<2>(*mesh);
+  auto elem_coords_storage = test::element_centroids<2>(*mesh);
+  auto elem_coords = make_coords_view<2>(elem_coords_storage);
   auto f = OMEGA_H_LAMBDA(LO e) {
     if (elem_coords(e, 1) > 0.5) {
       density[e] = 1e-4;

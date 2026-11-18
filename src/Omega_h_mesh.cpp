@@ -420,10 +420,12 @@ Adj Mesh::ask_adj(Int from, Int to) {
   return derived;
 }
 
-void Mesh::add_coords(CoordsView<> const& coords) {
-  if (coords.extent(0) != nverts() || coords.extent(1) != space_dim())
-    Omega_h_fail("add_coords: coordinate extents differ from mesh dimensions\n");
-  add_coords(coords.raw());
+Reals Mesh::retain_coords_storage() const {
+  auto storage = get_array<Real>(VERT, "coordinates");
+  if (get_tagbase(VERT, "coordinates")->ncomps() != space_dim() ||
+      storage.size() != nverts() * space_dim())
+    Omega_h_fail("coords_view: coordinates do not match nverts and space_dim (%d)\n", space_dim());
+  return storage;
 }
 
 void Mesh::add_coords(Reals array) {
@@ -441,19 +443,6 @@ void require_same_tdim_sdim(Mesh const& mesh, char const* caller) {
 Reals Mesh::coords() const {
   require_same_tdim_sdim(*this);
   return get_array<Real>(VERT, "coordinates");
-}
-
-void Mesh::set_coords(Reals const& array) {
-  require_same_tdim_sdim(*this);
-  if (array.size() != nverts() * space_dim())
-    Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
-  set_tag<Real>(VERT, "coordinates", array);
-}
-
-void Mesh::set_coords(CoordsView<> const& coords) {
-  if (coords.extent(0) != nverts() || coords.extent(1) != space_dim())
-    Omega_h_fail("set_coords: coordinate extents do not match mesh\n");
-  set_tag<Real>(VERT, "coordinates", coords.raw());
 }
 
 Read<GO> Mesh::globals(Int ent_dim) const {
@@ -660,7 +649,7 @@ void Mesh::balance(bool predictive) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_coords(this, dim(), coords_view()).raw();
+      average_coords(this, dim(), coords_view());
   if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Reals masses;
   Real abs_tol;
@@ -738,7 +727,7 @@ void Mesh::balance(Reals weights) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_coords(this, dim(), coords_view()).raw();
+      average_coords(this, dim(), coords_view());
   if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Real abs_tol;
   abs_tol = max2(0.0, get_max(comm_, weights));

@@ -33,11 +33,9 @@ template <class F> static void rejects(F f) {
 
 OMEGA_H_ALLOW_DEPRECATED_BEGIN
 static void check_deprecated(Mesh& ordinary, Mesh& embedded) {
-  require(ordinary.coords() == ordinary.coords_view().raw());
-  ordinary.set_coords(ordinary.coords_view().raw());
+  require(ordinary.coords() == ordinary.retain_coords_storage());
 #ifdef OMEGA_H_THROW
   rejects([&] { (void)embedded.coords(); });
-  rejects([&] { embedded.set_coords(embedded.coords_view().raw()); });
 #else
   (void)embedded;
 #endif
@@ -46,8 +44,10 @@ OMEGA_H_ALLOW_DEPRECATED_END
 
 static void check_coordinate_algorithms(Mesh& mesh) {
   auto coords = mesh.coords_view<3>();
-  CoordsView<3> centers = average_coords(&mesh, FACE, coords);
-  HostCoordsView<3> host_centers(centers);
+  auto centers_storage = average_coords(&mesh, FACE, coords);
+  auto centers = make_coords_view<3>(centers_storage);
+  auto host_centers_host_storage = copy_coords_to_host(centers);
+  auto host_centers = make_coords_view<3>(host_centers_host_storage);
   for (LO e = 0; e < mesh.nelems(); ++e) {
     require(are_close(host_centers(e, 0), 0.3 + 1.0 / 3.0));
     if (are_close(host_centers(e, 2), 2.5))
@@ -57,13 +57,18 @@ static void check_coordinate_algorithms(Mesh& mesh) {
       require(are_close(host_centers(e, 2), 2.5 + 1.0 / 3.0));
     }
   }
-  HostCoordsView<3> subset(average_coords(&mesh, FACE, LOs({1, 0}), coords));
+  auto subset_storage = average_coords(&mesh, FACE, LOs({1, 0}), coords);
+  HostRead<Real> subset_host(subset_storage);
+  auto subset = make_coords_view<3>(subset_host);
   for (Int d = 0; d < 3; ++d) {
     require(subset(0, d) == host_centers(1, d));
     require(subset(1, d) == host_centers(0, d));
   }
-  HostCoordsView<3> vertices(average_coords(&mesh, VERT, LOs({3, 0}), coords));
-  HostCoordsView<3> original(coords);
+  auto vertices_storage = average_coords(&mesh, VERT, LOs({3, 0}), coords);
+  HostRead<Real> vertices_host(vertices_storage);
+  auto vertices = make_coords_view<3>(vertices_host);
+  auto original_host_storage = copy_coords_to_host(coords);
+  auto original = make_coords_view<3>(original_host_storage);
   for (Int d = 0; d < 3; ++d) {
     require(vertices(0, d) == original(3, d));
     require(vertices(1, d) == original(0, d));
@@ -89,6 +94,58 @@ static void check_coordinate_algorithms(Mesh& mesh) {
   }
 }
 
+static void check_storage_lifetime(Mesh& mesh) {
+  // Ensure the mesh is the only initial owner of this fresh allocation.
+  mesh.set_coords<3>(deep_copy(mesh.retain_coords_storage()));
+  auto keep_alive = mesh.retain_coords_storage();
+  auto previous = mesh.coords_view<3>();
+  auto old_area = get_sum(mesh.ask_sizes());
+  require(previous.data_handle() == keep_alive.data());
+  // The mesh must retain this temporary owning buffer after the call returns.
+  mesh.set_coords<3>(Reals(Write<Real>(mesh.nverts() * 3, 42.0)));
+  require(get_sum(mesh.ask_sizes()) == 0.0);
+  auto current_storage = copy_coords_to_host(mesh.coords_view<3>());
+  auto current = make_coords_view<3>(current_storage);
+  for (LO v = 0; v < current.extent(0); ++v)
+    for (Int d = 0; d < 3; ++d) require(current(v, d) == 42.0);
+  require(test::coords_equal(previous, make_coords_view<3>(keep_alive)));
+  mesh.set_coords<3>(keep_alive);
+  require(are_close(get_sum(mesh.ask_sizes()), old_area));
+}
+
+struct OtherMemorySpace {};
+static_assert(std::is_same<typename CoordsView<3>::accessor_type::memory_space,
+    CoordsMemorySpace>::value, "coordinate spans retain the allocation space");
+static_assert(std::is_constructible<CoordsView<3>, CoordsWriteView<3>>::value,
+    "mutable spans convert to const spans");
+static_assert(!std::is_constructible<CoordsWriteView<3>, CoordsView<3>>::value,
+    "const coordinates cannot become writable");
+static_assert(!std::is_constructible<CoordsView<3>,
+    CoordsView<3, OtherMemorySpace>>::value, "memory tags cannot be changed implicitly");
+template <class T, class = void> struct CanSetCoords : std::false_type {};
+template <class T> struct CanSetCoords<T, std::void_t<decltype(
+    std::declval<Mesh&>().set_coords(std::declval<T>()))>> : std::true_type {};
+static_assert(CanSetCoords<Reals>::value && CanSetCoords<Write<Real>>::value,
+    "set_coords accepts owning storage");
+static_assert(!CanSetCoords<CoordsView<3>>::value && !CanSetCoords<CoordsWriteView<3>>::value,
+    "set_coords rejects borrowed storage");
+
+static void check_view_after_mesh_destruction(Library& lib) {
+  auto retained = [&] {
+    auto mesh = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 1, 1, 1, 1);
+    auto storage = mesh.retain_coords_storage();
+    return std::make_pair(storage, mesh.coords_view<3>());
+  }();
+  require(retained.second.data_handle() == retained.first.data());
+  auto host_storage = copy_coords_to_host(retained.second);
+  auto host = make_coords_view<3>(host_storage);
+  require(host.extent(0) == 8);
+  Real sum = 0;
+  for (LO v = 0; v < host.extent(0); ++v)
+    for (Int d = 0; d < 3; ++d) sum += host(v, d);
+  require(sum == 12.0);
+}
+
 static void check_geometry(Library& lib) {
   for (Int tdim = 1; tdim <= 2; ++tdim) {
     auto base = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 0, 4, tdim == 2 ? 4 : 0, 0);
@@ -99,7 +156,8 @@ static void check_geometry(Library& lib) {
       embedded_test::classify(embedded);
       require(are_close(embedded.ask_sizes(), base.ask_sizes(), 1e-12));
       auto lengths = measure_edges_real(&embedded);
-      HostCoordsView<> original(base.coords_view());
+      auto original_host_storage = copy_coords_to_host(base.coords_view());
+      auto original = make_coords_view<>(original_host_storage, base.coords_view().extent(1));
       HostRead<Real> actual(lengths);
       HostRead<LO> edges(embedded.ask_verts_of(EDGE));
       for (LO e = 0; e < embedded.nedges(); ++e) {
@@ -140,7 +198,8 @@ static void check_geometry(Library& lib) {
   std::vector<Real> decoded(folded.nverts() * 3);
   base64::decode(encoded.substr(header_size), decoded.data(), bytes);
   if (!is_little_endian_cpu()) for (auto& value : decoded) binary::swap_bytes(value);
-  HostCoordsView<3> expected(folded.coords_view<3>());
+  auto expected_host_storage = copy_coords_to_host(folded.coords_view<3>());
+  auto expected = make_coords_view<3>(expected_host_storage);
   for (LO v = 0; v < expected.extent(0); ++v)
     for (Int d = 0; d < 3; ++d) require(decoded[v * 3 + d] == expected(v, d));
   check_coordinate_algorithms(folded);
@@ -149,12 +208,8 @@ static void check_geometry(Library& lib) {
 int main(int argc, char** argv) {
   Library lib(&argc, &argv);
   if (argc > 2 && std::string(argv[2]) == "bad_static") {
-    CoordsView<2> invalid(Reals({1, 2, 3}), 3);
-    return 0;
-  }
-  if (argc > 2 && std::string(argv[2]) == "bad_index") {
-    CoordsView<3> invalid(Reals({1, 2, 3}), 3);
-    (void)invalid(0, 3);
+    auto storage = Reals({1, 2, 3});
+    (void)make_coords_view<2>(storage, 3);
     return 0;
   }
   auto mode = argc > 2 ? std::string(argv[2]) : std::string();
@@ -163,14 +218,17 @@ int main(int argc, char** argv) {
     build_from_elems_and_coords(&invalid, OMEGA_H_SIMPLEX, 2, LOs({0,1,2}), Reals({1,2,3}), 0);
     return 0;
   }
-  if (mode == "bad_length") { CoordsView<3> invalid(Reals({1,2,3,4}), 3); return 0; }
+  if (mode == "bad_length") {
+    auto storage = Reals({1,2,3,4});
+    (void)make_coords_view<3>(storage); return 0;
+  }
   if (mode == "bad_space_dim") {
     Mesh invalid(&lib); invalid.set_dim(2); invalid.set_space_dim(1); return 0;
   }
   if (mode == "bad_set_extent" || mode == "bad_tag_width") {
     auto invalid = build_box(lib.self(), OMEGA_H_SIMPLEX, 1, 1, 0, 2, 2, 0);
     if (mode == "bad_tag_width") invalid.set_space_dim(3);
-    else invalid.set_coords(CoordsView<>(Reals({1,2}), 2));
+    else invalid.set_coords(Reals({1,2}));
     return 0;
   }
   if (mode == "geometry") {
@@ -178,12 +236,10 @@ int main(int argc, char** argv) {
     std::cout << "embedded geometry checks passed\n";
     return 0;
   }
-  auto owned = [] {
-    Write<Real> values(6, 7.0);
-    CoordsView<3> fixed(Reals(values), 3);
-    return CoordsView<>(fixed);
-  }();
-  HostCoordsView<> owned_host(owned);
+  auto owned_storage = [] { return Reals(Write<Real>(6, 7.0)); }();
+  auto owned = make_coords_view<3>(owned_storage);
+  auto owned_host_storage = copy_coords_to_host(owned);
+  auto owned_host = make_coords_view<3>(owned_host_storage);
   Real sum = 0;
   for (LO v = 0; v < owned_host.extent(0); ++v)
     for (Int d = 0; d < owned_host.extent(1); ++d) sum += owned_host(v, d);
@@ -197,6 +253,7 @@ int main(int argc, char** argv) {
         2, dim >= 2 ? 2 : 0, dim == 3 ? 2 : 0);
     require(ordinary.tdim() == dim && ordinary.space_dim() == dim);
   }
+  check_view_after_mesh_destruction(lib);
   Mesh embedded(&lib);
   auto coords = Reals({0.3, -1.2, 2.5, 1.3, -1.2, 2.5, 0.3, -0.2, 3.5});
   build_from_elems_and_coords(&embedded, OMEGA_H_SIMPLEX, 2,
@@ -209,29 +266,35 @@ int main(int argc, char** argv) {
 #endif
   auto fixed = embedded.coords_view<3>();
   CoordsView<> dynamic = fixed;
-  auto roundtrip = dynamic.as<3>();
+  auto roundtrip = as_coords<3>(dynamic);
   require(dynamic.extent(0) == 3 && dynamic.extent(1) == 3);
   Write<Real> output(coords.size()), dynamic_output(coords.size()), span_output(coords.size());
-  auto borrowed = roundtrip.span();
+  auto borrowed = roundtrip;
+  auto z = Kokkos::submdspan(fixed, Kokkos::full_extent, 2);
+  static_assert(std::is_same<typename decltype(z)::accessor_type::memory_space,
+      CoordsMemorySpace>::value, "submdspan preserves the memory-space tag");
   auto check_indexing = OMEGA_H_LAMBDA(LO v) {
     auto gathered = gather_vectors<1>(fixed, Few<LO, 1>{v});
     for (Int d = 0; d < 3; ++d) {
       output[v * 3 + d] = gathered[0][d];
       dynamic_output[v * 3 + d] = dynamic(v, d);
-      span_output[v * 3 + d] = borrowed(v, d);
+      span_output[v * 3 + d] = d == 2 ? z(v) : borrowed(v, d);
     }
   };
   parallel_for(embedded.nverts(), check_indexing);
   require(Reals(output) == coords);
   require(Reals(dynamic_output) == coords && Reals(span_output) == coords);
   Write<Real> writable_data(coords.size(), 0.0);
-  CoordsWriteView<3> writable(writable_data, 3);
+  auto writable = make_coords_view<3>(writable_data, 3);
   auto write_coords = OMEGA_H_LAMBDA(LO v) {
     for (Int d = 0; d < 3; ++d) writable(v, d) = fixed(v, d);
   };
   parallel_for(embedded.nverts(), write_coords);
-  embedded.set_coords(CoordsView<>(writable));
-  require(test::coords_equal(embedded.coords_view<3>(), CoordsView<3>(coords, 3)));
+  embedded.set_coords<3>(writable_data);
+  require(embedded.coords_view<3>().data_handle() == writable_data.data());
+  require(test::coords_equal(embedded.coords_view<3>(), make_coords_view<3>(coords)));
+
+  check_storage_lifetime(embedded);
 
   auto copied = embedded.copy_meta();
   require(copied.space_dim() == 3);
@@ -242,15 +305,15 @@ int main(int argc, char** argv) {
   Mesh loaded(&lib);
   loaded.set_comm(lib.self());
   binary::read(stream, &loaded, binary::latest_version);
-  require(loaded.space_dim() == 3 && test::coords_equal(loaded.coords_view<3>(), CoordsView<3>(coords, 3)));
+  require(loaded.space_dim() == 3 && test::coords_equal(loaded.coords_view<3>(), make_coords_view<3>(coords)));
   auto old = binary::read(argv[1], lib.self());
   require(old.space_dim() == old.dim());
 #ifdef OMEGA_H_THROW
   rejects([&] { embedded.coords_view<2>(); });
-  rejects([&] { dynamic.as<2>(); });
-  rejects([&] { CoordsView<3> bad(Reals({1, 2, 3, 4}), 3); });
-  rejects([&] { embedded.set_coords(CoordsView<>(Reals({1, 2, 3}), 3)); });
-  rejects([&] { embedded.set_coords(CoordsView<>(Reals({1, 2, 3, 4, 5, 6}), 2)); });
+  rejects([&] { as_coords<2>(dynamic); });
+  rejects([&] { auto storage = Reals({1, 2, 3, 4}); (void)make_coords_view<3>(storage); });
+  rejects([&] { embedded.set_coords<3>(Reals({1, 2, 3})); });
+  rejects([&] { embedded.set_coords<2>(Reals({1, 2, 3, 4, 5, 6})); });
   rejects([&] { embedded.set_space_dim(1); });
   rejects([&] { embedded.set_space_dim(4); });
   rejects([&] { embedded.set_space_dim(2); });

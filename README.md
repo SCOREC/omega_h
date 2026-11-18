@@ -104,24 +104,33 @@ and defaults to `dim()` for ordinary meshes.
 Omega_h::Mesh mesh(&library);
 Omega_h::build_from_elems_and_coords(
     &mesh, OMEGA_H_SIMPLEX, 2, triangle_vertices, xyz_coordinates, 3);
-auto xyz = mesh.coords_view<3>(); // owns storage; checks the dimension on the host
+auto xyz = mesh.coords_view<3>(); // borrowed, read-only span; checks the spatial dimension
 // In an Omega_h device kernel: xyz(vertex, component)
 ```
 
 `coords_view()` provides a dynamic extent; `coords_view<N>()` checks a static
-extent, including in Release builds. `CoordsWriteView<N>` wraps writable
-coordinate arrays, and `set_coords(CoordsView<>)` validates mesh extents.
-`HostCoordsView<N>` owns a host mirror for inspecting coordinates from device
-storage with the same `(vertex, component)` indexing. `average_coords` returns
-coordinate views for entity centroids, preserving the spatial extent. Coordinate
-consumers and `UserTransfer::snap` use views; implementations of that callback
-should accept `CoordsView<> const& old_coords`.
+extent, including in Release builds. Both return borrowed mdspans whose accessor
+records the allocation's memory space. The mesh owns the allocation; replacing
+coordinates or destroying the mesh can invalidate the span. Retain an explicit
+`mesh.retain_coords_storage()` handle when old coordinates must survive either
+operation. Views from temporary meshes and factories borrowing temporary buffers
+are rejected at compile time.
+
+`set_coords<N>(storage)` accepts an owning `Read<Real>` (also convertible from
+`Write<Real>`), validates mesh extents, shares ownership without copying, and
+invalidates cached geometry. It does not accept borrowed spans. The owning-input
+setter supports embedded meshes; only the old raw `coords()` getter remains
+deprecated and restricted to ordinary meshes.
+
+`make_coords_view<N>(storage, space_dim)` creates a borrowed span over an explicit
+owner. `copy_coords_to_host(span)` returns an owned host vector, which can be
+inspected using a host-tagged span from the same factory. `average_coords` returns
+an owning coordinate array; callers retain it while using a span over its values.
+`UserTransfer::snap` receives borrowed `CoordsView<> const&` old coordinates.
 
 Algorithms requiring matching topological and spatial dimensions use
-`require_same_tdim_sdim(mesh)` independently of coordinate access.
-The deprecated raw `coords()` and `set_coords(Reals)` methods work only for
-ordinary meshes. `OMEGA_H_SUPPRESS_DEPRECATION` silences their warnings while
-retaining the embedded-mesh checks.
+`require_same_tdim_sdim(mesh)` independently of coordinate access. Index bounds follow
+the selected mdspan implementation and are not universally checked.
 
 Embedded meshes support real element measures and edge lengths, nonpredictive
 and weighted balancing, migration/ghosting, osh I/O, and VTK output. Surface

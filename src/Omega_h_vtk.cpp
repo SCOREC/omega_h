@@ -772,7 +772,7 @@ void write_vtu(std::ostream& stream, Mesh* mesh, Int cell_dim,
   write_connectivity(stream, mesh, cell_dim, compress);
   stream << "</Cells>\n";
   stream << "<Points>\n";
-  auto coords = mesh->coords_view().raw();
+  auto coords = mesh->retain_coords_storage();
   write_array(stream, "coordinates", 3, resize_vectors(coords, mesh->space_dim(), 3),
       compress);
   stream << "</Points>\n";

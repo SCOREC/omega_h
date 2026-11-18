@@ -33,18 +33,18 @@ static bool okay(Mesh* mesh, AdaptOpts const& opts) {
   return true;
 }
 
-static CoordsView<> displaced_coords(CoordsView<> coords, Reals warp) {
+static Reals displaced_coords(CoordsView<> coords, Reals warp) {
   auto sdim = coords.extent(1);
   if (warp.size() != coords.extent(0) * sdim)
     Omega_h_fail("warp: displacement extents differ from coordinates\n");
   Write<Real> data(warp.size());
-  CoordsWriteView<> result(data, sdim);
+  auto result = make_coords_view<>(data, sdim);
   auto displace = OMEGA_H_LAMBDA(LO v) {
     for (Int d = 0; d < sdim; ++d)
       result(v, d) = coords(v, d) + warp[v * sdim + d];
   };
   parallel_for(coords.extent(0), displace, "displaced_coords");
-  return CoordsView<>(result);
+  return data;
 }
 
 bool warp_to_limit(
@@ -52,7 +52,8 @@ bool warp_to_limit(
   require_same_tdim_sdim(*mesh);
   if (!mesh->has_tag(VERT, "warp")) return false;
   check_okay(mesh, opts);
-  auto coords = mesh->coords_view();
+  auto coords_storage = mesh->retain_coords_storage();
+  auto coords = make_coords_view(coords_storage, mesh->space_dim());
   auto warp = mesh->get_array<Real>(VERT, "warp");
   mesh->set_coords(displaced_coords(coords, warp));
   if (okay(mesh, opts)) {

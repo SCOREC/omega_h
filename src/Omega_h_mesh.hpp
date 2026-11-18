@@ -282,20 +282,24 @@ protected:
 
  public:
   void add_coords(Reals array);
-  void add_coords(CoordsView<> const& coords);
+  // Retain this handle explicitly if a borrowed view must survive replacement.
+  Reals retain_coords_storage() const;
   template <std::size_t N = dynamic_extent>
-  CoordsView<N> coords_view() const {
-    auto array = get_array<Real>(VERT, "coordinates");
-    if (get_tagbase(VERT, "coordinates")->ncomps() != space_dim() ||
-        array.size() != nverts() * space_dim())
-      Omega_h_fail("coords_view: coordinates do not match nverts and space_dim (%d)\n", space_dim());
-    return CoordsView<N>(array, space_dim());
+  CoordsView<N> coords_view() const & {
+    auto storage = retain_coords_storage();
+    return make_coords_view<N>(storage, space_dim());
   }
-  void set_coords(CoordsView<> const& coords);
+  template <std::size_t N = dynamic_extent>
+  CoordsView<N> coords_view() const && = delete;
+  template <std::size_t N = dynamic_extent>
+  void set_coords(Reals storage) {
+    (void)make_coords_view<N>(storage, space_dim());
+    if (storage.size() != nverts() * space_dim())
+      Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
+    set_tag<Real>(VERT, "coordinates", storage);
+  }
   OMEGA_H_DEPRECATED("use coords_view(); raw coordinates require dim == space_dim")
   Reals coords() const;
-  OMEGA_H_DEPRECATED("use set_coords(CoordsView)")
-  void set_coords(Reals const& array);
   Read<GO> globals(Int dim) const;
   Reals ask_lengths();
   Reals ask_qualities();
@@ -410,7 +414,7 @@ bool can_print(Mesh* mesh);
 Real repro_sum_owned(Mesh* mesh, Int dim, Reals a);
 
 template <std::size_t N>
-CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, LOs a2e,
+Reals average_coords(Mesh* mesh, Int ent_dim, LOs a2e,
     CoordsView<N> coords) {
   auto const sdim = coords.extent(1);
   auto vertices = ent_dim == VERT ? LOs(mesh->nverts(), 0, 1)
@@ -418,7 +422,7 @@ CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, LOs a2e,
   auto const degree = ent_dim == VERT ? 1
       : element_degree(mesh->family(), ent_dim, VERT);
   Write<Real> data(a2e.size() * sdim);
-  CoordsWriteView<N> result(data, sdim);
+  auto result = make_coords_view<N>(data, sdim);
   auto average = OMEGA_H_LAMBDA(LO a) {
     auto e = a2e[a];
     for (Int d = 0; d < sdim; ++d) {
@@ -429,12 +433,11 @@ CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, LOs a2e,
     }
   };
   parallel_for(a2e.size(), average, "average_coords");
-  return CoordsView<N>(result);
+  return data;
 }
 
 template <std::size_t N>
-CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, CoordsView<N> coords) {
-  if (ent_dim == VERT) return coords;
+Reals average_coords(Mesh* mesh, Int ent_dim, CoordsView<N> coords) {
   return average_coords(mesh, ent_dim, LOs(mesh->nents(ent_dim), 0, 1), coords);
 }
 

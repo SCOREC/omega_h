@@ -14,7 +14,8 @@ inline void check(bool value, char const* message) {
 }
 
 inline Reals embed(CoordsView<> input, Int sdim) {
-  HostCoordsView<> src(input);
+  auto src_storage = copy_coords_to_host(input);
+  auto src = make_coords_view<>(src_storage, input.extent(1));
   auto tdim = input.extent(1);
   HostWrite<Real> dst(input.extent(0) * sdim);
   // Rx(30), Ry(45), Rz(60), followed by a translation.

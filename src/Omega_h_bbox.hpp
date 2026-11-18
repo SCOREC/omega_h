@@ -81,7 +81,7 @@ template <Int dim>
 BBox<dim> find_bounding_box(CoordsView<dim> coords);
 template <Int dim>
 BBox<dim> find_bounding_box(Reals coords) {
-  return find_bounding_box<dim>(CoordsView<dim>(coords, dim));
+  return find_bounding_box<dim>(make_coords_view<dim>(coords, dim));
 }
 
 template <Int dim>

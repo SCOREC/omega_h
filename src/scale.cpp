@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
   auto nverts = mesh.nverts();
   auto coords = mesh.coords_view();
   Omega_h::Write<Omega_h::Real> scaled_coords(dim * nverts);
-  Omega_h::CoordsWriteView<> scaled(scaled_coords, dim);
+  auto scaled = Omega_h::make_coords_view<>(scaled_coords, dim);
 
   Omega_h::parallel_for(
       nverts, OMEGA_H_LAMBDA(const Omega_h::LO vert_id) {
@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
       });
   Omega_h::fence();
 
-  mesh.set_coords(Omega_h::CoordsView<>(scaled));
+  mesh.set_coords(scaled_coords);
   Omega_h::fence();
   Omega_h::binary::write(mesh_out, &mesh);
 

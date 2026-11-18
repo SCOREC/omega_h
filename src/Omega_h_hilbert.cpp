@@ -44,9 +44,9 @@ Read<I64> dists_from_coords_dim(CoordsView<dim> coords) {
 
 static Read<I64> dists_from_coords(CoordsView<> coords) {
   auto dim = coords.extent(1);
-  if (dim == 3) return dists_from_coords_dim<3>(coords.as<3>());
-  if (dim == 2) return dists_from_coords_dim<2>(coords.as<2>());
-  if (dim == 1) return dists_from_coords_dim<1>(coords.as<1>());
+  if (dim == 3) return dists_from_coords_dim<3>(as_coords<3>(coords));
+  if (dim == 2) return dists_from_coords_dim<2>(as_coords<2>(coords));
+  if (dim == 1) return dists_from_coords_dim<1>(as_coords<1>(coords));
   OMEGA_H_NORETURN(Read<I64>());
 }
 

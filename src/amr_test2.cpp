@@ -24,7 +24,8 @@ OMEGA_H_INLINE double eval_rc<3>(Omega_h::Vector<3> c) {
 
 template <int dim>
 Omega_h::Bytes mark(Omega_h::Mesh* m, int level) {
-  auto mids = Omega_h::test::element_centroids<dim>(*m);
+  auto mids_storage = Omega_h::test::element_centroids<dim>(*m);
+  auto mids = Omega_h::make_coords_view<dim>(mids_storage);
   auto is_leaf = m->ask_leaves(dim);
   auto leaf_elems = Omega_h::collect_marked(is_leaf);
   Omega_h::Write<Omega_h::Byte> marks(m->nelems(), 0);

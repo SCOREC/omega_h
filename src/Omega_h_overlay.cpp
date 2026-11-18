@@ -30,7 +30,8 @@ Overlay::Overlay(
   for (int i = 0; i < mesh.nfaces(); ++i) silly_faces.push_back(size_t(i));
   for (int i = 0; i < mesh.nedges(); ++i) silly_edges.push_back(size_t(i));
   for (int i = 0; i < mesh.nverts(); ++i) silly_nodes.push_back(size_t(i));
-  auto coords = mesh.coords_view<3>();
+  auto coords_storage = mesh.retain_coords_storage();
+  auto coords = make_coords_view<3>(coords_storage);
   auto new_coords = Write<double>(mesh.nverts() * 3);
   auto diff = overlayGridCenter - vector_3(Nx * cellSize / 2.0,
                                       Ny * cellSize / 2.0, Nz * cellSize / 2.0);
@@ -40,7 +41,7 @@ Overlay::Overlay(
     set_vector(new_coords, i, x);
   };
   parallel_for(mesh.nverts(), translate);
-  mesh.set_coords(CoordsView<3>(Reals(new_coords), 3));
+  mesh.set_coords<3>(new_coords);
   mesh.ask_down(FACE, VERT);
   mesh.ask_down(REGION, VERT);
   mesh.ask_down(REGION, FACE);
@@ -107,14 +108,16 @@ std::array<size_t, 2> Overlay::get_edge_nodes(size_t edge) const {
 }
 
 Omega_h::Vector<3> Overlay::get_node_coordinates(size_t node) const {
-  HostCoordsView<3> coords(mesh.coords_view<3>());
+  auto coords_storage = HostRead<Real>(mesh.retain_coords_storage());
+  auto coords = make_coords_view<3>(coords_storage);
   auto v = LO(node);
   return vector_3(coords(v, 0), coords(v, 1), coords(v, 2));
 }
 
 Omega_h::Vector<3> Overlay::get_cell_center_location(size_t cell) const {
   HostRead<LO> cells2nodes(mesh.get_adj(REGION, VERT).ab2b);
-  HostCoordsView<3> coords(mesh.coords_view<3>());
+  auto coords_storage = HostRead<Real>(mesh.retain_coords_storage());
+  auto coords = make_coords_view<3>(coords_storage);
   auto center = zero_vector<3>();
   for (Int i = 0; i < 8; ++i) {
     auto v = cells2nodes[LO(cell) * 8 + i];

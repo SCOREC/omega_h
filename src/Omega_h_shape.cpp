@@ -75,12 +75,12 @@ static Reals measure_ents_real_view(Mesh* mesh, Int ent_dim, LOs a2e, CoordsView
       coords.extent(1) != mesh->space_dim())
     Omega_h_fail("measure_ents_real: entity dimension or coordinate extents do not match mesh\n");
   return detail::dispatch_sdim_edim(mesh->space_dim(), ent_dim, [&](auto sdim, auto edim) {
-    return measure_ents_real_tmpl<sdim.value, edim.value>(mesh, a2e, coords.as<sdim.value>());
+    return measure_ents_real_tmpl<sdim.value, edim.value>(mesh, a2e, as_coords<sdim.value>(coords));
   });
 }
 
 Reals measure_ents_real(Mesh* mesh, Int ent_dim, LOs a2e, Reals coords) {
-  return measure_ents_real_view(mesh, ent_dim, a2e, CoordsView<>(coords, mesh->space_dim()));
+  return measure_ents_real_view(mesh, ent_dim, a2e, make_coords_view(coords, mesh->space_dim()));
 }
 
 Reals measure_elements_real(Mesh* mesh, LOs a2e) {

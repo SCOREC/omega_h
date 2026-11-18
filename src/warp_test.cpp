@@ -34,7 +34,8 @@ void add_dye(Mesh* mesh) {
 }
 
 Reals form_pointwise(Mesh* mesh) {
-  auto ecoords = test::element_centroids<3>(*mesh);
+  auto ecoords_storage = test::element_centroids<3>(*mesh);
+  auto ecoords = make_coords_view<3>(ecoords_storage);
   auto pw_w = Write<Real>(mesh->nelems());
   auto pw_fun = OMEGA_H_LAMBDA(LO elem) { pw_w[elem] = ecoords(elem, 0); };
   parallel_for(mesh->nelems(), pw_fun);

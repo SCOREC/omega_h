@@ -80,8 +80,8 @@ template <Int dim>
 void write_linear_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
     Reals data, Vector<dim> direction, Vector<dim> origin,
     std::string const& separator) {
-  auto coords =
-      average_coords(mesh, ent_dim, mesh->coords_view<dim>());  // get centroids
+  auto storage = average_coords(mesh, ent_dim, mesh->coords_view<dim>());
+  auto coords = make_coords_view<dim>(storage);
   auto coords_1d = get_linear_scatter_coords(coords, direction, origin);
   write_scatterplot(path, mesh, ent_dim, coords_1d, data, separator);
 }
@@ -89,8 +89,8 @@ void write_linear_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
 template <Int dim>
 void write_radial_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
     Reals data, Vector<dim> center, std::string const& separator) {
-  auto coords =
-      average_coords(mesh, ent_dim, mesh->coords_view<dim>());  // get centroids
+  auto storage = average_coords(mesh, ent_dim, mesh->coords_view<dim>());
+  auto coords = make_coords_view<dim>(storage);
   auto coords_1d = get_radial_scatter_coords(coords, center);
   write_scatterplot(path, mesh, ent_dim, coords_1d, data, separator);
 }

@@ -762,7 +762,7 @@ void test_copy_constructor(Library* lib)
   OMEGA_H_CHECK(test::coords_equal(mesh_a.coords_view<3>(), mesh_b.coords_view<3>()));
   Write<Real> two_coords_w(mesh_a.nverts() * 3, 2.0);
   Read<Real> two_coords(two_coords_w);
-  mesh_b.set_coords(Omega_h::CoordsView<>(two_coords, mesh_b.space_dim()));
+  mesh_b.set_coords<3>(two_coords);
   OMEGA_H_CHECK(!(test::coords_equal(mesh_a.coords_view<3>(), mesh_b.coords_view<3>())));
 }
 

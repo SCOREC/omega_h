@@ -156,7 +156,7 @@ OMEGA_H_INLINE Few<hilbert::coord_t, dim> from_spatial(
    the bounding box of the points */
 LOs sort_coords(CoordsView<> coords);
 inline LOs sort_coords(Reals coords, Int dim) {
-  return sort_coords(CoordsView<>(coords, dim));
+  return sort_coords(make_coords_view(coords, dim));
 }
 
 }  // end namespace hilbert
