@@ -2,6 +2,7 @@
 #define OMEGA_H_BBOX_HPP
 
 #include <Omega_h_affine.hpp>
+#include <Omega_h_coords_view.hpp>
 #include <Omega_h_vector.hpp>
 
 namespace Omega_h {
@@ -77,14 +78,18 @@ OMEGA_H_INLINE Affine<dim> get_affine_from_bbox_into_unit(BBox<dim> bbox) {
 }
 
 template <Int dim>
-BBox<dim> find_bounding_box(Reals coords);
+BBox<dim> find_bounding_box(CoordsView<dim> coords);
+template <Int dim>
+BBox<dim> find_bounding_box(Reals coords) {
+  return find_bounding_box<dim>(CoordsView<dim>(coords, dim));
+}
 
 template <Int dim>
 BBox<dim> get_bounding_box(Mesh* mesh);
 
-extern template BBox<1> find_bounding_box<1>(Reals coords);
-extern template BBox<2> find_bounding_box<2>(Reals coords);
-extern template BBox<3> find_bounding_box<3>(Reals coords);
+extern template BBox<1> find_bounding_box<1>(CoordsView<1> coords);
+extern template BBox<2> find_bounding_box<2>(CoordsView<2> coords);
+extern template BBox<3> find_bounding_box<3>(CoordsView<3> coords);
 
 extern template BBox<1> get_bounding_box<1>(Mesh* mesh);
 extern template BBox<2> get_bounding_box<2>(Mesh* mesh);

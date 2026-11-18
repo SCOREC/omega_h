@@ -363,12 +363,13 @@ OMEGA_H_INLINE Vector<3> get_closest_point(ego g, Vector<3> in) {
 }
 
 Reals egads_lite_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->dim() == 3);
   if (verbose) std::cout << "Querying closest points for surface vertices...\n";
   auto t0 = now();
   auto class_dims = mesh->get_array<I8>(VERT, "class_dim");
   auto class_ids = mesh->get_array<ClassId>(VERT, "class_id");
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<3>();
   auto closePts = Write<Real>(mesh->nverts() * 3);
   auto warp = Write<Real>(mesh->nverts() * 3);
   GOs egEnts_d{egoPtrToGo(eg->entities_d[0]),

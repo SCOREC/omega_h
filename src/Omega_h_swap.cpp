@@ -12,7 +12,7 @@
 namespace Omega_h {
 
 bool swap_part1(Mesh* mesh, AdaptOpts const& opts) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   mesh->set_parting(OMEGA_H_GHOSTED);
   auto comm = mesh->comm();
   auto elems_are_cands =
@@ -34,7 +34,7 @@ void filter_swap(Read<I8> keep_cands, LOs* cands2edges, Reals* cand_quals) {
 }
 
 Read<I8> filter_swap_improve(Mesh* mesh, LOs cands2edges, Reals cand_quals) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(EDGE));
   auto elem_quals = mesh->ask_qualities();
   auto edges2elems = mesh->ask_up(EDGE, mesh->dim());
@@ -45,7 +45,7 @@ Read<I8> filter_swap_improve(Mesh* mesh, LOs cands2edges, Reals cand_quals) {
 }
 
 bool swap_edges(Mesh* mesh, AdaptOpts const& opts) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_TIME_FUNCTION;
   bool ret = false;
   if (mesh->dim() == 3)

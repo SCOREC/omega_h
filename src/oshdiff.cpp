@@ -77,10 +77,10 @@ int main(int argc, char** argv) {
   }
   Omega_h::Mesh a(&lib);
   Omega_h::binary::read(filea, lib.world(), &a);
-  ::Omega_h::detail::require_same_tdim_sdim(a, __func__);
+  require_same_tdim_sdim(a);
   Omega_h::Mesh b(&lib);
   Omega_h::binary::read(fileb, lib.world(), &b);
-  ::Omega_h::detail::require_same_tdim_sdim(b, __func__);
+  require_same_tdim_sdim(b);
   auto opts = MeshCompareOpts::init(
       &a, VarCompareOpts{VarCompareOpts::RELATIVE, tol, floor});
   auto res = compare_meshes(&a, &b, opts, true);

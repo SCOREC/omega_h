@@ -82,6 +82,7 @@ static void form_sharing(Mesh* mesh_osh, Int ent_dim,
 }
 
 void to_dolfin(dolfin::Mesh& mesh_dolfin, Mesh* mesh_osh) {
+  require_same_tdim_sdim(*mesh_osh);
   dolfin::MeshEditor editor;
   static char const* const cell_type_names[4] = {
       "point", "interval", "triangle", "tetrahedron"};
@@ -95,11 +96,11 @@ void to_dolfin(dolfin::Mesh& mesh_dolfin, Mesh* mesh_osh) {
   editor.init_vertices_global(nverts, nverts_global);
   auto d_vert_globals = mesh_osh->globals(VERT);
   auto h_vert_globals = HostRead<GO>(d_vert_globals);
-  auto d_coords = ::Omega_h::detail::coords_tdim_only(*mesh_osh, __func__);
-  auto h_coords = HostRead<Real>(d_coords);
+  auto d_coords = mesh_osh->coords_view();
+  auto h_coords = HostCoordsView<>(d_coords);
   for (LO i_osh = 0; i_osh < nverts; ++i_osh) {
     editor.add_vertex_global(i_osh, h_vert_globals[i_osh],
-        dolfin::Point(dim, &h_coords[i_osh * dim]));
+        dolfin::Point(dim, &h_coords(i_osh, 0)));
   }
   auto ncells = mesh_osh->nelems();
   auto ncells_global = mesh_osh->nglobal_ents(dim);

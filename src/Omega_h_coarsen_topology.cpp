@@ -13,7 +13,7 @@
 namespace Omega_h {
 
 LOs get_verts_onto(Mesh* mesh, LOs rails2edges, Read<I8> rail_col_dirs) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto nkeys = rails2edges.size();
   auto ev2v = mesh->ask_verts_of(EDGE);
   auto keys2verts_onto_w = Write<LO>(nkeys, -1);
@@ -28,7 +28,7 @@ LOs get_verts_onto(Mesh* mesh, LOs rails2edges, Read<I8> rail_col_dirs) {
 
 void mark_dead_ents(Mesh* mesh, LOs rails2edges, Read<I8> rail_col_dirs,
     Int cell_dim, Write<I8>& dead_cells, Write<I8>& dead_sides) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto e2c = mesh->ask_up(EDGE, cell_dim);
   auto e2ec = e2c.a2ab;
   auto ec2c = e2c.ab2b;
@@ -58,7 +58,7 @@ void mark_dead_ents(Mesh* mesh, LOs rails2edges, Read<I8> rail_col_dirs,
 
 HostFew<Read<I8>, 4> mark_dead_ents(
     Mesh* mesh, LOs rails2edges, Read<I8> rail_col_dirs) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   HostFew<Write<I8>, 4> writes;
   writes[EDGE] = deep_copy(mark_image(rails2edges, mesh->nedges()));
   for (Int dim = Int(EDGE) + 1; dim <= mesh->dim(); ++dim)
@@ -73,7 +73,7 @@ HostFew<Read<I8>, 4> mark_dead_ents(
 
 Adj find_coarsen_domains(
     Mesh* mesh, LOs keys2verts, Int ent_dim, Read<I8> ents_are_dead) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto nkeys = keys2verts.size();
   auto v2e = mesh->ask_up(VERT, ent_dim);
   auto k2e = unmap_adjacency(keys2verts, v2e);
@@ -93,7 +93,7 @@ Adj find_coarsen_domains(
 
 LOs coarsen_topology(Mesh* mesh, LOs keys2verts_onto, Int dom_dim,
     Adj keys2doms, LOs old_verts2new_verts) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto nccv = simplex_degree(dom_dim, VERT);
   auto cv2v = mesh->ask_verts_of(dom_dim);
   auto k2kc = keys2doms.a2ab;

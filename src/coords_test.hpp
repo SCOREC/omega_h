@@ -20,18 +20,7 @@ bool coords_equal(CoordsView<A> const& a, CoordsView<B> const& b) {
 
 template <Int sdim>
 CoordsView<sdim> element_centroids(Mesh& mesh) {
-  auto coords = mesh.coords_view<sdim>();
-  auto vertices = mesh.ask_verts_of(mesh.dim());
-  auto degree = element_degree(mesh.family(), mesh.dim(), VERT);
-  Write<Real> result(mesh.nelems() * sdim);
-  auto average = OMEGA_H_LAMBDA(LO e) {
-    auto value = zero_vector<sdim>();
-    for (Int i = 0; i < degree; ++i)
-      value += get_vector<sdim>(coords, vertices[e * degree + i]);
-    set_vector<sdim>(result, e, value / Real(degree));
-  };
-  parallel_for(mesh.nelems(), average);
-  return CoordsView<sdim>(Reals(result), sdim);
+  return average_coords(&mesh, mesh.dim(), mesh.coords_view<sdim>());
 }
 }  // namespace test
 }  // namespace Omega_h

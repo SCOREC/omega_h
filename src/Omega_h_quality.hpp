@@ -37,12 +37,14 @@ OMEGA_H_INLINE Real metric_element_quality(
 
 template <Int space_dim, Int metric_dim>
 struct MetricElementQualities {
-  Reals coords;
+  CoordsView<space_dim> coords;
   Reals metrics;
   MetricElementQualities(Mesh const* mesh, Reals metrics_in)
-      : coords(::Omega_h::detail::coords_tdim_only(*mesh, __func__)), metrics(metrics_in) {}
+      : coords((require_same_tdim_sdim(*mesh),
+            mesh->coords_view<space_dim>())), metrics(metrics_in) {}
   MetricElementQualities(Mesh const* mesh)
-      : coords(::Omega_h::detail::coords_tdim_only(*mesh, __func__)),
+      : coords((require_same_tdim_sdim(*mesh),
+            mesh->coords_view<space_dim>())),
         metrics(mesh->get_array<Real>(VERT, "metric")) {}
   OMEGA_H_DEVICE Real measure(Few<LO, space_dim + 1> v) const {
     auto p = gather_vectors<space_dim + 1, space_dim>(coords, v);

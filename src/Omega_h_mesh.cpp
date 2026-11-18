@@ -432,29 +432,19 @@ void Mesh::add_coords(Reals array) {
   add_tag<Real>(0, "coordinates", space_dim(), array);
 }
 
-namespace detail {
 void require_same_tdim_sdim(Mesh const& mesh, char const* caller) {
   if (mesh.space_dim() != mesh.dim())
     Omega_h_fail("%s: meshes with space_dim (%d) != dim (%d) are not supported\n",
         caller, mesh.space_dim(), mesh.dim());
 }
-Reals coords_tdim_only(Mesh const& mesh, char const* caller) {
-  require_same_tdim_sdim(mesh, caller);
-  return mesh.coords_view().raw();
-}
-void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller) {
-  require_same_tdim_sdim(mesh, caller);
-  mesh.set_coords(CoordsView<>(coords, mesh.space_dim()));
-}
-}
 
 Reals Mesh::coords() const {
-  detail::require_same_tdim_sdim(*this, __func__);
+  require_same_tdim_sdim(*this);
   return get_array<Real>(VERT, "coordinates");
 }
 
 void Mesh::set_coords(Reals const& array) {
-  detail::require_same_tdim_sdim(*this, __func__);
+  require_same_tdim_sdim(*this);
   if (array.size() != nverts() * space_dim())
     Omega_h_fail("set_coords: coordinate count differs from nverts * space_dim\n");
   set_tag<Real>(VERT, "coordinates", array);
@@ -472,7 +462,7 @@ Read<GO> Mesh::globals(Int ent_dim) const {
 
 Reals Mesh::ask_lengths() {
   bool const metric = has_tag(VERT, "metric");
-  if (metric) ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
+  if (metric) require_same_tdim_sdim(*this);
   if (!has_tag(EDGE, "length")) {
     auto lengths = metric ? measure_edges_metric(this) : measure_edges_real(this);
     add_tag(EDGE, "length", 1, lengths);
@@ -481,7 +471,7 @@ Reals Mesh::ask_lengths() {
 }
 
 Reals Mesh::ask_qualities() {
-  ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
+  require_same_tdim_sdim(*this);
   if (!has_tag(dim(), "quality")) {
     auto qualities = measure_qualities(this);
     add_tag(dim(), "quality", 1, qualities);
@@ -663,14 +653,14 @@ void Mesh::set_parting(Omega_h_Parting parting_in, bool verbose) {
 /* this is a member function mainly because it
    modifies the RIB hints */
 void Mesh::balance(bool predictive) {
-  if (predictive) ::Omega_h::detail::require_same_tdim_sdim(*this, __func__);
+  if (predictive) require_same_tdim_sdim(*this);
   OMEGA_H_TIME_FUNCTION;
   if (comm_->size() == 1) return;
   set_parting(OMEGA_H_ELEM_BASED);
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), space_dim(), coords_view().raw());
+      average_coords(this, dim(), coords_view()).raw();
   if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Reals masses;
   Real abs_tol;
@@ -748,7 +738,7 @@ void Mesh::balance(Reals weights) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), space_dim(), coords_view().raw());
+      average_coords(this, dim(), coords_view()).raw();
   if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Real abs_tol;
   abs_tol = max2(0.0, get_max(comm_, weights));

@@ -1,4 +1,6 @@
 #include "coords_test.hpp"
+#include "Omega_h_bbox.hpp"
+#include "Omega_h_scatterplot.hpp"
 #include <sstream>
 #include <string>
 #include <iostream>
@@ -41,6 +43,51 @@ static void check_deprecated(Mesh& ordinary, Mesh& embedded) {
 #endif
 }
 OMEGA_H_ALLOW_DEPRECATED_END
+
+static void check_coordinate_algorithms(Mesh& mesh) {
+  auto coords = mesh.coords_view<3>();
+  CoordsView<3> centers = average_coords(&mesh, FACE, coords);
+  HostCoordsView<3> host_centers(centers);
+  for (LO e = 0; e < mesh.nelems(); ++e) {
+    require(are_close(host_centers(e, 0), 0.3 + 1.0 / 3.0));
+    if (are_close(host_centers(e, 2), 2.5))
+      require(are_close(host_centers(e, 1), -1.2 + 1.0 / 3.0));
+    else {
+      require(are_close(host_centers(e, 1), -1.2));
+      require(are_close(host_centers(e, 2), 2.5 + 1.0 / 3.0));
+    }
+  }
+  HostCoordsView<3> subset(average_coords(&mesh, FACE, LOs({1, 0}), coords));
+  for (Int d = 0; d < 3; ++d) {
+    require(subset(0, d) == host_centers(1, d));
+    require(subset(1, d) == host_centers(0, d));
+  }
+  HostCoordsView<3> vertices(average_coords(&mesh, VERT, LOs({3, 0}), coords));
+  HostCoordsView<3> original(coords);
+  for (Int d = 0; d < 3; ++d) {
+    require(vertices(0, d) == original(3, d));
+    require(vertices(1, d) == original(0, d));
+  }
+  HostRead<Real> projected(get_linear_scatter_coords<3>(
+      centers, vector_3(0, 0, 1), vector_3(0, 0, 0)));
+  for (LO e = 0; e < mesh.nelems(); ++e)
+    require(projected[e] == host_centers(e, 2));
+  auto before = get_bounding_box<3>(&mesh);
+  auto minimum = vector_3(0.3, -1.2, 2.5);
+  auto maximum = vector_3(1.3, -0.2, 3.5);
+  for (Int d = 0; d < 3; ++d) {
+    require(are_close(before.min[d], minimum[d]));
+    require(are_close(before.max[d], maximum[d]));
+  }
+  reorder_by_hilbert(&mesh);
+  require(mesh.tdim() == 2 && mesh.space_dim() == 3 && mesh.nverts() == 4);
+  require(are_close(get_sum(mesh.ask_sizes()), 1.0));
+  auto after = get_bounding_box<3>(&mesh);
+  for (Int d = 0; d < 3; ++d) {
+    require(before.min[d] == after.min[d]);
+    require(before.max[d] == after.max[d]);
+  }
+}
 
 static void check_geometry(Library& lib) {
   for (Int tdim = 1; tdim <= 2; ++tdim) {
@@ -96,6 +143,7 @@ static void check_geometry(Library& lib) {
   HostCoordsView<3> expected(folded.coords_view<3>());
   for (LO v = 0; v < expected.extent(0); ++v)
     for (Int d = 0; d < 3; ++d) require(decoded[v * 3 + d] == expected(v, d));
+  check_coordinate_algorithms(folded);
 }
 
 int main(int argc, char** argv) {

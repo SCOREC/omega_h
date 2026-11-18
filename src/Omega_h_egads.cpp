@@ -215,18 +215,19 @@ static Vector<3> get_closest_point(ego g, Vector<3> in) {
 }
 
 Reals egads_get_snap_warp(Mesh* mesh, Egads* eg, bool verbose) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->dim() == 3);
   if (verbose) std::cout << "Querying closest points for surface vertices...\n";
   auto t0 = now();
   auto class_dims = mesh->get_array<I8>(VERT, "class_dim");
   auto class_ids = mesh->get_array<ClassId>(VERT, "class_id");
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<3>();
   auto host_class_dims = HostRead<I8>(class_dims);
   auto host_class_ids = HostRead<LO>(class_ids);
-  auto host_coords = HostRead<Real>(coords);
+  auto host_coords = HostCoordsView<3>(coords);
   auto host_warp = HostWrite<Real>(mesh->nverts() * 3);
   for (LO i = 0; i < mesh->nverts(); ++i) {
-    auto a = get_vector<3>(host_coords, i);
+    auto a = vector_3(host_coords(i, 0), host_coords(i, 1), host_coords(i, 2));
     Int class_dim = host_class_dims[i];
     OMEGA_H_CHECK(class_dim >= 0);
     OMEGA_H_CHECK(class_dim <= 3);

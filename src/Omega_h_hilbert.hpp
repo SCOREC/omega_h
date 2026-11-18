@@ -4,7 +4,7 @@
 #include <cstdint>
 
 #include <Omega_h_affine.hpp>
-#include <Omega_h_array.hpp>
+#include <Omega_h_coords_view.hpp>
 #include <Omega_h_vector.hpp>
 
 namespace Omega_h {
@@ -154,7 +154,10 @@ OMEGA_H_INLINE Few<hilbert::coord_t, dim> from_spatial(
    points, such that their ordering reflects the
    traversal of a fine-scale Hilbert curve over
    the bounding box of the points */
-LOs sort_coords(Reals coords, Int dim);
+LOs sort_coords(CoordsView<> coords);
+inline LOs sort_coords(Reals coords, Int dim) {
+  return sort_coords(CoordsView<>(coords, dim));
+}
 
 }  // end namespace hilbert
 

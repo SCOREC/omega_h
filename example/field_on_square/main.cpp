@@ -18,13 +18,13 @@ int main(int argc, char** argv) {
   const auto world = lib.world();
   // create a distributed mesh object, calls mesh.balance() and then returns it
   auto mesh = Omega_h::gmsh::read("square.msh", world);
-  // return type Omega_h::Reals derived from Omega_h::Read<Omega_h::Real>
-  const auto coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
+  // Owning coordinate view with a checked, static spatial dimension.
+  const auto coords = mesh.coords_view<2>();
   // array of type Omega_h::Write must be used when modified as below
   const Omega_h::Write<Omega_h::Real> u_w(mesh.nverts());
   // Omega_h::LO is a 32 bits int for local indexes on each proc
   const auto initialize_u = OMEGA_H_LAMBDA(Omega_h::LO r) {
-    // get_vector<2> abstracts the storage convention inside coords array
+    // get_vector<2> reads the coordinate view without exposing its layout.
     const auto x_r = Omega_h::get_vector<2>(coords, r);
     // quadratic 2d function between -1 and 1 on the square [0,1] x [0,1]
     u_w[r] = x_r[1] - std::pow(2 * x_r[0] - 1, 2);

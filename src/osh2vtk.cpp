@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
   OMEGA_H_CHECK(argc == 3 || argc == 4);
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
-  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
+  require_same_tdim_sdim(mesh);
   auto dim = mesh.dim();
   if (argc == 4) dim = atoi(argv[2]);
   OMEGA_H_CHECK(dim>=0 && dim<=mesh.dim());

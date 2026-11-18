@@ -39,7 +39,7 @@ Reals refine_qualities_tmpl(Mesh* mesh, LOs candidates) {
   auto e2ec = e2c.a2ab;
   auto ec2c = e2c.ab2b;
   auto ec_codes = e2c.codes;
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<mesh_dim>();
   auto ncands = candidates.size();
   auto measure = MetricRefineQualities<mesh_dim, metric_dim>(mesh, candidates);
   Write<Real> quals_w(ncands);

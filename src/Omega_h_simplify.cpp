@@ -230,12 +230,14 @@ LOs tets_from_hexes(LOs hv2v) {
 /* The symmetric algorithms place nodes at the midpoints of quads and hexes */
 
 void tris_from_quads_symmetric(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   auto nold_verts = mesh->nverts();
   auto nquads = mesh->nfaces();
-  auto old_coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
-  auto quad_center_coords = average_field(mesh, 2, 2, old_coords);
+  auto old_coords = mesh->coords_view<2>();
+  auto quad_center_coords = average_coords(mesh, 2, old_coords);
   auto nverts = nold_verts + nquads;
   auto coords = Write<Real>(nverts * 2);
+  CoordsWriteView<2> result(coords, 2);
   auto ntris = nquads * 4;
   auto qv2v = mesh->ask_elem_verts();
   auto tv2v = Write<LO>(ntris * 3);
@@ -252,23 +254,28 @@ void tris_from_quads_symmetric(Mesh* mesh) {
     }
   };
   parallel_for(nquads, f);
-  map_into_range(old_coords, 0, nold_verts, coords, 2);
-  map_into_range(
-      quad_center_coords, nold_verts, nold_verts + nquads, coords, 2);
+  auto assemble = OMEGA_H_LAMBDA(LO v) {
+    for (Int d = 0; d < 2; ++d)
+      result(v, d) = v < nold_verts ? old_coords(v, d)
+          : quad_center_coords(v - nold_verts, d);
+  };
+  parallel_for(nverts, assemble);
   Mesh new_mesh(mesh->library());
   build_from_elems_and_coords(&new_mesh, OMEGA_H_SIMPLEX, 2, tv2v, coords);
   assign(*mesh, new_mesh);
 }
 
 void tets_from_hexes_symmetric(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   auto nold_verts = mesh->nverts();
   auto nquads = mesh->nfaces();
   auto nhexes = mesh->nregions();
-  auto old_coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
-  auto quad_center_coords = average_field(mesh, 2, 3, old_coords);
-  auto hex_center_coords = average_field(mesh, 3, 3, old_coords);
+  auto old_coords = mesh->coords_view<3>();
+  auto quad_center_coords = average_coords(mesh, 2, old_coords);
+  auto hex_center_coords = average_coords(mesh, 3, old_coords);
   auto nverts = nold_verts + nquads + nhexes;
   auto coords = Write<Real>(nverts * 3);
+  CoordsWriteView<3> result(coords, 3);
   auto ntets = nhexes * 6 * 4;
   auto hv2v = mesh->ask_elem_verts();
   auto hq2q = mesh->ask_down(3, 2).ab2b;
@@ -292,10 +299,13 @@ void tets_from_hexes_symmetric(Mesh* mesh) {
     }
   };
   parallel_for(nhexes, f);
-  map_into_range(old_coords, 0, nold_verts, coords, 3);
-  map_into_range(
-      quad_center_coords, nold_verts, nold_verts + nquads, coords, 3);
-  map_into_range(hex_center_coords, nold_verts + nquads, nverts, coords, 3);
+  auto assemble = OMEGA_H_LAMBDA(LO v) {
+    for (Int d = 0; d < 3; ++d)
+      result(v, d) = v < nold_verts ? old_coords(v, d)
+          : v < nold_verts + nquads ? quad_center_coords(v - nold_verts, d)
+          : hex_center_coords(v - nold_verts - nquads, d);
+  };
+  parallel_for(nverts, assemble);
   Mesh new_mesh(mesh->library());
   build_from_elems_and_coords(&new_mesh, OMEGA_H_SIMPLEX, 3, tv2v, coords);
   assign(*mesh, new_mesh);

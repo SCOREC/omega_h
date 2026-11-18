@@ -33,7 +33,7 @@ Reals get_interior_coeffs_dim(Mesh* mesh, Reals e_data, Int ncomps) {
   auto v2ve = v2e.a2ab;
   auto ve2e = v2e.ab2b;
   auto ev2v = mesh->ask_elem_verts();
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto owned = mesh->owned(VERT);
   auto class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto out = Write<Real>(mesh->nverts() * ncomps * (dim + 1));
@@ -99,7 +99,7 @@ void diffuse_to_exterior(
 
 template <Int dim>
 Reals evaluate_coeffs_dim(Mesh* mesh, Reals v_coeffs, Int ncomps) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto out = Write<Real>(mesh->nverts() * ncomps);
   auto f = OMEGA_H_LAMBDA(LO v) {
     auto x = get_vector<dim>(coords, v);
@@ -125,7 +125,7 @@ static Reals evaluate_coeffs(Mesh* mesh, Reals v_coeffs, Int ncomps) {
 }
 
 bool has_interior_verts(Mesh* mesh) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto dim = mesh->dim();
   auto class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto interior = each_eq_to(class_dim, I8(dim));
@@ -135,7 +135,7 @@ bool has_interior_verts(Mesh* mesh) {
 }
 
 Reals project_by_fit(Mesh* mesh, Reals e_data) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   OMEGA_H_CHECK(e_data.size() % mesh->nelems() == 0);
   OMEGA_H_CHECK(has_interior_verts(mesh));
@@ -151,7 +151,7 @@ Reals project_by_fit(Mesh* mesh, Reals e_data) {
 }
 
 Reals project_by_average(Mesh* mesh, Reals e_data) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->owners_have_all_upward(VERT));
   OMEGA_H_CHECK(e_data.size() % mesh->nelems() == 0);
   auto ncomps = e_data.size() / mesh->nelems();
@@ -175,7 +175,7 @@ OMEGA_H_INLINE Matrix<dim, dim> get_simplex_jacobian(
 
 template <Int dim>
 Reals derive_element_gradients_dim(Mesh* mesh, Reals vert_values) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto ev2v = mesh->ask_elem_verts();
   auto out = Write<Real>(mesh->nelems() * dim);
   auto f = OMEGA_H_LAMBDA(LO e) {
@@ -195,7 +195,7 @@ Reals derive_element_gradients_dim(Mesh* mesh, Reals vert_values) {
 
 template <Int dim>
 Reals derive_element_hessians_dim(Mesh* mesh, Reals vert_gradients) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto ev2v = mesh->ask_elem_verts();
   auto out = Write<Real>(mesh->nelems() * symm_ncomps(dim));
   auto f = OMEGA_H_LAMBDA(LO e) {
@@ -218,7 +218,7 @@ Reals derive_element_hessians_dim(Mesh* mesh, Reals vert_gradients) {
 }
 
 Reals derive_element_gradients(Mesh* mesh, Reals vert_values) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(vert_values.size() == mesh->nverts());
   if (mesh->dim() == 3) {
     return derive_element_gradients_dim<3>(mesh, vert_values);
@@ -231,7 +231,7 @@ Reals derive_element_gradients(Mesh* mesh, Reals vert_values) {
 }
 
 Reals derive_element_hessians(Mesh* mesh, Reals vert_gradients) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(vert_gradients.size() == mesh->nverts() * mesh->dim());
   if (mesh->dim() == 3) {
     return derive_element_hessians_dim<3>(mesh, vert_gradients);
@@ -244,19 +244,19 @@ Reals derive_element_hessians(Mesh* mesh, Reals vert_gradients) {
 }
 
 Reals recover_gradients(Mesh* mesh, Reals vert_values) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto e_grad = derive_element_gradients(mesh, vert_values);
   return project_by_fit(mesh, e_grad);
 }
 
 Reals recover_hessians_from_gradients(Mesh* mesh, Reals vert_gradients) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto e_hess = derive_element_hessians(mesh, vert_gradients);
   return project_by_fit(mesh, e_hess);
 }
 
 Reals recover_hessians(Mesh* mesh, Reals vert_values) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto v_grad = recover_gradients(mesh, vert_values);
   return recover_hessians_from_gradients(mesh, v_grad);
 }

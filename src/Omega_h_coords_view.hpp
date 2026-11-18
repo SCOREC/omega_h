@@ -107,11 +107,7 @@ OMEGA_H_INLINE Matrix<static_cast<Int>(N), n> gather_vectors(
 }
 
 class Mesh;
-namespace detail {
-void require_same_tdim_sdim(Mesh const& mesh, char const* caller);
-Reals coords_tdim_only(Mesh const& mesh, char const* caller);
-void set_coords_tdim_only(Mesh& mesh, Reals coords, char const* caller);
-}
+void require_same_tdim_sdim(Mesh const& mesh, char const* caller = "require_same_tdim_sdim");
 
 }  // namespace Omega_h
 

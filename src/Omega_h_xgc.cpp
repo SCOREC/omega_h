@@ -105,6 +105,7 @@ Mesh read(filesystem::path const& basename, CommPtr comm) {
 }
 
 void write(filesystem::path const& basename, Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->comm()->size() == 1);
   OMEGA_H_CHECK(mesh->dim() == 2);
 
@@ -114,13 +115,13 @@ void write(filesystem::path const& basename, Mesh* mesh) {
   auto nverts = mesh->nverts();
   auto nelems = mesh->nelems();
   auto dim = mesh->dim();
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<2>();
   auto e2v = mesh->ask_elem_verts();
 
   auto exposed_sides = mark_exposed_sides(mesh);
   auto exposed_nodes = mark_down(mesh, dim - 1, 0, exposed_sides);
 
-  HostRead<Real> h_coords(coords);
+  HostCoordsView<2> h_coords(coords);
   HostRead<LO> h_e2v(e2v);
   HostRead<I8> h_exposed(exposed_nodes);
 
@@ -130,8 +131,8 @@ void write(filesystem::path const& basename, Mesh* mesh) {
   }
   node_stream << nverts << " 2 0 1\n";
   for (LO i = 0; i < nverts; ++i) {
-    node_stream << i + 1 << " " << h_coords[i * dim] << " "
-                << h_coords[i * dim + 1] << " "
+    node_stream << i + 1 << " " << h_coords(i, 0) << " "
+                << h_coords(i, 1) << " "
                 << static_cast<int>(h_exposed[i]) << "\n";
   }
   node_stream << "\n";

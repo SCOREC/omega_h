@@ -127,7 +127,7 @@ OMEGA_H_INLINE Real metric_edge_length(
 
 template <Int space_dim, Int metric_dim>
 OMEGA_H_DEVICE Real metric_edge_length(
-    Few<LO, 2> v, Reals coords, Reals metrics) {
+    Few<LO, 2> v, CoordsView<space_dim> coords, Reals metrics) {
   auto p = gather_vectors<2, space_dim>(coords, v);
   auto ms = gather_symms<2, metric_dim>(metrics, v);
   return metric_edge_length<space_dim, metric_dim>(p, ms);
@@ -145,12 +145,14 @@ struct RealEdgeLengths {
 
 template <Int space_dim, Int metric_dim>
 struct MetricEdgeLengths {
-  Reals coords;
+  CoordsView<space_dim> coords;
   Reals metrics;
   MetricEdgeLengths(Mesh const* mesh, Reals metrics_in)
-      : coords(::Omega_h::detail::coords_tdim_only(*mesh, __func__)), metrics(metrics_in) {}
+      : coords((require_same_tdim_sdim(*mesh),
+            mesh->coords_view<space_dim>())), metrics(metrics_in) {}
   MetricEdgeLengths(Mesh const* mesh)
-      : coords(::Omega_h::detail::coords_tdim_only(*mesh, __func__)),
+      : coords((require_same_tdim_sdim(*mesh),
+            mesh->coords_view<space_dim>())),
         metrics(mesh->get_array<Real>(VERT, "metric")) {}
   OMEGA_H_DEVICE Real measure(Few<LO, 2> v) const {
     return metric_edge_length<space_dim, metric_dim>(v, coords, metrics);

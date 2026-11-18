@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
   auto version = Omega_h::binary::read_version(path_in, world);
   if (is_in) {
     Omega_h::binary::read_in_comm(path_in, comm_in, &mesh, version);
-  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
+  require_same_tdim_sdim(mesh);
     if (nparts_out < nparts_in) {
       Omega_h_fail(
           "partitioning to a smaller part count not yet implemented\n");

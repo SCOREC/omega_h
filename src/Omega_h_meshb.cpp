@@ -128,7 +128,7 @@ static void write_meshb_version(Mesh* mesh, GmfFile file, int dim) {
   using GmfReal = typename VersionTypes<version>::RealOut;
   auto nverts = mesh->nverts();
   GmfSetKwd(file, GmfVertices, GmfLine(nverts));
-  auto coords = HostRead<Real>(::Omega_h::detail::coords_tdim_only(*mesh, __func__));
+  auto coords = HostCoordsView<>(mesh->coords_view());
   LOs vert_refs;
   if (mesh->has_tag(VERT, "class_id")) {
     vert_refs = mesh->get_array<ClassId>(VERT, "class_id");
@@ -138,7 +138,7 @@ static void write_meshb_version(Mesh* mesh, GmfFile file, int dim) {
   auto h_vert_refs = HostRead<LO>(vert_refs);
   for (LO i = 0; i < nverts; ++i) {
     Few<GmfReal, 3> tmp = {0.0, 0.0, 0.0};
-    for (int j = 0; j < dim; ++j) tmp[j] = GmfReal(coords[i * dim + j]);
+    for (int j = 0; j < dim; ++j) tmp[j] = GmfReal(coords(i, j));
     auto ref = GmfIndex(h_vert_refs[i]);
     if (dim == 2)
       GmfSetLin(file, GmfVertices, tmp[0], tmp[1], ref);
@@ -200,6 +200,7 @@ void read(Mesh* mesh, std::string const& filepath) {
 }
 
 void write(Mesh* mesh, std::string const& filepath, int version) {
+  require_same_tdim_sdim(*mesh);
   auto dim = int(mesh->dim());
   auto file = GmfOpenMesh(filepath.c_str(), GmfWrite, version, dim);
   if (!file) {

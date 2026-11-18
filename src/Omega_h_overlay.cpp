@@ -1,6 +1,7 @@
 #include <Omega_h_overlay.hpp>
 
 #include <Omega_h_build.hpp>
+#include <Omega_h_for.hpp>
 
 namespace Omega_h {
 
@@ -29,16 +30,17 @@ Overlay::Overlay(
   for (int i = 0; i < mesh.nfaces(); ++i) silly_faces.push_back(size_t(i));
   for (int i = 0; i < mesh.nedges(); ++i) silly_edges.push_back(size_t(i));
   for (int i = 0; i < mesh.nverts(); ++i) silly_nodes.push_back(size_t(i));
-  auto coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
+  auto coords = mesh.coords_view<3>();
   auto new_coords = Write<double>(mesh.nverts() * 3);
   auto diff = overlayGridCenter - vector_3(Nx * cellSize / 2.0,
                                       Ny * cellSize / 2.0, Nz * cellSize / 2.0);
-  for (int i = 0; i < mesh.nverts(); ++i) {
+  auto translate = OMEGA_H_LAMBDA(LO i) {
     auto x = get_vector<3>(coords, i);
     x += diff;
     set_vector(new_coords, i, x);
-  }
-  ::Omega_h::detail::set_coords_tdim_only(mesh, new_coords, __func__);
+  };
+  parallel_for(mesh.nverts(), translate);
+  mesh.set_coords(CoordsView<3>(Reals(new_coords), 3));
   mesh.ask_down(FACE, VERT);
   mesh.ask_down(REGION, VERT);
   mesh.ask_down(REGION, FACE);
@@ -105,16 +107,20 @@ std::array<size_t, 2> Overlay::get_edge_nodes(size_t edge) const {
 }
 
 Omega_h::Vector<3> Overlay::get_node_coordinates(size_t node) const {
-  auto nodes2coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
-  return get_vector<3>(nodes2coords, LO(node));
+  HostCoordsView<3> coords(mesh.coords_view<3>());
+  auto v = LO(node);
+  return vector_3(coords(v, 0), coords(v, 1), coords(v, 2));
 }
 
 Omega_h::Vector<3> Overlay::get_cell_center_location(size_t cell) const {
-  auto cells2nodes = mesh.get_adj(REGION, VERT).ab2b;
-  auto nodes2coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
-  auto cell_nodes2nodes = gather_verts<8>(cells2nodes, LO(cell));
-  auto cell_nodes2coords = gather_vectors<8, 3>(nodes2coords, cell_nodes2nodes);
-  return average(cell_nodes2coords);
+  HostRead<LO> cells2nodes(mesh.get_adj(REGION, VERT).ab2b);
+  HostCoordsView<3> coords(mesh.coords_view<3>());
+  auto center = zero_vector<3>();
+  for (Int i = 0; i < 8; ++i) {
+    auto v = cells2nodes[LO(cell) * 8 + i];
+    for (Int d = 0; d < 3; ++d) center[d] += coords(v, d);
+  }
+  return center / 8.0;
 }
 
 size_t Overlay::get_invalid_cell_handle() const { return ~size_t(0); }

@@ -21,7 +21,7 @@ Reals measure_edges_metric_tmpl(Mesh* mesh, LOs a2e, Reals metrics) {
 }
 
 Reals measure_edges_metric(Mesh* mesh, LOs a2e, Reals metrics) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   if (a2e.size() == 0) return Reals({});
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
   if (mesh->dim() == 3 && metric_dim == 3) {
@@ -39,17 +39,17 @@ Reals measure_edges_metric(Mesh* mesh, LOs a2e, Reals metrics) {
 }
 
 Reals measure_edges_metric(Mesh* mesh, LOs a2e) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   return measure_edges_metric(mesh, a2e, mesh->get_array<Real>(VERT, "metric"));
 }
 
 Reals measure_edges_metric(Mesh* mesh, Reals metrics) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   return measure_edges_metric(mesh, LOs(mesh->nedges(), 0, 1), metrics);
 }
 
 Reals measure_edges_metric(Mesh* mesh) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   return measure_edges_metric(mesh, mesh->get_array<Real>(VERT, "metric"));
 }
 

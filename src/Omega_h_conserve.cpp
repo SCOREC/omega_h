@@ -372,8 +372,8 @@ static Cavs form_initial_cavs(Mesh* old_mesh, Mesh* new_mesh, Int key_dim,
 void transfer_conserve_refine(Mesh* old_mesh, TransferOpts const& opts,
     Mesh* new_mesh, LOs keys2edges, LOs keys2prods, LOs prods2new_ents,
     LOs same_ents2old_ents, LOs same_ents2new_ents) {
-  ::Omega_h::detail::require_same_tdim_sdim(*old_mesh, __func__);
-  ::Omega_h::detail::require_same_tdim_sdim(*new_mesh, __func__);
+  require_same_tdim_sdim(*old_mesh);
+  require_same_tdim_sdim(*new_mesh);
   if (!should_conserve_any(old_mesh, opts)) return;
   auto init_cavs = form_initial_cavs(
       old_mesh, new_mesh, EDGE, keys2edges, keys2prods, prods2new_ents);
@@ -402,9 +402,9 @@ void transfer_by_intersection_dim(Mesh* old_mesh, Mesh* new_mesh,
   auto old_tag = as<Real>(tagbase);
   auto old_data = old_tag->array();
   auto old_ev2v = old_mesh->ask_elem_verts();
-  auto old_coords = ::Omega_h::detail::coords_tdim_only(*old_mesh, __func__);
+  auto old_coords = old_mesh->coords_view<dim>();
   auto new_ev2v = new_mesh->ask_elem_verts();
-  auto new_coords = ::Omega_h::detail::coords_tdim_only(*new_mesh, __func__);
+  auto new_coords = new_mesh->coords_view<dim>();
   auto nkeys = cavs.size();
   auto f = OMEGA_H_LAMBDA(LO key) {
     for (auto kne = keys2new_elems.a2ab[key];
@@ -459,8 +459,8 @@ static void transfer_by_intersection(Mesh* old_mesh, Mesh* new_mesh,
 void transfer_densities_and_conserve_swap(Mesh* old_mesh,
     TransferOpts const& opts, Mesh* new_mesh, LOs keys2edges, LOs keys2prods,
     LOs prods2new_ents, LOs same_ents2old_ents, LOs same_ents2new_ents) {
-  ::Omega_h::detail::require_same_tdim_sdim(*old_mesh, __func__);
-  ::Omega_h::detail::require_same_tdim_sdim(*new_mesh, __func__);
+  require_same_tdim_sdim(*old_mesh);
+  require_same_tdim_sdim(*new_mesh);
   if (!has_densities_or_conserved(old_mesh, opts)) return;
   auto init_cavs = form_initial_cavs(
       old_mesh, new_mesh, EDGE, keys2edges, keys2prods, prods2new_ents);
@@ -494,8 +494,8 @@ void transfer_densities_and_conserve_swap(Mesh* old_mesh,
 void transfer_densities_and_conserve_coarsen(Mesh* old_mesh,
     TransferOpts const& opts, Mesh* new_mesh, LOs keys2verts, Adj keys2doms,
     LOs prods2new_ents, LOs same_ents2old_ents, LOs same_ents2new_ents) {
-  ::Omega_h::detail::require_same_tdim_sdim(*old_mesh, __func__);
-  ::Omega_h::detail::require_same_tdim_sdim(*new_mesh, __func__);
+  require_same_tdim_sdim(*old_mesh);
+  require_same_tdim_sdim(*new_mesh);
   if (!has_densities_or_conserved(old_mesh, opts)) return;
   auto keys2prods = keys2doms.a2ab;
   auto init_cavs = form_initial_cavs(
@@ -537,8 +537,8 @@ void transfer_densities_and_conserve_coarsen(Mesh* old_mesh,
 void transfer_conserve_motion(Mesh* old_mesh, TransferOpts const& opts,
     Mesh* new_mesh, LOs keys2verts, Graph keys2elems, LOs same_ents2old_ents,
     LOs same_ents2new_ents) {
-  ::Omega_h::detail::require_same_tdim_sdim(*old_mesh, __func__);
-  ::Omega_h::detail::require_same_tdim_sdim(*new_mesh, __func__);
+  require_same_tdim_sdim(*old_mesh);
+  require_same_tdim_sdim(*new_mesh);
   if (!should_conserve_any(old_mesh, opts)) return;
   auto keys2prods = keys2elems.a2ab;
   auto prods2new_ents = keys2elems.ab2b;
@@ -562,7 +562,7 @@ void transfer_conserve_motion(Mesh* old_mesh, TransferOpts const& opts,
 
 void fix_momentum_velocity_verts(
     Mesh* mesh, std::vector<ClassPair> const& class_pairs, Int comp) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   for (Int ent_dim = VERT; ent_dim <= mesh->dim(); ++ent_dim) {
     auto ent_marks = mark_class_closures(mesh, ent_dim, class_pairs);
     auto comp_marks = multiply_each_by(ent_marks, I8(1 << comp));
@@ -585,7 +585,7 @@ static Read<I8> get_comps_are_fixed(Mesh* mesh) {
 }
 
 void setup_conservation_tags(Mesh* mesh, AdaptOpts const& opts) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto& xfer_opts = opts.xfer_opts;
   auto dim = mesh->dim();
   for (Int tagi = 0; tagi < mesh->ntags(dim); ++tagi) {
@@ -807,7 +807,7 @@ void correct_momentum_error(Mesh* mesh, TransferOpts const& xfer_opts,
 }
 
 void correct_integral_errors(Mesh* mesh, AdaptOpts const& opts) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto& xfer_opts = opts.xfer_opts;
   if (!should_conserve_any(mesh, xfer_opts)) return;
   begin_code("correct_integral_errors");

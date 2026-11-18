@@ -17,7 +17,7 @@
 namespace Omega_h {
 
 Bytes find_bridge_edges(Mesh* mesh) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   auto verts2class_dim = mesh->get_array<I8>(VERT, "class_dim");
   auto edges2class_dim = mesh->get_array<I8>(EDGE, "class_dim");
   auto edges_are_bridges_w = Write<I8>(mesh->nedges());
@@ -34,7 +34,7 @@ Bytes find_bridge_edges(Mesh* mesh) {
 
 template <Int dim>
 Reals get_edge_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto edges2verts = mesh->ask_verts_of(EDGE);
   auto out = Write<Real>(mesh->nedges(), -1.0);
   auto f = OMEGA_H_LAMBDA(LO edge) {
@@ -50,7 +50,7 @@ Reals get_edge_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 
 template <Int dim>
 Reals get_tri_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto tris2verts = mesh->ask_verts_of(FACE);
   auto tris2edges = mesh->ask_down(FACE, EDGE).ab2b;
   auto out = Write<Real>(mesh->nfaces(), -1.0);
@@ -80,7 +80,7 @@ Reals get_tri_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 }
 
 Reals get_tet_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<3>();
   auto tets2verts = mesh->ask_verts_of(REGION);
   auto tets2edges = mesh->ask_down(REGION, EDGE).ab2b;
   auto out = Write<Real>(mesh->nregions(), -1.0);
@@ -162,7 +162,7 @@ Reals get_tet_pad_dists(Mesh* mesh, Read<I8> edges_are_bridges) {
 }
 
 Reals get_pad_dists(Mesh* mesh, Int pad_dim, Read<I8> edges_are_bridges) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   if (pad_dim == EDGE) {
     if (mesh->dim() == 3) {
       return get_edge_pad_dists<3>(mesh, edges_are_bridges);
@@ -189,7 +189,7 @@ Reals get_pinched_tri_angles_dim(Mesh* mesh) {
   auto edges2class_dim = mesh->get_array<I8>(EDGE, "class_dim");
   auto tris2edges = mesh->ask_down(FACE, EDGE).ab2b;
   auto tris2verts = mesh->ask_down(FACE, VERT).ab2b;
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<dim>();
   auto tri_angles_w = Write<Real>(mesh->nfaces());
   auto f = OMEGA_H_LAMBDA(LO tri) {
     auto ttv2v = gather_down<3>(tris2verts, tri);
@@ -222,7 +222,7 @@ Reals get_pinched_tet_angles(Mesh* mesh) {
   auto tets2edges = mesh->ask_down(REGION, EDGE).ab2b;
   auto tets2tris = mesh->ask_down(REGION, FACE).ab2b;
   auto edges2verts = mesh->ask_down(EDGE, VERT).ab2b;
-  auto coords = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
+  auto coords = mesh->coords_view<3>();
   auto tet_angles_w = Write<Real>(mesh->nregions());
   auto f = OMEGA_H_LAMBDA(LO tet) {
     auto kke2e = gather_down<6>(tets2edges, tet);
@@ -261,7 +261,7 @@ Reals get_pinched_tet_angles(Mesh* mesh) {
 }
 
 Reals get_pinched_angles(Mesh* mesh, Int pinched_dim) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   if (pinched_dim == FACE) {
     if (mesh->dim() == 3) {
       return get_pinched_tri_angles_dim<3>(mesh);

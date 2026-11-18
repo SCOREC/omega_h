@@ -40,7 +40,7 @@ void classify_elements(Mesh* mesh) {
 }
 
 void classify_by_angles(Mesh* mesh, Real sharp_angle) {
-  ::Omega_h::detail::require_same_tdim_sdim(*mesh, __func__);
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->family() == OMEGA_H_SIMPLEX);
   auto dim = mesh->dim();
   classify_elements(mesh);

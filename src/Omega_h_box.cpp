@@ -102,10 +102,9 @@ void make_3d_box(Real x, Real y, Real z, LO nx, LO ny, LO nz, LOs* hv2v_out,
 }
 
 template <Int dim>
-void classify_box_dim(Mesh* mesh, Int ent_dim, Reals centroids,
+void classify_box_dim(Mesh* mesh, Int ent_dim, CoordsView<dim> centroids,
     Few<LO, 3> nel, Vector<3> const l) {
-  OMEGA_H_CHECK(centroids.size() % dim == 0);
-  auto npts = centroids.size() / dim;
+  auto npts = centroids.extent(0);
   Vector<dim> dists;
   /* we assume that if an entity should not be classified on
      the boundary surface, its centroid is more than an (1/32)
@@ -137,23 +136,18 @@ void classify_box_dim(Mesh* mesh, Int ent_dim, Reals centroids,
 }
 
 void classify_box(Mesh* mesh, Real x, Real y, Real z, LO nx, LO ny, LO nz) {
+  require_same_tdim_sdim(*mesh);
   Few<LO, 3> nel({nx, ny, nz});
   Vector<3> l({x, y, z});
   for (Int ent_dim = 0; ent_dim <= mesh->dim(); ++ent_dim) {
-    Reals centroids;
-    if (ent_dim) {
-      centroids = average_field(mesh, ent_dim, LOs(mesh->nents(ent_dim), 0, 1),
-          mesh->dim(), ::Omega_h::detail::coords_tdim_only(*mesh, __func__));
-    } else {
-      centroids = ::Omega_h::detail::coords_tdim_only(*mesh, __func__);
-    }
+    auto centroids = average_coords(mesh, ent_dim, mesh->coords_view());
     Read<LO> class_ids;
     if (mesh->dim() == 3)
-      classify_box_dim<3>(mesh, ent_dim, centroids, nel, l);
+      classify_box_dim<3>(mesh, ent_dim, centroids.as<3>(), nel, l);
     else if (mesh->dim() == 2)
-      classify_box_dim<2>(mesh, ent_dim, centroids, nel, l);
+      classify_box_dim<2>(mesh, ent_dim, centroids.as<2>(), nel, l);
     else if (mesh->dim() == 1)
-      classify_box_dim<1>(mesh, ent_dim, centroids, nel, l);
+      classify_box_dim<1>(mesh, ent_dim, centroids.as<1>(), nel, l);
     else
       Omega_h_fail("classify_box: dimension isn't 1, 2, or 3!");
   }

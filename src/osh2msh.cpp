@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
   try {
     auto lib = Omega_h::Library(&argc, &argv);
     Omega_h::Mesh mesh = Omega_h::binary::read(input_filename, lib.world());
-  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
+  require_same_tdim_sdim(mesh);
     Omega_h::gmsh::write(output_filename, &mesh);
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << "\n";

@@ -33,23 +33,23 @@ int main(int argc, char** argv) {
 
   auto mesh = Omega_h::Mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
-  ::Omega_h::detail::require_same_tdim_sdim(mesh, __func__);
+  require_same_tdim_sdim(mesh);
 
   auto dim = mesh.dim();
   auto nverts = mesh.nverts();
-  auto coords = ::Omega_h::detail::coords_tdim_only(mesh, __func__);
-  Omega_h::Write<Omega_h::Real> scaled_coords(coords.size());
-  OMEGA_H_CHECK(coords.size() == dim * nverts);
+  auto coords = mesh.coords_view();
+  Omega_h::Write<Omega_h::Real> scaled_coords(dim * nverts);
+  Omega_h::CoordsWriteView<> scaled(scaled_coords, dim);
 
   Omega_h::parallel_for(
       nverts, OMEGA_H_LAMBDA(const Omega_h::LO vert_id) {
         for (int i = 0; i < dim; ++i) {  // for future scale each coordinate
-          scaled_coords[vert_id * dim + i] = coords[vert_id * dim + i] * scale;
+          scaled(vert_id, i) = coords(vert_id, i) * scale;
         }
       });
   Omega_h::fence();
 
-  ::Omega_h::detail::set_coords_tdim_only(mesh, scaled_coords, __func__);
+  mesh.set_coords(Omega_h::CoordsView<>(scaled));
   Omega_h::fence();
   Omega_h::binary::write(mesh_out, &mesh);
 

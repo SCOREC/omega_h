@@ -62,8 +62,8 @@ struct UniteOp {
 
 template <Int dim>
 struct GetBBoxOp {
-  Reals coords;
-  GetBBoxOp(Reals coords_in) : coords(coords_in) {}
+  CoordsView<dim> coords;
+  GetBBoxOp(CoordsView<dim> coords_in) : coords(coords_in) {}
   OMEGA_H_INLINE BBox<dim> operator()(LO i) const {
     return BBox<dim>(get_vector<dim>(coords, i));
   }
@@ -71,8 +71,8 @@ struct GetBBoxOp {
 
 //find the bbox enclosing all listed points
 template <Int dim>
-BBox<dim> find_bounding_box(Reals coords) {
-  auto npts = divide_no_remainder(coords.size(), dim);
+BBox<dim> find_bounding_box(CoordsView<dim> coords) {
+  auto npts = coords.extent(0);
   BBox<dim> init;
   for (Int i = 0; i < dim; ++i) {
     init.min[i] = ArithTraits<Real>::max();
@@ -97,13 +97,13 @@ BBox<dim> find_bounding_box(Reals coords) {
 #endif
 }
 
-template BBox<1> find_bounding_box<1>(Reals coords);
-template BBox<2> find_bounding_box<2>(Reals coords);
-template BBox<3> find_bounding_box<3>(Reals coords);
+template BBox<1> find_bounding_box<1>(CoordsView<1> coords);
+template BBox<2> find_bounding_box<2>(CoordsView<2> coords);
+template BBox<3> find_bounding_box<3>(CoordsView<3> coords);
 
 template <Int dim>
 BBox<dim> get_bounding_box(Mesh* mesh) {
-  auto bb = find_bounding_box<dim>(::Omega_h::detail::coords_tdim_only(*mesh, __func__));
+  auto bb = find_bounding_box<dim>(mesh->coords_view<dim>());
   for (Int i = 0; i < dim; ++i) {
     bb.min[i] = mesh->comm()->allreduce(bb.min[i], OMEGA_H_MIN);
     bb.max[i] = mesh->comm()->allreduce(bb.max[i], OMEGA_H_MAX);

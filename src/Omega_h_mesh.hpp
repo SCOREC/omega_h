@@ -5,6 +5,8 @@
 #include <Omega_h_comm.hpp>
 #include <Omega_h_coords_view.hpp>
 #include <Omega_h_dist.hpp>
+#include <Omega_h_element.hpp>
+#include <Omega_h_for.hpp>
 #include <Omega_h_library.hpp>
 #include <Omega_h_tag.hpp>
 #include <array>
@@ -406,6 +408,35 @@ class ScopedChangeRCFieldsToMesh {
 bool can_print(Mesh* mesh);
 
 Real repro_sum_owned(Mesh* mesh, Int dim, Reals a);
+
+template <std::size_t N>
+CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, LOs a2e,
+    CoordsView<N> coords) {
+  auto const sdim = coords.extent(1);
+  auto vertices = ent_dim == VERT ? LOs(mesh->nverts(), 0, 1)
+                                   : mesh->ask_verts_of(ent_dim);
+  auto const degree = ent_dim == VERT ? 1
+      : element_degree(mesh->family(), ent_dim, VERT);
+  Write<Real> data(a2e.size() * sdim);
+  CoordsWriteView<N> result(data, sdim);
+  auto average = OMEGA_H_LAMBDA(LO a) {
+    auto e = a2e[a];
+    for (Int d = 0; d < sdim; ++d) {
+      Real sum = 0;
+      for (Int i = 0; i < degree; ++i)
+        sum += coords(vertices[e * degree + i], d);
+      result(a, d) = sum / degree;
+    }
+  };
+  parallel_for(a2e.size(), average, "average_coords");
+  return CoordsView<N>(result);
+}
+
+template <std::size_t N>
+CoordsView<N> average_coords(Mesh* mesh, Int ent_dim, CoordsView<N> coords) {
+  if (ent_dim == VERT) return coords;
+  return average_coords(mesh, ent_dim, LOs(mesh->nents(ent_dim), 0, 1), coords);
+}
 
 Reals average_field(Mesh* mesh, Int dim, LOs a2e, Int ncomps, Reals v2x);
 Reals average_field(Mesh* mesh, Int dim, Int ncomps, Reals v2x);
