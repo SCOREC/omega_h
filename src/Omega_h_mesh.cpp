@@ -85,6 +85,15 @@ void Mesh::set_dim(Int dim_in) {
   dim_ = dim_in;
 }
 
+void Mesh::set_space_dim(Int sdim) {
+  if (dim_ < 1 || sdim < dim_ || sdim > 3)
+    Omega_h_fail("set_space_dim: require 1 <= dim (%d) <= space_dim (%d) <= 3\n", dim_, sdim);
+  if (has_tag(VERT, "coordinates") &&
+      get_tagbase(VERT, "coordinates")->ncomps() != sdim)
+    Omega_h_fail("set_space_dim: coordinates component count differs from space_dim (%d)\n", sdim);
+  space_dim_ = sdim;
+}
+
 void Mesh::set_verts(LO nverts_in) { nents_[VERT] = nverts_in; }
 
 void Mesh::set_ents(Int ent_dim, Adj down) {
@@ -411,15 +420,29 @@ Adj Mesh::ask_adj(Int from, Int to) {
   return derived;
 }
 
-void Mesh::add_coords(Reals array) {
-  add_tag<Real>(0, "coordinates", dim(), array);
+Reals Mesh::retain_coords_storage() const {
+  auto storage = get_array<Real>(VERT, "coordinates");
+  if (get_tagbase(VERT, "coordinates")->ncomps() != space_dim() ||
+      storage.size() != nverts() * space_dim())
+    Omega_h_fail("coords_view: coordinates do not match nverts and space_dim (%d)\n", space_dim());
+  return storage;
 }
 
-Reals Mesh::coords() const { return get_array<Real>(0, "coordinates"); }
+void Mesh::add_coords(Reals array) {
+  if (array.size() != nverts() * space_dim())
+    Omega_h_fail("add_coords: coordinate count differs from nverts * space_dim\n");
+  add_tag<Real>(0, "coordinates", space_dim(), array);
+}
 
-void Mesh::set_coords(Reals const& array) {
-  OMEGA_H_CHECK(array.size() == nverts() * dim());
-  set_tag<Real>(VERT, "coordinates", array);
+void require_same_tdim_sdim(Mesh const& mesh, char const* caller) {
+  if (mesh.space_dim() != mesh.dim())
+    Omega_h_fail("%s: meshes with space_dim (%d) != dim (%d) are not supported\n",
+        caller, mesh.space_dim(), mesh.dim());
+}
+
+Reals Mesh::coords() const {
+  require_same_tdim_sdim(*this);
+  return get_array<Real>(VERT, "coordinates");
 }
 
 Read<GO> Mesh::globals(Int ent_dim) const {
@@ -427,14 +450,17 @@ Read<GO> Mesh::globals(Int ent_dim) const {
 }
 
 Reals Mesh::ask_lengths() {
+  bool const metric = has_tag(VERT, "metric");
+  if (metric) require_same_tdim_sdim(*this);
   if (!has_tag(EDGE, "length")) {
-    auto lengths = measure_edges_metric(this);
+    auto lengths = metric ? measure_edges_metric(this) : measure_edges_real(this);
     add_tag(EDGE, "length", 1, lengths);
   }
   return get_array<Real>(EDGE, "length");
 }
 
 Reals Mesh::ask_qualities() {
+  require_same_tdim_sdim(*this);
   if (!has_tag(dim(), "quality")) {
     auto qualities = measure_qualities(this);
     add_tag(dim(), "quality", 1, qualities);
@@ -616,14 +642,15 @@ void Mesh::set_parting(Omega_h_Parting parting_in, bool verbose) {
 /* this is a member function mainly because it
    modifies the RIB hints */
 void Mesh::balance(bool predictive) {
+  if (predictive) require_same_tdim_sdim(*this);
   OMEGA_H_TIME_FUNCTION;
   if (comm_->size() == 1) return;
   set_parting(OMEGA_H_ELEM_BASED);
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), coords());
-  if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
+      average_coords(this, dim(), coords_view());
+  if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Reals masses;
   Real abs_tol;
   if (predictive) {
@@ -700,8 +727,8 @@ void Mesh::balance(Reals weights) {
   inertia::Rib hints;
   if (rib_hints_) hints = *rib_hints_;
   auto ecoords =
-      average_field(this, dim(), LOs(nelems(), 0, 1), dim(), coords());
-  if (dim() < 3) ecoords = resize_vectors(ecoords, dim(), 3);
+      average_coords(this, dim(), coords_view());
+  if (space_dim() < 3) ecoords = resize_vectors(ecoords, space_dim(), 3);
   Real abs_tol;
   abs_tol = max2(0.0, get_max(comm_, weights));
   abs_tol *= 2.0;
@@ -916,6 +943,7 @@ Mesh Mesh::copy_meta() const {
   Mesh m(library_);
   m.family_ = this->family_;
   m.dim_ = this->dim_;
+  m.space_dim_ = this->space_dim_;
   m.comm_ = this->comm_;
   m.parting_ = this->parting_;
   m.nghost_layers_ = this->nghost_layers_;

@@ -12,9 +12,9 @@ namespace Omega_h {
 
 template <Int dim>
 Reals get_linear_scatter_coords(
-    Reals coords, Vector<dim> direction, Vector<dim> origin) {
+    CoordsView<static_cast<std::size_t>(dim)> coords, Vector<dim> direction, Vector<dim> origin) {
   auto offset = origin * direction;
-  auto n = divide_no_remainder(coords.size(), dim);
+  auto n = coords.extent(0);
   auto coords_1d_w = Write<Real>(n);
   auto f = OMEGA_H_LAMBDA(LO i) {
     auto x = get_vector<dim>(coords, i);
@@ -26,8 +26,8 @@ Reals get_linear_scatter_coords(
 }
 
 template <Int dim>
-Reals get_radial_scatter_coords(Reals coords, Vector<dim> center) {
-  auto n = divide_no_remainder(coords.size(), dim);
+Reals get_radial_scatter_coords(CoordsView<static_cast<std::size_t>(dim)> coords, Vector<dim> center) {
+  auto n = coords.extent(0);
   auto coords_1d_w = Write<Real>(n);
   auto f = OMEGA_H_LAMBDA(LO i) {
     auto x = get_vector<dim>(coords, i);
@@ -80,8 +80,8 @@ template <Int dim>
 void write_linear_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
     Reals data, Vector<dim> direction, Vector<dim> origin,
     std::string const& separator) {
-  auto coords =
-      average_field(mesh, ent_dim, dim, mesh->coords());  // get centroids
+  auto storage = average_coords(mesh, ent_dim, mesh->coords_view<dim>());
+  auto coords = make_coords_view<dim>(storage);
   auto coords_1d = get_linear_scatter_coords(coords, direction, origin);
   write_scatterplot(path, mesh, ent_dim, coords_1d, data, separator);
 }
@@ -89,16 +89,16 @@ void write_linear_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
 template <Int dim>
 void write_radial_scatterplot(std::string const& path, Mesh* mesh, Int ent_dim,
     Reals data, Vector<dim> center, std::string const& separator) {
-  auto coords =
-      average_field(mesh, ent_dim, dim, mesh->coords());  // get centroids
+  auto storage = average_coords(mesh, ent_dim, mesh->coords_view<dim>());
+  auto coords = make_coords_view<dim>(storage);
   auto coords_1d = get_radial_scatter_coords(coords, center);
   write_scatterplot(path, mesh, ent_dim, coords_1d, data, separator);
 }
 
 #define OMEGA_H_EXPL_INST(dim)                                                 \
   template Reals get_linear_scatter_coords(                                    \
-      Reals coords, Vector<dim> direction, Vector<dim> origin);                \
-  template Reals get_radial_scatter_coords(Reals coords, Vector<dim> center);  \
+      CoordsView<static_cast<std::size_t>(dim)> coords, Vector<dim> direction, Vector<dim> origin);                \
+  template Reals get_radial_scatter_coords(CoordsView<static_cast<std::size_t>(dim)> coords, Vector<dim> center);  \
   template void write_linear_scatterplot(std::string const& path, Mesh* mesh,  \
       Int ent_dim, Reals data, Vector<dim> direction, Vector<dim> origin,      \
       std::string const& separator);                                           \

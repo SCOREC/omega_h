@@ -1,3 +1,4 @@
+#include "coords_test.hpp"
 #include <iostream>
 
 #include "Omega_h_adapt.hpp"
@@ -13,10 +14,10 @@ using namespace Omega_h;
 
 void add_density_tag(Mesh* mesh) {
   auto density = Write<Real>(mesh->nelems());
-  auto elem_coords =
-      average_field(mesh, mesh->dim(), mesh->dim(), mesh->coords());
+  auto elem_coords_storage = test::element_centroids<2>(*mesh);
+  auto elem_coords = make_coords_view<2>(elem_coords_storage);
   auto f = OMEGA_H_LAMBDA(LO e) {
-    if (elem_coords[e * 2 + 1] > 0.5) {
+    if (elem_coords(e, 1) > 0.5) {
       density[e] = 1e-4;
     } else {
       density[e] = 1.0;
@@ -68,7 +69,7 @@ int main(int argc, char** argv) {
   mesh.set_parting(OMEGA_H_ELEM_BASED);
   add_density_tag(&mesh);
   auto velocity = Write<Real>(mesh.nverts() * mesh.dim());
-  auto coords = mesh.coords();
+  auto coords = mesh.coords_view<2>();
   auto f = OMEGA_H_LAMBDA(LO vert) {
     auto x = get_vector<2>(coords, vert);
     auto x2 = x[0] - 0.3;

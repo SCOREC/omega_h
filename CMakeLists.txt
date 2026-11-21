@@ -55,12 +55,27 @@ endif()
 set(Omega_h_USE_ZLIB_DEFAULT ON)
 bob_add_dependency(PUBLIC NAME ZLIB TARGETS ZLIB::ZLIB)
 
-set(Kokkos_REQUIRED_VERSION 4.0)
+set(Kokkos_REQUIRED_VERSION 4.4)
 set(Omega_h_USE_Kokkos_DEFAULT OFF)
 set(KokkosCore_PREFIX_DEFAULT ${Kokkos_PREFIX})
 bob_add_dependency(PUBLIC NAME Kokkos TARGETS Kokkos::kokkos)
 if (Omega_h_USE_Kokkos)
   set_target_properties(Kokkos::kokkos PROPERTIES INTERFACE_COMPILE_OPTIONS "")
+  get_target_property(_omega_kokkos_includes Kokkos::kokkos INTERFACE_INCLUDE_DIRECTORIES)
+  unset(Omega_h_MDSPAN_INCLUDE_DIR CACHE)
+  find_path(Omega_h_MDSPAN_INCLUDE_DIR mdspan/mdspan.hpp
+    PATHS ${_omega_kokkos_includes} NO_DEFAULT_PATH)
+  if(NOT Omega_h_MDSPAN_INCLUDE_DIR)
+    message(FATAL_ERROR "Omega_h requires Kokkos with bundled mdspan headers installed")
+  endif()
+  if(Kokkos_VERSION VERSION_LESS 5.0)
+    file(STRINGS "${Omega_h_MDSPAN_INCLUDE_DIR}/KokkosCore_config.h"
+      _omega_mdspan_enabled REGEX "^#[ \t]*define[ \t]+KOKKOS_ENABLE_IMPL_MDSPAN([ \t]|$)")
+    if(NOT _omega_mdspan_enabled)
+      message(FATAL_ERROR "Omega_h requires Kokkos_ENABLE_IMPL_MDSPAN=ON in Kokkos 4.x")
+    endif()
+  endif()
+
 endif()
 
 set(Omega_h_USE_egadslite_DEFAULT OFF)

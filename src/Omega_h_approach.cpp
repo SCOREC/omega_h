@@ -33,13 +33,29 @@ static bool okay(Mesh* mesh, AdaptOpts const& opts) {
   return true;
 }
 
+static Reals displaced_coords(CoordsView<> coords, Reals warp) {
+  auto sdim = coords.extent(1);
+  if (warp.size() != coords.extent(0) * sdim)
+    Omega_h_fail("warp: displacement extents differ from coordinates\n");
+  Write<Real> data(warp.size());
+  auto result = make_coords_view<>(data, sdim);
+  auto displace = OMEGA_H_LAMBDA(LO v) {
+    for (Int d = 0; d < sdim; ++d)
+      result(v, d) = coords(v, d) + warp[v * sdim + d];
+  };
+  parallel_for(coords.extent(0), displace, "displaced_coords");
+  return data;
+}
+
 bool warp_to_limit(
     Mesh* mesh, AdaptOpts const& opts, bool exit_on_stall, Int max_niters) {
+  require_same_tdim_sdim(*mesh);
   if (!mesh->has_tag(VERT, "warp")) return false;
   check_okay(mesh, opts);
-  auto coords = mesh->coords();
+  auto coords_storage = mesh->retain_coords_storage();
+  auto coords = make_coords_view(coords_storage, mesh->space_dim());
   auto warp = mesh->get_array<Real>(VERT, "warp");
-  mesh->set_coords(add_each(coords, warp));
+  mesh->set_coords(displaced_coords(coords, warp));
   if (okay(mesh, opts)) {
     if (opts.verbosity >= EACH_REBUILD && can_print(mesh)) {
       std::cout << "warp_to_limit completed in one step\n";
@@ -73,7 +89,7 @@ bool warp_to_limit(
     factor /= 2.0;
     warp = half_warp;
     remainder = add_each(remainder, half_warp);
-    mesh->set_coords(add_each(coords, warp));
+    mesh->set_coords(displaced_coords(coords, warp));
   } while (!okay(mesh, opts));
   if (opts.verbosity >= EACH_REBUILD && can_print(mesh)) {
     std::cout << "warp_to_limit moved by factor " << factor << '\n';
@@ -84,6 +100,7 @@ bool warp_to_limit(
 }
 
 bool approach_metric(Mesh* mesh, AdaptOpts const& opts, Real min_step) {
+  require_same_tdim_sdim(*mesh);
   auto name = "metric";
   auto target_name = "target_metric";
   if (!mesh->has_tag(VERT, target_name)) return false;

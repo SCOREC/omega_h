@@ -1,0 +1,6 @@
+# Exclude third-party code from GitHub language statistics.
+/tpl/** linguist-vendored
+
+# Collapse third-party header diffs on GitHub; keep licenses and READMEs visible.
+/tpl/**/*.h linguist-generated
+/tpl/**/*.hpp linguist-generated

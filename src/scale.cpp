@@ -33,17 +33,18 @@ int main(int argc, char** argv) {
 
   auto mesh = Omega_h::Mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
+  require_same_tdim_sdim(mesh);
 
   auto dim = mesh.dim();
   auto nverts = mesh.nverts();
-  auto coords = mesh.coords();
-  Omega_h::Write<Omega_h::Real> scaled_coords(coords.size());
-  OMEGA_H_CHECK(coords.size() == dim * nverts);
+  auto coords = mesh.coords_view();
+  Omega_h::Write<Omega_h::Real> scaled_coords(dim * nverts);
+  auto scaled = Omega_h::make_coords_view<>(scaled_coords, dim);
 
   Omega_h::parallel_for(
       nverts, OMEGA_H_LAMBDA(const Omega_h::LO vert_id) {
         for (int i = 0; i < dim; ++i) {  // for future scale each coordinate
-          scaled_coords[vert_id * dim + i] = coords[vert_id * dim + i] * scale;
+          scaled(vert_id, i) = coords(vert_id, i) * scale;
         }
       });
   Omega_h::fence();

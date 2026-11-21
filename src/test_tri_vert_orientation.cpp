@@ -11,13 +11,13 @@
 bool is_ccw_oriented(Omega_h::Mesh& mesh) {
   OMEGA_H_CHECK_PRINTF(mesh.dim() == 2, "ERROR: Mesh is not 2D. Found Dim = %d\n", mesh.dim());
   const auto& face2nodes = mesh.ask_down(Omega_h::FACE, Omega_h::VERT).ab2b;
-  const auto& coords = mesh.coords();
+  const auto& coords = mesh.coords_view<2>();
 
   Omega_h::LO ccw;
   Kokkos::Sum<Omega_h::LO> sum_reducer(ccw);
   auto find_ccw_face = KOKKOS_LAMBDA(const Omega_h::LO face, Omega_h::LO& ccw) {
     const auto faceVerts = Omega_h::gather_verts<3>(face2nodes, face);
-    const auto faceCoords = Omega_h::gather_vectors<3, 2>(coords, faceVerts);
+    const auto faceCoords = Omega_h::gather_vectors<3>(coords, faceVerts);
 
     /*
      * It calculates the orientation based on sign of the cross product of

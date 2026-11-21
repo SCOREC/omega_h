@@ -11,17 +11,17 @@
 
 using namespace Omega_h;
 
-Reals logistic_function(Reals x, Real x0, Real L, Real k) {
-  Write<Real> out(x.size());
+Reals logistic_function(CoordsView<1> x, Real x0, Real L, Real k) {
+  Write<Real> out(x.extent(0));
   auto f = OMEGA_H_LAMBDA(LO i) {
-    out[i] = L / (1 + std::exp(-k * (x[i] - x0)));
+    out[i] = L / (1 + std::exp(-k * (x(i, 0) - x0)));
   };
-  parallel_for(x.size(), f);
+  parallel_for(x.extent(0), f);
   return out;
 }
 
 static void add_solution(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view<1>();
   auto sol = logistic_function(coords, 0.5, 1.0, 20.0);
   mesh->add_tag(VERT, "solution", 1, sol);
 }

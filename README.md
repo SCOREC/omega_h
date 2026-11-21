@@ -57,6 +57,15 @@ Omega\_h provides at least the following:
 
 ## Configuration
 
+Kokkos builds require Kokkos 4.4 or newer with bundled mdspan enabled
+(`Kokkos_ENABLE_IMPL_MDSPAN` in Kokkos 4.x). Builds without Kokkos use
+an installed, vendored mdspan copy through `Omega_h_mdspan.hpp`; avoid
+including another mdspan distribution in the same translation unit because
+these distributions share internal include guards and namespaces.
+
+New osh outputs use format version 12. Existing older osh files remain
+readable; older Omega_h versions cannot read the new outputs.
+
 Below we document some key CMake configuration options:
 
 #### Omega\_h\_USE\_MPI
@@ -84,6 +93,50 @@ Default: `OFF`
 Whether to use the Exodus subpackage of the SEACAS toolkit.
 This allows reading and writing Exodus files from Omega\_h.
 By default, it will look for this dependency in `SEACASExodus_PREFIX`.
+
+## Embedded meshes
+
+The existing `Mesh` supports edges in 2D/3D and triangles in 3D.
+`dim()` (also `tdim()`) describes topology; `space_dim()` describes coordinates
+and defaults to `dim()` for ordinary meshes.
+
+```cpp
+Omega_h::Mesh mesh(&library);
+Omega_h::build_from_elems_and_coords(
+    &mesh, OMEGA_H_SIMPLEX, 2, triangle_vertices, xyz_coordinates, 3);
+auto xyz = mesh.coords_view<3>(); // borrowed, read-only span; checks the spatial dimension
+// In an Omega_h device kernel: xyz(vertex, component)
+```
+
+`coords_view()` provides a dynamic extent; `coords_view<N>()` checks a static
+extent, including in Release builds. Both return borrowed mdspans whose accessor
+records the allocation's memory space. The mesh owns the allocation; replacing
+coordinates or destroying the mesh can invalidate the span. Retain an explicit
+`mesh.retain_coords_storage()` handle when old coordinates must survive either
+operation. Views from temporary meshes and factories borrowing temporary buffers
+are rejected at compile time.
+
+`set_coords<N>(storage)` accepts an owning `Read<Real>` (also convertible from
+`Write<Real>`), validates mesh extents, shares ownership without copying, and
+invalidates cached geometry. It does not accept borrowed spans. The owning-input
+setter supports embedded meshes; only the old raw `coords()` getter remains
+deprecated and restricted to ordinary meshes.
+
+`make_coords_view<N>(storage, space_dim)` creates a borrowed span over an explicit
+owner. `copy_coords_to_host(span)` returns an owned host vector, which can be
+inspected using a host-tagged span from the same factory. `average_coords` returns
+an owning coordinate array; callers retain it while using a span over its values.
+`UserTransfer::snap` receives borrowed `CoordsView<> const&` old coordinates.
+
+Algorithms requiring matching topological and spatial dimensions use
+`require_same_tdim_sdim(mesh)` independently of coordinate access. Index bounds follow
+the selected mdspan implementation and are not universally checked.
+
+Embedded meshes support real element measures and edge lengths, nonpredictive
+and weighted balancing, migration/ghosting, osh I/O, and VTK output. Surface
+areas are unsigned. Adaptation, metrics, quality, recovery, conservation, and
+AMR reject embedded meshes. Unported tools also reject them. Topological
+classification is supported; distributed classification needs a ghosted partition.
 
 ## Contributing
 

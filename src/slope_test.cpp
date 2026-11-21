@@ -40,11 +40,11 @@ int main(int argc, char** argv) {
       mesh.comm()->allreduce<Omega_h::Real>(mesh.nelems(), OMEGA_H_SUM);
   mesh.set_parting(OMEGA_H_GHOSTED);
   auto dim = mesh.dim();
-  auto coords = mesh.coords();
+  auto coords = mesh.coords_view();
   auto bb = Omega_h::get_bounding_box<3>(&mesh);
   auto analytic_metric_w = Omega_h::Write<Omega_h::Real>(mesh.nverts());
   auto f = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    auto z = coords[v * dim + (dim - 1)];
+    auto z = coords(v, dim - 1);
     auto minz = bb.min[dim - 1];
     auto maxz = bb.max[dim - 1];
     auto z_norm = (z * 2.0 / (maxz - minz)) - 1.0;

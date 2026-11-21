@@ -13,7 +13,7 @@ using namespace Omega_h;
 constexpr Int dim = 3;
 
 static Reals get_first_metric(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view<dim>();
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   auto f = OMEGA_H_LAMBDA(LO v) {
@@ -28,7 +28,7 @@ static Reals get_first_metric(Mesh* mesh) {
 }
 
 static Reals get_second_metric(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view<dim>();
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   constexpr Real h_z = 1.0 / 10.0;
@@ -50,7 +50,7 @@ static Reals get_second_metric(Mesh* mesh) {
 }
 
 static Reals get_third_metric(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view<dim>();
   auto out = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   constexpr Real h0 = 0.001;
   constexpr Real h_z = 1.0 / 10.0;

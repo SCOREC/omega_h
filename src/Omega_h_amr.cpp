@@ -15,6 +15,7 @@ namespace Omega_h {
 namespace amr {
 
 void remove_non_leaf_uses(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   Bytes ent_persists[4];
   auto elem_dim = mesh->dim();
   ent_persists[elem_dim] = mesh->ask_leaves(elem_dim);
@@ -54,6 +55,7 @@ static OMEGA_H_DEVICE Byte should_elem_be_refined(LO elem, Adj elems2bridges,
 }
 
 Bytes enforce_2to1_refine(Mesh* mesh, Int bridge_dim, Bytes elems_are_marked) {
+  require_same_tdim_sdim(*mesh);
   auto elem_dim = mesh->dim();
   OMEGA_H_CHECK(bridge_dim > 0);
   OMEGA_H_CHECK(bridge_dim < elem_dim);
@@ -180,6 +182,7 @@ static void refine_elem_based(Mesh* mesh, TransferOpts xfer_opts) {
 }
 
 void refine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
   amr::mark_refined(mesh, elems_are_marked);
   mesh->set_parting(OMEGA_H_GHOSTED);
@@ -189,6 +192,7 @@ void refine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
 }
 
 void derefine(Mesh* mesh, Bytes elems_are_marked, TransferOpts xfer_opts) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->family() == OMEGA_H_HYPERCUBE);
   amr::tag_derefined(mesh, elems_are_marked);
   LOs new_ents2old_ents[4];

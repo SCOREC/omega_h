@@ -13,4 +13,5 @@ int main(int argc, char** argv) {
   OMEGA_H_CHECK(argc == 2);
   Omega_h::Mesh2D mesh(&lib);
   Omega_h::binary::read(argv[1], lib.world(), &mesh);
+  require_same_tdim_sdim(mesh);
 }

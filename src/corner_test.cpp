@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   opts.min_quality_allowed = 0.47;
   do {
     Write<Real> metrics_w(mesh.nverts());
-    auto coords = mesh.coords();
+    auto coords = mesh.coords_view<3>();
     auto f = OMEGA_H_LAMBDA(LO v) {
       auto x = get_vector<3>(coords, v);
       auto coarse = 0.4;

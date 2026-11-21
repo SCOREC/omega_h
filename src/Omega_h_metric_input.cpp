@@ -40,6 +40,7 @@ void MetricInput::add_source(MetricSource const& src) {
 
 static Reals get_variation_metrics(
     Mesh* mesh, Real knob, Int dim, Int ncomps, Reals data) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(data.size() == mesh->nents(dim) * ncomps);
   if (ncomps == 1) {
     if (dim == VERT) {
@@ -67,6 +68,7 @@ static Reals get_variation_metrics(
 }
 
 Reals get_variation_metrics(Mesh* mesh, std::string const& name, Real knob) {
+  require_same_tdim_sdim(*mesh);
   Int dim = -1;
   if (mesh->has_tag(VERT, name)) {
     dim = VERT;
@@ -82,6 +84,7 @@ Reals get_variation_metrics(Mesh* mesh, std::string const& name, Real knob) {
 }
 
 Reals get_derivative_metrics(Mesh* mesh, std::string const& name, Real knob) {
+  require_same_tdim_sdim(*mesh);
   enum {
     INVALID,
     NODAL_SCALAR,
@@ -138,6 +141,7 @@ Reals get_derivative_metrics(Mesh* mesh, std::string const& name, Real knob) {
 }
 
 Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
+  require_same_tdim_sdim(*mesh);
   begin_code("generate_metrics");
   auto t0 = now();
   if (input.should_limit_lengths) {
@@ -254,32 +258,38 @@ Reals generate_metrics(Mesh* mesh, MetricInput const& input) {
 }
 
 void add_metric_tag(Mesh* mesh, Reals metrics, std::string const& name) {
+  require_same_tdim_sdim(*mesh);
   auto metric_dim = get_metrics_dim(mesh->nverts(), metrics);
   mesh->add_tag(VERT, name, symm_ncomps(metric_dim), metrics);
 }
 
 void generate_metric_tag(Mesh* mesh, MetricInput const& input) {
+  require_same_tdim_sdim(*mesh);
   auto metrics = generate_metrics(mesh, input);
   add_metric_tag(mesh, metrics, "metric");
 }
 
 void generate_target_metric_tag(Mesh* mesh, MetricInput const& input) {
+  require_same_tdim_sdim(*mesh);
   auto metrics = generate_metrics(mesh, input);
   add_metric_tag(mesh, metrics, "target_metric");
 }
 
 void add_implied_metric_tag(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   auto metrics = get_implied_metrics(mesh);
   add_metric_tag(mesh, metrics, "metric");
 }
 
 void add_implied_isos_tag(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_TIME_FUNCTION;
   auto metrics = get_implied_isos(mesh);
   add_metric_tag(mesh, metrics, "metric");
 }
 
 void add_implied_metric_based_on_target(Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   auto target_tagbase = mesh->get_tagbase(VERT, "target_metric");
   if (mesh->dim() > 1 && target_tagbase->ncomps() == 1) {
     add_implied_isos_tag(mesh);

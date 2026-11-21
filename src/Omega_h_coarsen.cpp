@@ -204,6 +204,7 @@ static bool coarsen_ents(Mesh* mesh, AdaptOpts const& opts, Int ent_dim,
 }
 
 bool coarsen_by_size(Mesh* mesh, AdaptOpts const& opts) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_TIME_FUNCTION;
   auto comm = mesh->comm();
   auto lengths = mesh->ask_lengths();
@@ -216,6 +217,7 @@ bool coarsen_by_size(Mesh* mesh, AdaptOpts const& opts) {
 }
 
 bool coarsen_slivers(Mesh* mesh, AdaptOpts const& opts) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_TIME_FUNCTION;
 
 

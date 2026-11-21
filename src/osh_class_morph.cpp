@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
   auto path_in = cmdline.get<std::string>("input.osh");
   auto path_out = cmdline.get<std::string>("output.osh");
   auto mesh = Omega_h::binary::read(path_in, &lib, /*strict=*/true);
+  require_same_tdim_sdim(mesh);
   mesh.set_parting(OMEGA_H_GHOSTED);
   auto faces_to_elements = mesh.ask_up(2, 3);
   auto faces_to_face_elements = faces_to_elements.a2ab;

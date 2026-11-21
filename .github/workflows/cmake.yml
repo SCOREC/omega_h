@@ -21,6 +21,8 @@ jobs:
         mempool: [on, off]
         cxx_standard: [17]
         python: [off]
+        build_type: [Release]
+        throw: [off]
         exclude:
         - kokkos: off
           mempool: on
@@ -30,7 +32,26 @@ jobs:
              kokkos: on
              mempool: on
              mpi: off
-             kokkos_version: 4.3.00
+             kokkos_version: 4.4.00
+           # Exercise checked failures in both mdspan implementations.
+           - compiler: g++
+             kokkos: off
+             mempool: off
+             mpi: on
+             kokkos_version: develop
+             cxx_standard: 17
+             python: off
+             build_type: Debug
+             throw: on
+           - compiler: g++
+             kokkos: on
+             mempool: off
+             mpi: on
+             kokkos_version: 4.4.00
+             cxx_standard: 17
+             python: off
+             build_type: Release
+             throw: on
            #run one config with g++ and C++20
            - compiler: g++
              kokkos: on
@@ -160,6 +181,8 @@ jobs:
           fi
           cmake . -Bbuild \
           -DCMAKE_CXX_COMPILER=$CXX \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type || 'Release' }} \
+          -DOmega_h_THROW=${{ matrix.throw || 'off' }} \
           -DCMAKE_CXX_STANDARD=${{ matrix.cxx_standard }} \
           -DCMAKE_VERBOSE_MAKEFILE=on \
           -DOmega_h_USE_MPI=${{ matrix.mpi }} \
@@ -174,6 +197,10 @@ jobs:
           -DBUILD_SHARED_LIBS=${{ matrix.python }} \
           -DENABLE_CTEST_MEMPOOL=${{ matrix.mempool }}
 
+    - name: Check coordinate API
+      working-directory: ${{github.workspace}}/omega_h
+      run: sh tools/lint/check_coords.sh
+
     - name: Build
       working-directory: ${{github.workspace}}/omega_h/build
       shell: bash
@@ -182,7 +209,7 @@ jobs:
     - name: Test
       working-directory: ${{github.workspace}}/omega_h/build
       shell: bash
-      run: ctest
+      run: ctest --output-on-failure
 
     - name: Test Python
       if: ${{ matrix.python == 'on' }}

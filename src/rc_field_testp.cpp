@@ -14,10 +14,10 @@ using namespace Omega_h;
 
 template <Int dim>
 void set_target_metric(Mesh* mesh) {
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view<dim>();
   auto target_metrics_w = Write<Real>(mesh->nverts() * symm_ncomps(dim));
   auto calc_metrics = OMEGA_H_LAMBDA(LO v) {
-    auto z = coords[v * dim + (dim - 1)];
+    auto z = coords(v, dim - 1);
     auto h = Vector<dim>();
     for (Int i = 0; i < dim - 1; ++i) h[i] = 0.5;
     h[dim - 1] = 2*(0.001 + 0.198 * std::abs(z - 0.5));

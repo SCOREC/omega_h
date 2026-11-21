@@ -130,7 +130,7 @@ struct UserTransfer {
    * Also, currently there is no built-in field transfer for vertex repositioning.
    *
    */
-  virtual void snap(Mesh& mesh, const Reals& old_coords, const Reals& warp) = 0;
+  virtual void snap(Mesh& mesh, const CoordsView<>& old_coords, const Reals& warp) = 0;
 };
 
 struct TransferOpts {

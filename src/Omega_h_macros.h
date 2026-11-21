@@ -21,6 +21,26 @@
 #define OMEGA_H_SYSTEM_HEADER OMEGA_H_PRAGMA(GCC system_header)
 #endif
 
+#ifdef OMEGA_H_SUPPRESS_DEPRECATION
+#define OMEGA_H_DEPRECATED(msg)
+#else
+#define OMEGA_H_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
+
+#if defined(__clang__)
+#define OMEGA_H_ALLOW_DEPRECATED_BEGIN OMEGA_H_PRAGMA(clang diagnostic push) OMEGA_H_PRAGMA(clang diagnostic ignored "-Wdeprecated-declarations")
+#define OMEGA_H_ALLOW_DEPRECATED_END OMEGA_H_PRAGMA(clang diagnostic pop)
+#elif defined(__GNUC__)
+#define OMEGA_H_ALLOW_DEPRECATED_BEGIN OMEGA_H_PRAGMA(GCC diagnostic push) OMEGA_H_PRAGMA(GCC diagnostic ignored "-Wdeprecated-declarations")
+#define OMEGA_H_ALLOW_DEPRECATED_END OMEGA_H_PRAGMA(GCC diagnostic pop)
+#elif defined(_MSC_VER)
+#define OMEGA_H_ALLOW_DEPRECATED_BEGIN __pragma(warning(push)) __pragma(warning(disable:4996))
+#define OMEGA_H_ALLOW_DEPRECATED_END __pragma(warning(pop))
+#else
+#define OMEGA_H_ALLOW_DEPRECATED_BEGIN
+#define OMEGA_H_ALLOW_DEPRECATED_END
+#endif
+
 #define OMEGA_H_PI 3.14159265358979323
 //                  ^    ^    ^    ^
 //                  0    5   10   15

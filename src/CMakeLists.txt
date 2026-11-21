@@ -193,6 +193,16 @@ if(Omega_h_USE_Kokkos)
   list(APPEND Omega_h_SOURCES Omega_h_pool_kokkos.cpp)
 endif()
 
+# Apply to this directory's library, tools, and tests, not to downstream targets.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|IntelLLVM|NVIDIA")
+  if(Kokkos_ENABLE_CUDA)
+    # nvcc_wrapper accepts the two-token spelling; nvcc also supports it.
+    add_compile_options("SHELL:-Xcompiler -Werror=deprecated-declarations")
+  else()
+    add_compile_options(-Werror=deprecated-declarations)
+  endif()
+endif()
+
 add_library(omega_h ${Omega_h_SOURCES})
 add_library(Omega_h::omega_h ALIAS omega_h)
 
@@ -204,6 +214,13 @@ if (Kokkos_ENABLE_CUDA)
 endif()
 
 bob_library_includes(omega_h)
+
+if(NOT Omega_h_USE_Kokkos)
+  target_include_directories(omega_h PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tpl/mdspan>)
+  install(FILES ${PROJECT_SOURCE_DIR}/tpl/mdspan/mdspan/mdspan.hpp DESTINATION include/mdspan)
+  install(FILES ${PROJECT_SOURCE_DIR}/tpl/mdspan/LICENSE DESTINATION share/Omega_h/licenses/mdspan)
+endif()
+
 
 get_filename_component(TPL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../tpl" ABSOLUTE)
 target_include_directories(omega_h PRIVATE $<BUILD_INTERFACE:${TPL_PATH}>)
@@ -341,6 +358,10 @@ osh_add_util(ascii_vtk2osh)
 set(ENABLE_CTEST_MEMPOOL OFF CACHE BOOL "Run tests with the Kokkos mempool enabled")
 
 if(BUILD_TESTING)
+  if(UNIX)
+    add_test(NAME coords_api_lint COMMAND sh ${PROJECT_SOURCE_DIR}/tools/lint/check_coords.sh)
+    set_tests_properties(coords_api_lint PROPERTIES LABELS lint)
+  endif()
   # Create test output directory in build tree to avoid polluting source tree
   set(TEST_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/test_output)
   file(MAKE_DIRECTORY ${TEST_OUTPUT_DIR})
@@ -414,6 +435,30 @@ if(BUILD_TESTING)
   osh_add_exe(reprosum_test)
   osh_add_exe(arrayops_test)
   osh_add_exe(sort_test)
+  if(Omega_h_USE_MPI)
+    osh_add_exe(embedded_mpi_test)
+    test_func(embedded_mpi_2 2 ./embedded_mpi_test 2)
+    test_func(embedded_mpi_4 4 ./embedded_mpi_test 4)
+    set_tests_properties(embedded_mpi_2 embedded_mpi_4 PROPERTIES
+      PASS_REGULAR_EXPRESSION "embedded MPI checks passed"
+      FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  endif()
+  osh_add_exe(unit_embedded)
+  test_func(run_unit_embedded 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh)
+  test_func(embedded_geometry 1 ./unit_embedded ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh geometry)
+  set_tests_properties(run_unit_embedded PROPERTIES
+    PASS_REGULAR_EXPRESSION "embedded unit checks passed"
+    FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  set_tests_properties(embedded_geometry PROPERTIES
+    PASS_REGULAR_EXPRESSION "embedded geometry checks passed"
+    FAIL_REGULAR_EXPRESSION "terminate called;BAD TERMINATION")
+  # Run negative checks as singleton processes: cmake -E env turns signals
+  # into nonzero exit codes, without relying on MPI launcher exit handling.
+  foreach(mode bad_static bad_dimension bad_length bad_space_dim bad_set_extent bad_tag_width)
+    add_test(NAME embedded_reject_${mode} COMMAND ${CMAKE_COMMAND} -E env
+      $<TARGET_FILE:unit_embedded> ${PROJECT_SOURCE_DIR}/meshes/plate_6elem.osh ${mode})
+    set_tests_properties(embedded_reject_${mode} PROPERTIES WILL_FAIL TRUE LABELS mesh)
+  endforeach()
   osh_add_exe(unit_math)
 
   osh_add_exe(test_patches)
@@ -520,7 +565,10 @@ if(BUILD_TESTING)
 
   osh_add_exe(load_2d)
   list(APPEND TEST_EXES load_2d)
-  will_fail_test_func(load_2d_box_100 1 ./load_2d box_100.osh)
+  add_test(NAME load_2d_box_100
+    COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:load_2d> box_100.osh)
+  set_tests_properties(load_2d_box_100 PROPERTIES
+    WILL_FAIL TRUE LABELS mesh FIXTURES_REQUIRED smoke_test_osh_scale)
 
   osh_add_exe(osh_scale2d)
   list(APPEND TEST_EXES osh_scale2d)
@@ -757,6 +805,8 @@ endif()
 
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h")
 set(Omega_h_HEADERS
+  Omega_h_mdspan.hpp
+  Omega_h_coords_view.hpp
   "${CMAKE_CURRENT_BINARY_DIR}/Omega_h_config.h"
   Omega_h_adapt.hpp
   Omega_h_adj.hpp

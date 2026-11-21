@@ -14,7 +14,7 @@
  * number of elements adjacent to a vertex.
  */
 
-#include "Omega_h_adj.hpp"
+#include "Omega_h_coords_view.hpp"
 #include "Omega_h_qr.hpp"
 #include "Omega_h_simplex.hpp"
 
@@ -34,7 +34,7 @@ struct MaxFitPoints {
 template <Int dim>
 OMEGA_H_DEVICE QRFactorization<MaxFitPoints<dim>::value, dim + 1>
 get_cavity_qr_factorization(LO k, LOs const& k2ke, LOs const& ke2e,
-    LOs const& ev2v, Reals const& coords) {
+    LOs const& ev2v, CoordsView<dim> const& coords) {
   constexpr auto max_fit_pts = MaxFitPoints<dim>::value;
   Matrix<max_fit_pts, dim + 1> vandermonde;
   auto begin = k2ke[k];

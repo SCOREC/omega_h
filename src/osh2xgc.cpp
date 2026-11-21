@@ -16,6 +16,7 @@ int main(int argc, char** argv) {
 
   Omega_h::Mesh mesh(&lib);
   Omega_h::binary::read(mesh_in, lib.world(), &mesh);
+  require_same_tdim_sdim(mesh);
   Omega_h::xgc::write(mesh_out, &mesh);
 
   return 0;

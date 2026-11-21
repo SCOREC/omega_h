@@ -783,6 +783,7 @@ void write_nodal_fields(int exodus_file, Mesh* mesh, int time_step,
 void write(
     filesystem::path const& path, Mesh* mesh, bool verbose, int classify_with,
     FieldNames excludedNodalFields) {
+  require_same_tdim_sdim(*mesh);
   begin_code("exodus::write");
   auto comp_ws = int(sizeof(Real));
   auto io_ws = comp_ws;
@@ -832,9 +833,9 @@ void write(
       nelem_blocks, nnode_sets, nside_sets));
   Few<Write<Real>, 3> coord_blk;
   for (Int i = 0; i < dim; ++i) coord_blk[i] = Write<Real>(mesh->nverts());
-  auto coords = mesh->coords();
+  auto coords = mesh->coords_view();
   auto f0 = OMEGA_H_LAMBDA(LO i) {
-    for (Int j = 0; j < dim; ++j) coord_blk[j][i] = coords[i * dim + j];
+    for (Int j = 0; j < dim; ++j) coord_blk[j][i] = coords(i, j);
   };
   parallel_for(mesh->nverts(), f0, "copy_coords");
   HostRead<Real> h_coord_blk[3];

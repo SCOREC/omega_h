@@ -21,11 +21,11 @@ namespace hilbert {
    bits, and the last integer getting the least significant bits. */
 
 template <Int dim>
-Read<I64> dists_from_coords_dim(Reals coords) {
+Read<I64> dists_from_coords_dim(CoordsView<dim> coords) {
   auto bbox = find_bounding_box<dim>(coords);
   bbox = make_equilateral(bbox);
   auto unit_affine = get_affine_from_bbox_into_unit(bbox);
-  auto npts = divide_no_remainder(coords.size(), dim);
+  auto npts = coords.extent(0);
   Write<I64> out(npts * dim);
   auto f = OMEGA_H_LAMBDA(LO i) {
     constexpr Int nbits = MANTISSA_BITS;
@@ -42,16 +42,17 @@ Read<I64> dists_from_coords_dim(Reals coords) {
   return out;
 }
 
-static Read<I64> dists_from_coords(Reals coords, Int dim) {
-  if (dim == 3) return dists_from_coords_dim<3>(coords);
-  if (dim == 2) return dists_from_coords_dim<2>(coords);
-  if (dim == 1) return dists_from_coords_dim<1>(coords);
+static Read<I64> dists_from_coords(CoordsView<> coords) {
+  auto dim = coords.extent(1);
+  if (dim == 3) return dists_from_coords_dim<3>(as_coords<3>(coords));
+  if (dim == 2) return dists_from_coords_dim<2>(as_coords<2>(coords));
+  if (dim == 1) return dists_from_coords_dim<1>(as_coords<1>(coords));
   OMEGA_H_NORETURN(Read<I64>());
 }
 
-LOs sort_coords(Reals coords, Int dim) {
-  auto keys = hilbert::dists_from_coords(coords, dim);
-  return sort_by_keys(keys, dim);
+LOs sort_coords(CoordsView<> coords) {
+  auto keys = hilbert::dists_from_coords(coords);
+  return sort_by_keys(keys, coords.extent(1));
 }
 
 }  // end namespace hilbert

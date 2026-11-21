@@ -61,7 +61,7 @@ struct RotateBall : public Case {
     return static_motion(m, ov2v);
   }
   static Reals static_motion(Mesh* m, LOs ov2v) {
-    auto coords = m->coords();
+    auto coords = m->coords_view<3>();
     auto out = Write<Real>(ov2v.size() * 3);
     auto rot = rotate(PI / 16, vector_3(0, 0, 1));
     auto f = OMEGA_H_LAMBDA(LO ov) {
@@ -164,7 +164,7 @@ struct TwinRotor : public Case {
     return static_motion(m, ov2v, center, dir);
   }
   static Reals static_motion(Mesh* m, LOs ov2v, Vector<3> center, Real dir) {
-    auto coords = m->coords();
+    auto coords = m->coords_view<3>();
     auto out = Write<Real>(ov2v.size() * 3);
     auto rm = rotate(dir * PI / 32, vector_3(0, 0, 1));
     auto f = OMEGA_H_LAMBDA(LO ov) {
@@ -192,6 +192,7 @@ static void run_case(Library* lib, Case const& c, Int niters) {
   }
   auto world = lib->world();
   auto mesh = gmsh::read(c.file_name(), world);
+  require_same_tdim_sdim(mesh);
   mesh.set_parting(OMEGA_H_GHOSTED);
   {
     auto metrics = get_implied_isos(&mesh);

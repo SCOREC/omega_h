@@ -525,9 +525,9 @@ void transfer_pointwise_tmpl(Mesh* old_mesh, Mesh* new_mesh, Int key_dim,
   auto kds2kd_elems = kds2elems.a2ab;
   auto kd_elems2elems = kds2elems.ab2b;
   auto old_elem_verts2verts = old_mesh->ask_verts_of(dim);
-  auto old_coords = old_mesh->coords();
+  auto old_coords = old_mesh->coords_view<dim>();
   auto new_elem_verts2verts = new_mesh->ask_verts_of(dim);
-  auto new_coords = new_mesh->coords();
+  auto new_coords = new_mesh->coords_view<dim>();
   auto nkeys = keys2kds.size();
   auto nprods = keys2prods.last();
   auto prod_data_w = Write<Real>(nprods * ncomps);

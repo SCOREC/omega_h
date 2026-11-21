@@ -16,6 +16,10 @@ void bcast_mesh(Mesh* mesh, CommPtr new_comm, bool is_source) {
   if (is_source) dim = mesh->dim();
   new_comm->bcast(dim);
   if (!is_source) mesh->set_dim(dim);
+  I32 sdim;
+  if (is_source) sdim = mesh->space_dim();
+  new_comm->bcast(sdim);
+  if (!is_source) mesh->set_space_dim(sdim);
   I32 parting;
   if (is_source) parting = mesh->parting();
   new_comm->bcast(parting);

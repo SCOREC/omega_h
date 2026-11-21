@@ -104,6 +104,18 @@ void build_from_elems_and_coords(
   mesh->add_coords(coords);
 }
 
+void build_from_elems_and_coords(Mesh* mesh, Omega_h_Family family, Int edim,
+    LOs ev2v, Reals coords, Int sdim) {
+  if (edim < 1 || sdim < edim || sdim > 3)
+    Omega_h_fail("build_from_elems_and_coords: require 1 <= dim (%d) <= space_dim (%d) <= 3\n", edim, sdim);
+  if (coords.size() % sdim != 0)
+    Omega_h_fail("build_from_elems_and_coords: coordinate count is not divisible by space_dim (%d)\n", sdim);
+  auto nverts = coords.size() / sdim;
+  build_from_elems2verts(mesh, family, edim, ev2v, nverts);
+  mesh->set_space_dim(sdim);
+  mesh->add_coords(coords);
+}
+
 void build_box_internal(Mesh* mesh, Omega_h_Family family, Real x, Real y,
     Real z, LO nx, LO ny, LO nz, bool symmetric) {
   OMEGA_H_CHECK(nx > 0);

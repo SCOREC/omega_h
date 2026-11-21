@@ -745,6 +745,7 @@ Mesh read_parallel(filesystem::path filename, CommPtr comm) {
 #endif  // OMEGA_H_USE_GMSH
 
 void write(std::ostream& stream, Mesh* mesh) {
+  require_same_tdim_sdim(*mesh);
   OMEGA_H_CHECK(mesh->comm()->size() == 1);
   stream << "$MeshFormat\n";
   stream << "2.2 0 " << sizeof(Real) << '\n';
@@ -753,12 +754,13 @@ void write(std::ostream& stream, Mesh* mesh) {
   auto nverts = mesh->nverts();
   stream << nverts << '\n';
   auto dim = mesh->dim();
-  auto d_coords = mesh->coords();
-  auto h_coords = HostRead<Real>(d_coords);
+  auto d_coords = mesh->coords_view();
+  auto h_coords_storage = HostRead<Real>(mesh->retain_coords_storage());
+  auto h_coords = make_coords_view<>(h_coords_storage, d_coords.extent(1));
   stream << std::scientific << std::setprecision(17);
   for (LO i = 0; i < nverts; ++i) {
     stream << (i + 1);
-    for (Int j = 0; j < dim; ++j) stream << ' ' << h_coords[i * dim + j];
+    for (Int j = 0; j < dim; ++j) stream << ' ' << h_coords(i, j);
     for (Int j = dim; j < 3; ++j) stream << " 0";
     stream << '\n';
   }
@@ -810,12 +812,14 @@ void write(filesystem::path const& filepath, Mesh* mesh) {
 #ifdef OMEGA_H_USE_GMSH
 
 void write_parallel(filesystem::path const& filename, Mesh& mesh) {
+  require_same_tdim_sdim(mesh);
   const auto dim = mesh.dim();
   const auto nnodes = mesh.nverts();
   const auto globals_v = mesh.globals(VERT);
   const auto h_globals_v = HostRead<GO>(globals_v);
-  const auto coords = mesh.coords();
-  const auto h_coords = HostRead<Real>(coords);
+  const auto coords = mesh.coords_view();
+  const auto h_coords_storage = HostRead<Real>(mesh.retain_coords_storage());
+  auto h_coords = make_coords_view<>(h_coords_storage, coords.extent(1));
   const auto gmsh_dims = 3;
 
   std::vector<std::size_t> node_tags(static_cast<size_t>(nnodes));
@@ -826,7 +830,7 @@ void write_parallel(filesystem::path const& filename, Mesh& mesh) {
     // cleaner to use gather_vector on coords
     for (LO j = 0; j < dim; ++j) {
       node_coords[static_cast<std::size_t>(local_index * gmsh_dims + j)] =
-          h_coords[local_index * dim + j];
+          h_coords(local_index, j);
     }
   }
 
